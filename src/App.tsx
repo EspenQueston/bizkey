@@ -20,6 +20,7 @@ import NegotiatePage from '@/pages/Negotiate'
 import ProfilePage from '@/pages/Profile'
 import SettingsPage from '@/pages/Settings'
 import CheckoutPage from '@/pages/Checkout'
+import CheckoutAssistantPage from '@/pages/CheckoutAssistant'
 import DashboardPricingPage from '@/pages/DashboardPricing'
 
 // Unified ERP Panel
@@ -138,6 +139,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+      <Route path="/checkout-assistant" element={<ProtectedRoute><CheckoutAssistantPage /></ProtectedRoute>} />
 
       {/* Single authenticated panel. The old /dashboard layout is gone — its
           pages live here, and its own content (analyze widget + recent

@@ -314,6 +314,7 @@ export interface PaymentTransaction {
   user_id: string
   plan_id: string | null
   quote_request_id: string | null
+  assistant_plan_id: string | null
   amount_local: number
   currency: string
   amount_usd: number | null
@@ -553,6 +554,7 @@ export interface AssistantClient {
   status: AssistantClientStatus
   plan_id: string | null
   whatsapp_number_id: string | null
+  profile_id: string | null
   notes: string | null
   created_at: string
   updated_at: string

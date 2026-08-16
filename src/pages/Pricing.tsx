@@ -417,7 +417,7 @@ export default function PricingPage() {
                       </div>
 
                       <Button asChild variant={plan.is_popular ? 'secondary' : 'default'} className="w-full transition-transform duration-200 hover:scale-[1.02]">
-                        <Link to={`/contact?subject=assistant&plan=${plan.name}`}>Nous contacter</Link>
+                        <Link to={`/checkout-assistant?plan=${plan.name}`}>S'abonner</Link>
                       </Button>
 
                       <ul className="flex flex-col gap-2.5 pt-1 text-sm">

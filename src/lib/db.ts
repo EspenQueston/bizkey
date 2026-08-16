@@ -1147,4 +1147,21 @@ export async function deleteAssistantClient(id: string) {
   if (error) throw error
 }
 
+/** The logged-in customer's own Assistant subscription — null if they've never paid for one. Relies on the additive `assistant_clients_own_read` RLS policy. */
+export async function getMyAssistantClient(userId: string): Promise<AssistantClient | null> {
+  const { data, error } = await supabase
+    .from('assistant_clients')
+    .select('*')
+    .eq('profile_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data as AssistantClient | null
+}
+
+/** Activates (or upgrades) the caller's own Assistant subscription — server-side re-verifies a successful payment exists for this transaction before writing anything. */
+export async function activateAssistantSubscription(transactionId: string): Promise<void> {
+  const { error } = await supabase.rpc('activate_assistant_subscription', { p_transaction_id: transactionId })
+  if (error) throw error
+}
+
 
