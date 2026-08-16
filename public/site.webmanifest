@@ -1,0 +1,12 @@
+{
+  "name": "BizKey — New Vision",
+  "short_name": "BizKey",
+  "description": "Sourcing intelligent depuis la Chine, agent d'achat BizKey Sourcing.",
+  "icons": [
+    { "src": "/brand/icone.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
+  ],
+  "theme_color": "#0A1B33",
+  "background_color": "#0A1B33",
+  "display": "standalone",
+  "start_url": "/"
+}

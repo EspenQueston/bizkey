@@ -1,0 +1,86 @@
+{
+  "benin": {
+    "label": "Bénin",
+    "flag": "🇧🇯",
+    "currency": "XOF",
+    "country_code": "BJ",
+    "calling_code": "+229",
+    "methods": [
+      { "id": "mtn_momo_bj", "name": "MTN Mobile Money", "provider": "cinetpay", "color": "bg-yellow-400/15 text-yellow-700", "active": true },
+      { "id": "moov_bj",     "name": "Moov Money",       "provider": "cinetpay", "color": "bg-blue-500/15 text-blue-600",   "active": true },
+      { "id": "airtel_bj",   "name": "Airtel Money",     "provider": "cinetpay", "color": "bg-red-500/15 text-red-600",     "active": false }
+    ]
+  },
+  "togo": {
+    "label": "Togo",
+    "flag": "🇹🇬",
+    "currency": "XOF",
+    "country_code": "TG",
+    "calling_code": "+228",
+    "methods": [
+      { "id": "tmoney_tg",   "name": "T-Money",            "provider": "cinetpay", "color": "bg-green-500/15 text-green-700",  "active": true },
+      { "id": "flooz_tg",    "name": "Flooz (Moov)",        "provider": "cinetpay", "color": "bg-orange-500/15 text-orange-600","active": true },
+      { "id": "orange_tg",   "name": "Orange Money",        "provider": "cinetpay", "color": "bg-orange-400/15 text-orange-700","active": true }
+    ]
+  },
+  "senegal": {
+    "label": "Sénégal",
+    "flag": "🇸🇳",
+    "currency": "XOF",
+    "country_code": "SN",
+    "calling_code": "+221",
+    "methods": [
+      { "id": "orange_sn",   "name": "Orange Money",  "provider": "cinetpay", "color": "bg-orange-400/15 text-orange-700", "active": true },
+      { "id": "wave_sn",     "name": "Wave",           "provider": "cinetpay", "color": "bg-blue-400/15 text-blue-600",    "active": true },
+      { "id": "free_sn",     "name": "Free Money",     "provider": "fedapay",  "color": "bg-red-400/15 text-red-600",      "active": false }
+    ]
+  },
+  "mali": {
+    "label": "Mali",
+    "flag": "🇲🇱",
+    "currency": "XOF",
+    "country_code": "ML",
+    "calling_code": "+223",
+    "methods": [
+      { "id": "orange_ml",   "name": "Orange Money", "provider": "cinetpay", "color": "bg-orange-400/15 text-orange-700", "active": true },
+      { "id": "wave_ml",     "name": "Wave",          "provider": "cinetpay", "color": "bg-blue-400/15 text-blue-600",    "active": true },
+      { "id": "moov_ml",     "name": "Moov Money",    "provider": "cinetpay", "color": "bg-blue-500/15 text-blue-600",    "active": false }
+    ]
+  },
+  "cote_divoire": {
+    "label": "Côte d'Ivoire",
+    "flag": "🇨🇮",
+    "currency": "XOF",
+    "country_code": "CI",
+    "calling_code": "+225",
+    "methods": [
+      { "id": "orange_ci",   "name": "Orange Money", "provider": "cinetpay", "color": "bg-orange-400/15 text-orange-700", "active": true },
+      { "id": "wave_ci",     "name": "Wave",          "provider": "cinetpay", "color": "bg-blue-400/15 text-blue-600",    "active": true },
+      { "id": "mtn_ci",      "name": "MTN MoMo",      "provider": "cinetpay", "color": "bg-yellow-400/15 text-yellow-700","active": true },
+      { "id": "moov_ci",     "name": "Moov Money",    "provider": "cinetpay", "color": "bg-blue-500/15 text-blue-600",    "active": false }
+    ]
+  },
+  "niger": {
+    "label": "Niger",
+    "flag": "🇳🇪",
+    "currency": "XOF",
+    "country_code": "NE",
+    "calling_code": "+227",
+    "methods": [
+      { "id": "orange_ne",   "name": "Orange Money", "provider": "cinetpay", "color": "bg-orange-400/15 text-orange-700", "active": true },
+      { "id": "moov_ne",     "name": "Moov Money",   "provider": "cinetpay", "color": "bg-blue-500/15 text-blue-600",     "active": true },
+      { "id": "airtel_ne",   "name": "Airtel Money",  "provider": "fedapay",  "color": "bg-red-500/15 text-red-600",       "active": false }
+    ]
+  },
+  "cameroun": {
+    "label": "Cameroun",
+    "flag": "🇨🇲",
+    "currency": "XAF",
+    "country_code": "CM",
+    "calling_code": "+237",
+    "methods": [
+      { "id": "orange_cm",   "name": "Orange Money", "provider": "cinetpay", "color": "bg-orange-400/15 text-orange-700", "active": true },
+      { "id": "mtn_cm",      "name": "MTN MoMo",      "provider": "cinetpay", "color": "bg-yellow-400/15 text-yellow-700","active": true }
+    ]
+  }
+}

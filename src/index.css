@@ -1,0 +1,390 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* BizKey — white + navy dominant, light mode. Gold (#F2C94C) is reserved
+     for the logo, key words, buttons, primary icons, active states and small
+     decorative accents — never large surfaces. Background/secondary/muted/
+     accent are true neutral white/gray, not warm-tinted — an earlier pass
+     used a warm ivory (#FAF8F2/#F0ECE0/#F3E9C7-family) across these same
+     tokens, and since they drive hover states, badges, panels and sidebar
+     accents everywhere, that warmth compounded platform-wide into a visibly
+     yellow cast that hurt text legibility. Navy-on-gold ~11:1, well over
+     WCAG AA. */
+  --card: #ffffff;
+  --ring: #f2c94c;
+  --input: #e5e7eb;
+  --muted: #f5f5f5;
+  --accent: #eef0f3;
+  --border: #e5e7eb;
+  --radius: 0.5rem;
+  --chart-1: #f2c94c;
+  --chart-2: #b99a3f;
+  --chart-3: #7c7550;
+  --chart-4: #3e5075;
+  --chart-5: #0a1b33;
+  --popover: #ffffff;
+  --primary: #f2c94c;
+  --sidebar: #ffffff;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-sans: "DM Sans", sans-serif;
+  --secondary: #f3f4f6;
+  --background: #ffffff;
+  --font-serif: "Playfair Display", serif;
+  --foreground: #0a1b33;
+  --destructive: #ef4444;
+  --sidebar-ring: #f2c94c;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-border: #e5e7eb;
+  --card-foreground: #0a1b33;
+  --sidebar-primary: #f2c94c;
+  --muted-foreground: #667085;
+  --accent-foreground: #0a1b33;
+  --popover-foreground: #0a1b33;
+  /* Navy, not white — gold-on-white is ~2.3:1 contrast (fails WCAG AA);
+     gold-on-navy is ~11:1. */
+  --primary-foreground: #0a1b33;
+  --sidebar-foreground: #0a1b33;
+  --secondary-foreground: #0a1b33;
+  --destructive-foreground: #ffffff;
+  --sidebar-accent-foreground: #0a1b33;
+  --sidebar-primary-foreground: #0a1b33;
+}
+
+.dark {
+  /* BizKey — navy / gold / white, dark mode */
+  --card: #102a4c;
+  --ring: #e5c158;
+  --input: #24406b;
+  --muted: #14294a;
+  --accent: #3a331a;
+  --border: #24406b;
+  --radius: 0.5rem;
+  --chart-1: #e5c158;
+  --chart-2: #d4af37;
+  --chart-3: #8c97ae;
+  --chart-4: #4c6690;
+  --chart-5: #1b3050;
+  --popover: #102a4c;
+  --primary: #e5c158;
+  --sidebar: #102a4c;
+  --secondary: #14294a;
+  --background: #0a1b33;
+  --foreground: #f5f7fa;
+  --destructive: #f87171;
+  --sidebar-ring: #e5c158;
+  --sidebar-accent: #3a331a;
+  --sidebar-border: #24406b;
+  --card-foreground: #f5f7fa;
+  --sidebar-primary: #e5c158;
+  --muted-foreground: #9fb0c7;
+  --accent-foreground: #f5efd9;
+  --popover-foreground: #f5f7fa;
+  --primary-foreground: #0a1b33;
+  --sidebar-foreground: #f5f7fa;
+  --secondary-foreground: #ffffff;
+  --destructive-foreground: #0a1b33;
+  --sidebar-accent-foreground: #f5efd9;
+  --sidebar-primary-foreground: #0a1b33;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-card: var(--card);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-popover: var(--popover);
+  --color-primary: var(--primary);
+  --color-sidebar: var(--sidebar);
+  --font-mono: var(--font-mono);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --color-secondary: var(--secondary);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-destructive: var(--destructive);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-card-foreground: var(--card-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--foreground) 6%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--foreground) 6%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .hero-glow {
+    background: radial-gradient(60% 60% at 50% 40%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 70%);
+  }
+  /* Light-mode-only dial-back (see .bg-grid/.aurora-bg below) — dark mode
+     keeps its original, unchanged intensity. */
+  .dark .bg-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px);
+  }
+  .dark .hero-glow {
+    background: radial-gradient(60% 60% at 50% 40%, color-mix(in srgb, var(--primary) 25%, transparent), transparent 70%);
+  }
+
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .animate-floaty {
+    animation: floaty 6s ease-in-out infinite;
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .animate-gradient-shift {
+    animation: gradient-shift 18s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-gradient-shift { animation: none; }
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fade-up 0.8s ease-out both;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 30%, transparent), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+  }
+
+  /* ── Aurora / mesh-gradient animated backdrop ──────────────────────────── */
+  @keyframes aurora-drift-1 {
+    0%, 100% { transform: translate(-10%, -10%) scale(1); }
+    50%      { transform: translate(10%, 5%) scale(1.15); }
+  }
+  @keyframes aurora-drift-2 {
+    0%, 100% { transform: translate(10%, 10%) scale(1.1); }
+    50%      { transform: translate(-15%, -5%) scale(0.95); }
+  }
+  @keyframes aurora-drift-3 {
+    0%, 100% { transform: translate(0%, 0%) scale(1); }
+    50%      { transform: translate(-8%, 12%) scale(1.1); }
+  }
+  .aurora-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .aurora-bg::before,
+  .aurora-bg::after,
+  .aurora-bg .aurora-blob-3 {
+    content: "";
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.5;
+  }
+  /* Light mode: small, quiet corner accents only — cream/white must stay the
+     dominant surface. (First pass made these full-strength navy, which just
+     swapped "too much gold" for "too much navy"; this is the corrected,
+     genuinely restrained version.) Navy carries a faint touch, gold carries
+     an even fainter one — neither should read as a filled background. */
+  .aurora-bg::before {
+    top: -8%;
+    left: -4%;
+    width: 26%;
+    height: 34%;
+    background: radial-gradient(circle, var(--chart-4), transparent 70%);
+    animation: aurora-drift-1 16s ease-in-out infinite;
+    opacity: 0.16;
+  }
+  .aurora-bg::after {
+    bottom: -10%;
+    right: -4%;
+    width: 28%;
+    height: 32%;
+    background: radial-gradient(circle, var(--chart-5), transparent 70%);
+    animation: aurora-drift-2 20s ease-in-out infinite;
+    opacity: 0.12;
+  }
+  .aurora-bg .aurora-blob-3 {
+    top: 30%;
+    left: 40%;
+    width: 22%;
+    height: 28%;
+    background: radial-gradient(circle, var(--primary), transparent 70%);
+    animation: aurora-drift-3 24s ease-in-out infinite;
+    opacity: 0.12;
+  }
+  /* Dark mode keeps its original size/position/opacity/color recipe in full —
+     the light-mode rebalance above only ever touches the base (light) rule,
+     so every property it changed (not just background/opacity) needs restating
+     here, or dark would inherit light's smaller/fainter geometry too. */
+  .dark .aurora-bg::before {
+    top: -10%;
+    left: 0%;
+    width: 45%;
+    height: 60%;
+    background: radial-gradient(circle, var(--primary), transparent 70%);
+    opacity: 0.5;
+  }
+  .dark .aurora-bg::after {
+    bottom: -15%;
+    right: 0%;
+    width: 50%;
+    height: 55%;
+    background: radial-gradient(circle, var(--chart-2), transparent 70%);
+    opacity: 0.5;
+  }
+  .dark .aurora-bg .aurora-blob-3 {
+    top: 30%;
+    left: 40%;
+    width: 35%;
+    height: 45%;
+    background: radial-gradient(circle, var(--chart-4), transparent 70%);
+    opacity: 0.3;
+  }
+
+  /* Subtle film-grain overlay — reads as premium/tactile over flat gradients */
+  .noise-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ── Glassmorphism surface ─────────────────────────────────────────────── */
+  .glass-card {
+    background: color-mix(in srgb, var(--card) 65%, transparent);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
+
+  /* ── 3D tilt-on-hover — perspective card that leans toward the cursor ──── */
+  .tilt-card {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+  }
+  .tilt-card:hover {
+    transform: rotateX(4deg) rotateY(-4deg) translateY(-4px) scale(1.015);
+  }
+
+  /* ── Gradient text ──────────────────────────────────────────────────────── */
+  .text-gradient {
+    background: linear-gradient(90deg, var(--primary), var(--chart-2) 45%, var(--chart-4));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ── Animated conic-gradient glow border — wraps a card for a premium CTA ── */
+  @keyframes spin-slow {
+    to { transform: rotate(360deg); }
+  }
+  .glow-border {
+    position: relative;
+    isolation: isolate;
+  }
+  .glow-border::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    z-index: -1;
+    background: conic-gradient(from 0deg, var(--primary), var(--chart-2), var(--chart-4), var(--primary));
+    animation: spin-slow 6s linear infinite;
+    opacity: 0.85;
+    filter: blur(6px);
+  }
+  .glow-border::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--card);
+    z-index: -1;
+  }
+
+  /* ── Scroll-reveal — paired with the useInView hook ─────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(var(--orbit-radius, 120px)) rotate(0deg); }
+    to   { transform: rotate(360deg) translateX(var(--orbit-radius, 120px)) rotate(-360deg); }
+  }
+  .animate-orbit {
+    animation: orbit linear infinite;
+  }
+}
