@@ -30,9 +30,9 @@ const ICON_SIZE_MAP = {
 } as const
 
 const LOCKUP_HEIGHT_MAP = {
-  sm: 'h-7',
-  md: 'h-9',
-  lg: 'h-11',
+  sm: 'h-8',
+  md: 'h-11',
+  lg: 'h-14',
 } as const
 
 /**
