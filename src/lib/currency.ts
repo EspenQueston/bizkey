@@ -42,18 +42,3 @@ export function formatCurrencyFromCny(cny: number, target: Currency, rates: Reco
   if (target === 'EUR') return `${amount.toFixed(2)} €`
   return `${amount.toLocaleString('fr-FR')} FCFA`
 }
-
-/** Assistant plans are priced directly in USD/XOF (no CNY leg), so this converts from USD instead — used for any currency other than those two. */
-export function convertFromUsd(usd: number, target: Currency, rates: Record<string, number>): number {
-  if (target === 'USD') return usd
-  const r = rate(rates, 'USD', target)
-  const converted = usd * r
-  return target === 'EUR' ? Math.round(converted * 100) / 100 : Math.round(converted)
-}
-
-export function formatCurrencyFromUsd(usd: number, target: Currency, rates: Record<string, number>): string {
-  const amount = convertFromUsd(usd, target, rates)
-  if (target === 'USD') return `$${amount.toFixed(2)}`
-  if (target === 'EUR') return `${amount.toFixed(2)} €`
-  return `${amount.toLocaleString('fr-FR')} FCFA`
-}

@@ -13,7 +13,7 @@ import { ModeToggle } from '@/components/mode-toggle'
 import { useAuth } from '@/contexts/AuthContext'
 import { Logo } from '@/components/Logo'
 import { getAssistantPlans, createTransaction, getExchangeRates, updateTransaction, activateAssistantSubscription } from '@/lib/db'
-import { convertFromUsd, DEFAULT_RATE_FALLBACK, type Currency } from '@/lib/currency'
+import { convertFromCny, formatCurrencyFromCny, DEFAULT_RATE_FALLBACK, type Currency } from '@/lib/currency'
 import { FedaPayProvider } from '@/lib/payment/providers/FedaPay'
 import { StripeProvider } from '@/lib/payment/providers/Stripe'
 import type { PaymentGatewayInterface, ProviderName } from '@/lib/payment/PaymentGatewayInterface'
@@ -158,15 +158,9 @@ export default function CheckoutAssistantPage() {
     return () => clearInterval(interval)
   }, [step, transactionId, gatewayTransactionId, methodData?.provider, refreshProfile, paymentStartedAt])
 
-  function localPrice(usd: number): string {
+  function localPrice(yuan: number): string {
     const currency = (countryData?.currency ?? 'XOF') as Currency
-    // Plans already store an XOF price directly (avoids an extra USD->XOF
-    // conversion drifting from the number shown on the pricing page).
-    if (currency === 'XOF' && selectedPlan) return `${selectedPlan.price_xof.toLocaleString('fr-FR')} FCFA`
-    const amount = convertFromUsd(usd, currency, rates)
-    if (currency === 'USD') return `$${amount.toFixed(2)}`
-    if (currency === 'EUR') return `${amount.toFixed(2)} €`
-    return `${amount.toLocaleString('fr-FR')} FCFA`
+    return formatCurrencyFromCny(yuan, currency, rates)
   }
 
   async function handleConfirmPayment() {
@@ -175,9 +169,7 @@ export default function CheckoutAssistantPage() {
     try {
       const provider = getPaymentProvider(methodData?.provider)
       const currency = (countryData?.currency ?? 'XOF') as Currency
-      const localAmount = currency === 'XOF'
-        ? selectedPlan.price_xof
-        : convertFromUsd(selectedPlan.price_usd, currency, rates)
+      const localAmount = convertFromCny(selectedPlan.price_yuan, currency, rates)
 
       const result = await provider.initiatePayment({
         amount: localAmount,
@@ -386,7 +378,7 @@ export default function CheckoutAssistantPage() {
                               </p>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-black text-xl">${plan.price_usd}</p>
+                              <p className="font-black text-xl">¥{plan.price_yuan}</p>
                               <p className="text-xs text-muted-foreground">/mois</p>
                             </div>
                           </div>
@@ -543,7 +535,7 @@ export default function CheckoutAssistantPage() {
                         ))}
                         <div className="flex justify-between font-bold text-base pt-3">
                           <span>Total à payer</span>
-                          <span className="text-primary">{localPrice(selectedPlan.price_usd)}/mois</span>
+                          <span className="text-primary">{localPrice(selectedPlan.price_yuan)}/mois</span>
                         </div>
                       </div>
                     </CardContent>
@@ -560,7 +552,7 @@ export default function CheckoutAssistantPage() {
                   <Button className="w-full h-12 rounded-xl shadow-lg shadow-primary/20 text-base" onClick={handleConfirmPayment} disabled={processing}>
                     {processing
                       ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Traitement en cours…</>
-                      : <><Lock className="h-4 w-4 mr-2" />Confirmer le paiement — {localPrice(selectedPlan.price_usd)}/mois</>}
+                      : <><Lock className="h-4 w-4 mr-2" />Confirmer le paiement — {localPrice(selectedPlan.price_yuan)}/mois</>}
                   </Button>
                 </div>
               )}
@@ -586,7 +578,7 @@ export default function CheckoutAssistantPage() {
                           <p className="font-bold">{selectedPlan.display_name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">Assistant WhatsApp</p>
                         </div>
-                        <p className="font-black text-lg shrink-0">${selectedPlan.price_usd}</p>
+                        <p className="font-black text-lg shrink-0">¥{selectedPlan.price_yuan}</p>
                       </div>
                       {selectedCountry && countryData && (
                         <div className="pt-3 border-t border-border space-y-1.5 text-sm">
@@ -596,7 +588,7 @@ export default function CheckoutAssistantPage() {
                           </div>
                           <div className="flex justify-between font-bold">
                             <span>Total</span>
-                            <span className="text-primary">{localPrice(selectedPlan.price_usd)}/mois</span>
+                            <span className="text-primary">{localPrice(selectedPlan.price_yuan)}/mois</span>
                           </div>
                         </div>
                       )}

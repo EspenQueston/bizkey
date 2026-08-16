@@ -532,6 +532,7 @@ export interface AssistantPlan {
   id: string
   name: string
   display_name: string
+  price_yuan: number
   price_usd: number
   price_xof: number
   max_numbers: number

@@ -404,7 +404,7 @@ export default function PricingPage() {
                     <CardContent className="space-y-4">
                       <div>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-4xl font-extrabold tracking-tight">${plan.price_usd}</span>
+                          <span className="text-4xl font-extrabold tracking-tight">¥{plan.price_yuan}</span>
                           <span className={`font-medium ${plan.is_popular ? 'text-white/70' : 'text-muted-foreground'}`}>/mois</span>
                         </div>
                         <p className={`text-xs mt-1 ${plan.is_popular ? 'text-white/80' : 'text-muted-foreground'}`}>
