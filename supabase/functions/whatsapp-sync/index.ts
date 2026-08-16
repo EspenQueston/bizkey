@@ -131,25 +131,30 @@ async function handleInbound(supabase: any, body: InboundBody) {
     return json({ dedup: true })
   }
 
-  const { data: contact, error: contactError } = await supabase
-    .from('whatsapp_contacts')
-    .upsert(
-      { whatsapp_number: whatsappNumber, display_name: customerName ?? null },
-      { onConflict: 'whatsapp_number', ignoreDuplicates: false },
-    )
-    .select('id, is_provisional')
-    .single()
-  if (contactError) return json({ error: contactError.message }, 500)
-
   let numberId: string | null = null
+  let clientId: string | null = null
   if (businessNumber) {
     const { data: num } = await supabase
       .from('whatsapp_numbers')
-      .select('id')
+      .select('id, client_id')
       .eq('phone_number', businessNumber)
       .maybeSingle()
     numberId = num?.id ?? null
+    clientId = num?.client_id ?? null
   }
+
+  // Routed through an RPC rather than a plain .upsert() because the same
+  // real phone number can now belong to different contacts across tenants
+  // (whatsapp_contacts' uniqueness is keyed by (client_id, number) via an
+  // expression index supabase-js's onConflict can't target directly).
+  const { data: contact, error: contactError } = await supabase
+    .rpc('upsert_whatsapp_contact', {
+      p_client_id: clientId,
+      p_whatsapp_number: whatsappNumber,
+      p_display_name: customerName ?? null,
+    })
+    .single()
+  if (contactError) return json({ error: contactError.message }, 500)
 
   // Reuse the contact's most recent non-closed conversation; otherwise start one.
   const { data: existingConvo } = await supabase
@@ -175,6 +180,7 @@ async function handleInbound(supabase: any, body: InboundBody) {
       .from('whatsapp_conversations')
       .insert({
         number_id: numberId,
+        client_id: clientId,
         contact_id: contact.id,
         customer_phone: whatsappNumber,
         customer_name: customerName ?? null,
@@ -190,6 +196,7 @@ async function handleInbound(supabase: any, body: InboundBody) {
 
   const { error: msgError } = await supabase.from('whatsapp_messages').insert({
     conversation_id: conversationId,
+    client_id: clientId,
     direction: 'inbound',
     sender_type: 'customer',
     body: messageText ?? '',
@@ -226,8 +233,17 @@ async function handleOutbound(supabase: any, body: OutboundBody) {
     return json({ error: 'missing required fields: conversationId, responseText' }, 400)
   }
 
+  // handleOutbound only receives conversationId, not businessNumber — one
+  // extra primary-key lookup to keep client_id stamped on every message.
+  const { data: convo } = await supabase
+    .from('whatsapp_conversations')
+    .select('client_id')
+    .eq('id', conversationId)
+    .maybeSingle()
+
   const { error: msgError } = await supabase.from('whatsapp_messages').insert({
     conversation_id: conversationId,
+    client_id: convo?.client_id ?? null,
     direction: 'outbound',
     sender_type: 'bot',
     body: responseText,
