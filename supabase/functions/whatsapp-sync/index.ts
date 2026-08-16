@@ -34,6 +34,8 @@ interface InboundBody {
   carrier?: string
   mediaUrl?: string
   receivedAt?: string
+  /** 'whatsapp' (default) or 'website' — which surface the message came from. Threading stays unified by contact/conversation either way. */
+  channel?: 'whatsapp' | 'website'
 }
 
 interface OutboundBody {
@@ -44,6 +46,7 @@ interface OutboundBody {
   aiCost?: number
   sentStatus?: 'sent' | 'failed'
   sentAt?: string
+  channel?: 'whatsapp' | 'website'
 }
 
 function json(data: unknown, status = 200) {
@@ -105,6 +108,7 @@ async function handleInbound(supabase: any, body: InboundBody) {
     customerName, imageIntent, messageText,
     trackingNumber, carrier, mediaUrl, receivedAt,
   } = body
+  const channel = body.channel ?? 'whatsapp'
 
   if (!providerEventId || !whatsappNumber || !body.messageType) {
     return json({ error: 'missing required fields: providerEventId, whatsappNumber, messageType' }, 400)
@@ -176,6 +180,7 @@ async function handleInbound(supabase: any, body: InboundBody) {
         customer_name: customerName ?? null,
         status: 'open',
         last_message_at: nowIso,
+        channel,
       })
       .select('id')
       .single()
@@ -194,6 +199,7 @@ async function handleInbound(supabase: any, body: InboundBody) {
     tracking_number: trackingNumber ?? null,
     carrier: carrier ?? null,
     media_url: mediaUrl ?? null,
+    channel,
   })
   if (msgError) return json({ error: msgError.message }, 500)
 
@@ -214,6 +220,7 @@ async function handleInbound(supabase: any, body: InboundBody) {
 // deno-lint-ignore no-explicit-any
 async function handleOutbound(supabase: any, body: OutboundBody) {
   const { conversationId, providerMessageId, responseText, aiCost, sentStatus, sentAt } = body
+  const channel = body.channel ?? 'whatsapp'
 
   if (!conversationId || !responseText) {
     return json({ error: 'missing required fields: conversationId, responseText' }, 400)
@@ -226,6 +233,7 @@ async function handleOutbound(supabase: any, body: OutboundBody) {
     body: responseText,
     provider_message_id: providerMessageId ?? null,
     ai_cost: aiCost ?? null,
+    channel,
   })
   if (msgError) return json({ error: msgError.message }, 500)
 
