@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
+import { WhatsAppChatWidget } from '@/components/WhatsAppChatWidget'
 
 // Pages
 import LandingPage from '@/pages/Landing'
@@ -215,6 +216,7 @@ export function App() {
       <AuthProvider>
         <BrowserRouter>
           <AppRoutes />
+          <WhatsAppChatWidget />
           <Toaster richColors position="top-right" />
         </BrowserRouter>
       </AuthProvider>

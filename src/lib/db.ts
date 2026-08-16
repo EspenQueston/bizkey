@@ -947,9 +947,14 @@ export async function getWhatsAppMessages(conversationId: string): Promise<Whats
 }
 
 export async function sendWhatsAppAgentReply(conversationId: string, body: string): Promise<WhatsAppMessage> {
+  const { data: convo } = await supabase
+    .from('whatsapp_conversations')
+    .select('channel')
+    .eq('id', conversationId)
+    .single()
   const { data, error } = await supabase
     .from('whatsapp_messages')
-    .insert({ conversation_id: conversationId, direction: 'outbound', sender_type: 'agent', body })
+    .insert({ conversation_id: conversationId, direction: 'outbound', sender_type: 'agent', body, channel: convo?.channel ?? 'whatsapp' })
     .select()
     .single()
   if (error) throw error

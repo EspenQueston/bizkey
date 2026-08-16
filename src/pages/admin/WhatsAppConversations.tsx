@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { MessageCircle, Send, X, UserRound, Bot, CheckCircle2, Play } from 'lucide-react'
+import { MessageCircle, Send, X, UserRound, Bot, CheckCircle2, Play, Globe, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -131,10 +131,17 @@ export default function WhatsAppConversationsPage() {
                     className={`w-full text-left p-3.5 hover:bg-secondary/30 transition ${selectedId === c.id ? 'bg-primary/5 border-l-2 border-primary' : ''}`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <p className="text-sm font-medium truncate">{c.customer_name || c.customer_phone}</p>
+                      <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                        {c.channel === 'website'
+                          ? <Globe className="h-3 w-3 text-sky-500 shrink-0" />
+                          : <Smartphone className="h-3 w-3 text-emerald-500 shrink-0" />}
+                        <span className="truncate">{c.customer_name || c.customer_phone}</span>
+                      </p>
                       <Badge className={`text-[9px] shrink-0 ${st.color}`}>{st.icon}</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{c.customer_phone}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {c.channel === 'website' ? 'Chat site web' : c.customer_phone}
+                    </p>
                     <p className="text-[10px] text-muted-foreground/60 mt-0.5">{new Date(c.last_message_at).toLocaleString('fr-FR')}</p>
                   </button>
                 )
@@ -148,8 +155,15 @@ export default function WhatsAppConversationsPage() {
               <>
                 <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
                   <div>
-                    <p className="font-medium text-sm">{selected.customer_name || selected.customer_phone}</p>
-                    <p className="text-xs text-muted-foreground">{selected.customer_phone}</p>
+                    <p className="font-medium text-sm flex items-center gap-1.5">
+                      {selected.channel === 'website'
+                        ? <Globe className="h-3.5 w-3.5 text-sky-500" />
+                        : <Smartphone className="h-3.5 w-3.5 text-emerald-500" />}
+                      {selected.customer_name || selected.customer_phone}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {selected.channel === 'website' ? 'Chat du site web' : selected.customer_phone}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     {(['open', 'pending_human', 'closed'] as const).map(s => (

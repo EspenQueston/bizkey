@@ -472,6 +472,8 @@ export interface WhatsAppNumber {
 
 export type WhatsAppConversationStatus = 'open' | 'pending_human' | 'closed'
 
+export type WhatsAppChannel = 'whatsapp' | 'website'
+
 export interface WhatsAppConversation {
   id: string
   number_id: string | null
@@ -481,6 +483,7 @@ export interface WhatsAppConversation {
   last_message_at: string
   assigned_to: string | null
   created_at: string
+  channel: WhatsAppChannel
 }
 
 export type WhatsAppMessageDirection = 'inbound' | 'outbound'
@@ -493,6 +496,12 @@ export interface WhatsAppMessage {
   sender_type: WhatsAppSenderType
   body: string
   created_at: string
+  channel?: WhatsAppChannel
+  message_type?: 'text' | 'audio' | 'image' | null
+  image_intent?: 'parcel' | 'product' | 'unknown' | null
+  tracking_number?: string | null
+  carrier?: string | null
+  media_url?: string | null
 }
 
 export interface WhatsAppKbArticle {
