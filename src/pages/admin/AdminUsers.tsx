@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Search, Shield, ShieldOff, Loader2, Pencil, Trash2,
-  X, Save, Crown, CreditCard
+  X, Save, Crown, Bot, Zap, XCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,9 +11,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import { supabase } from '@/lib/supabase'
 import { getFunctionErrorMessage } from '@/lib/api'
+import {
+  getAllPlans, getAllAssistantPlans, getUserSubscription, getMyAssistantClient,
+  adminAssignSourcingPlan, adminAssignAssistantPlan,
+} from '@/lib/db'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Database } from '@/lib/supabase'
+import type { Plan, AssistantPlan, Subscription, AssistantClient } from '@/lib/supabase'
 
 type UserProfile = Database['public']['Tables']['profiles']['Row']
 
@@ -26,20 +31,28 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<UserProfile | null>(null)
-  const [editForm, setEditForm] = useState({
-    name: '',
-    email: '',
-    subscription_tier: 'free' as 'free' | 'basic' | 'pro',
-    credits_remaining: 0,
-    basic_credits_remaining: 0,
-    advanced_credits_remaining: 0,
-    payg_basic_credits: 0,
-    payg_advanced_credits: 0,
-    country: '',
-  })
+  const [editForm, setEditForm] = useState({ name: '', email: '', country: '' })
+
+  // Plan catalogs — fetched once, reused across every user the admin opens.
+  const [sourcingPlans, setSourcingPlans] = useState<Plan[]>([])
+  const [assistantPlans, setAssistantPlans] = useState<AssistantPlan[]>([])
+
+  // The editing user's *current* real state, not a hand-typed guess — and
+  // the pending selection until "Appliquer" actually commits it.
+  const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null)
+  const [currentAssistantClient, setCurrentAssistantClient] = useState<AssistantClient | null>(null)
+  const [loadingPlanState, setLoadingPlanState] = useState(false)
+  const [selectedSourcingPlanId, setSelectedSourcingPlanId] = useState('')
+  const [selectedAssistantPlanId, setSelectedAssistantPlanId] = useState('')
+  const [applyingSourcing, setApplyingSourcing] = useState(false)
+  const [applyingAssistant, setApplyingAssistant] = useState(false)
 
   useEffect(() => {
     loadUsers()
+    Promise.allSettled([getAllPlans(), getAllAssistantPlans()]).then(([p, ap]) => {
+      if (p.status === 'fulfilled') setSourcingPlans(p.value.filter(x => x.is_active))
+      if (ap.status === 'fulfilled') setAssistantPlans(ap.value.filter(x => x.is_active))
+    })
   }, [])
 
   async function loadUsers() {
@@ -80,17 +93,22 @@ export default function AdminUsers() {
 
   function openEdit(user: UserProfile) {
     setEditingUser(user)
-    setEditForm({
-      name: user.name ?? '',
-      email: user.email,
-      subscription_tier: user.subscription_tier as 'free' | 'basic' | 'pro',
-      credits_remaining: user.credits_remaining,
-      basic_credits_remaining: user.basic_credits_remaining,
-      advanced_credits_remaining: user.advanced_credits_remaining,
-      payg_basic_credits: user.payg_basic_credits,
-      payg_advanced_credits: user.payg_advanced_credits,
-      country: user.country ?? '',
-    })
+    setEditForm({ name: user.name ?? '', email: user.email, country: user.country ?? '' })
+    setCurrentSubscription(null)
+    setCurrentAssistantClient(null)
+    setSelectedSourcingPlanId('')
+    setSelectedAssistantPlanId('')
+    setLoadingPlanState(true)
+    Promise.allSettled([getUserSubscription(user.id), getMyAssistantClient(user.id)]).then(([sub, ac]) => {
+      if (sub.status === 'fulfilled') {
+        setCurrentSubscription(sub.value)
+        setSelectedSourcingPlanId(sub.value?.plan_id ?? '')
+      }
+      if (ac.status === 'fulfilled') {
+        setCurrentAssistantClient(ac.value)
+        setSelectedAssistantPlanId(ac.value?.status === 'active' ? (ac.value.plan_id ?? '') : '')
+      }
+    }).finally(() => setLoadingPlanState(false))
   }
 
   async function saveEdit() {
@@ -100,12 +118,6 @@ export default function AdminUsers() {
         .from('profiles')
         .update({
           name: editForm.name || null,
-          subscription_tier: editForm.subscription_tier,
-          credits_remaining: editForm.credits_remaining,
-          basic_credits_remaining: editForm.basic_credits_remaining,
-          advanced_credits_remaining: editForm.advanced_credits_remaining,
-          payg_basic_credits: editForm.payg_basic_credits,
-          payg_advanced_credits: editForm.payg_advanced_credits,
           country: editForm.country || null,
           updated_at: new Date().toISOString(),
         })
@@ -113,7 +125,6 @@ export default function AdminUsers() {
       if (error) throw error
       setUsers(prev => prev.map(u => u.id === editingUser.id ? {
         ...u,
-        ...editForm,
         name: editForm.name || null,
         country: editForm.country || null,
         updated_at: new Date().toISOString(),
@@ -122,6 +133,38 @@ export default function AdminUsers() {
       setEditingUser(null)
     } catch {
       toast.error('Erreur lors de la mise à jour')
+    }
+  }
+
+  async function applySourcingPlan() {
+    if (!editingUser || !selectedSourcingPlanId) return
+    setApplyingSourcing(true)
+    try {
+      const updatedProfile = await adminAssignSourcingPlan(editingUser.id, selectedSourcingPlanId)
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedProfile : u))
+      setEditingUser(updatedProfile)
+      const sub = await getUserSubscription(editingUser.id)
+      setCurrentSubscription(sub)
+      toast.success('Formule BizKey Sourcing appliquée')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'attribution de la formule")
+    } finally {
+      setApplyingSourcing(false)
+    }
+  }
+
+  async function applyAssistantPlan(planId: string | null) {
+    if (!editingUser) return
+    setApplyingAssistant(true)
+    try {
+      const client = await adminAssignAssistantPlan(editingUser.id, planId)
+      setCurrentAssistantClient(client)
+      setSelectedAssistantPlanId(planId ?? '')
+      toast.success(planId ? 'Accès BizKey WhatsApp Assistant accordé' : 'Accès BizKey WhatsApp Assistant révoqué')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'attribution de l'assistant")
+    } finally {
+      setApplyingAssistant(false)
     }
   }
 
@@ -230,45 +273,93 @@ export default function AdminUsers() {
                   <Input value={editForm.email} disabled className="opacity-60" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Plan</label>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Pays</label>
+                <Input value={editForm.country} onChange={e => setEditForm(f => ({ ...f, country: e.target.value }))} />
+              </div>
+
+              {/* BizKey Sourcing — the dropdown always reflects a real plans
+                  row; applying it runs the exact same credit-grant logic a
+                  real checkout would (subscription replaces the pool, PAYG
+                  tops it up), never a hand-typed number. */}
+              <div className="border-t pt-3 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  <Zap className="h-3 w-3" /> BizKey Sourcing
+                </p>
+                {loadingPlanState ? (
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-1"><Loader2 className="h-3 w-3 animate-spin" /> Chargement…</div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {currentSubscription ? (
+                      <>Actuel : <strong className="text-foreground">{sourcingPlans.find(p => p.id === currentSubscription.plan_id)?.display_name ?? 'Formule inconnue'}</strong>{' '}
+                        ({currentSubscription.basic_credits_remaining} Basic · {currentSubscription.advanced_credits_remaining} Advanced)
+                        {currentSubscription.expires_at && ` — expire le ${new Date(currentSubscription.expires_at).toLocaleDateString('fr-FR')}`}
+                      </>
+                    ) : 'Actuel : Free (aucun abonnement actif)'}
+                    {(editingUser?.payg_basic_credits || editingUser?.payg_advanced_credits) ? (
+                      <> · PAYG : {editingUser?.payg_basic_credits ?? 0} Basic · {editingUser?.payg_advanced_credits ?? 0} Advanced</>
+                    ) : null}
+                  </p>
+                )}
+                <div className="flex gap-2">
                   <select
-                    value={editForm.subscription_tier}
-                    onChange={e => setEditForm(f => ({ ...f, subscription_tier: e.target.value as any }))}
-                    className="w-full h-10 rounded-md border bg-background px-3 text-sm"
+                    value={selectedSourcingPlanId}
+                    onChange={e => setSelectedSourcingPlanId(e.target.value)}
+                    className="flex-1 h-10 rounded-md border bg-background px-3 text-sm"
                   >
-                    <option value="free">Free</option>
-                    <option value="basic">Basic</option>
-                    <option value="pro">Pro</option>
+                    <option value="">Choisir une formule…</option>
+                    {sourcingPlans.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.display_name} {p.type === 'payg' ? '(PAYG)' : '(Abonnement)'} — {p.basic_credits}B/{p.advanced_credits}A
+                      </option>
+                    ))}
                   </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Pays</label>
-                  <Input value={editForm.country} onChange={e => setEditForm(f => ({ ...f, country: e.target.value }))} />
+                  <Button
+                    size="sm"
+                    className="rounded-full shrink-0"
+                    disabled={!selectedSourcingPlanId || applyingSourcing}
+                    onClick={applySourcingPlan}
+                  >
+                    {applyingSourcing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Appliquer'}
+                  </Button>
                 </div>
               </div>
-              <div className="border-t pt-3">
-                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-                  <CreditCard className="h-3 w-3" /> Crédits
+
+              {/* BizKey WhatsApp Assistant */}
+              <div className="border-t pt-3 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  <Bot className="h-3 w-3" /> BizKey WhatsApp Assistant
                 </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Crédits legacy</label>
-                    <Input type="number" value={editForm.credits_remaining} onChange={e => setEditForm(f => ({ ...f, credits_remaining: parseInt(e.target.value) || 0 }))} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Basic</label>
-                    <Input type="number" value={editForm.basic_credits_remaining} onChange={e => setEditForm(f => ({ ...f, basic_credits_remaining: parseInt(e.target.value) || 0 }))} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">Advanced</label>
-                    <Input type="number" value={editForm.advanced_credits_remaining} onChange={e => setEditForm(f => ({ ...f, advanced_credits_remaining: parseInt(e.target.value) || 0 }))} />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground">PAYG Basic</label>
-                    <Input type="number" value={editForm.payg_basic_credits} onChange={e => setEditForm(f => ({ ...f, payg_basic_credits: parseInt(e.target.value) || 0 }))} />
-                  </div>
+                {loadingPlanState ? (
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-1"><Loader2 className="h-3 w-3 animate-spin" /> Chargement…</div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {currentAssistantClient && currentAssistantClient.status !== 'cancelled' ? (
+                      <>Actuel : <strong className="text-foreground">{assistantPlans.find(p => p.id === currentAssistantClient.plan_id)?.display_name ?? 'Formule inconnue'}</strong>
+                        {' '}— statut {currentAssistantClient.status}</>
+                    ) : 'Aucun accès Assistant WhatsApp'}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <select
+                    value={selectedAssistantPlanId}
+                    onChange={e => setSelectedAssistantPlanId(e.target.value)}
+                    className="flex-1 h-10 rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">— Aucun accès —</option>
+                    {assistantPlans.map(p => (
+                      <option key={p.id} value={p.id}>{p.display_name} — ¥{p.price_yuan}/mois</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    className="rounded-full shrink-0"
+                    variant={selectedAssistantPlanId ? 'default' : 'outline'}
+                    disabled={applyingAssistant}
+                    onClick={() => applyAssistantPlan(selectedAssistantPlanId || null)}
+                  >
+                    {applyingAssistant ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : selectedAssistantPlanId ? 'Appliquer' : <XCircle className="h-3.5 w-3.5" />}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -305,12 +396,10 @@ export default function AdminUsers() {
                       <Badge
                         variant="outline"
                         className={`text-[10px] capitalize ${
-                          u.subscription_tier === 'pro' ? 'border-primary/30 text-primary bg-primary/5' :
-                          u.subscription_tier === 'basic' ? 'border-blue-500/30 text-blue-600 bg-blue-500/5' :
-                          ''
+                          u.subscription_tier !== 'free' ? 'border-primary/30 text-primary bg-primary/5' : ''
                         }`}
                       >
-                        {u.subscription_tier === 'pro' && <Crown className="h-2.5 w-2.5 mr-0.5" />}
+                        {u.subscription_tier !== 'free' && <Crown className="h-2.5 w-2.5 mr-0.5" />}
                         {u.subscription_tier}
                       </Badge>
                     </div>

@@ -1179,4 +1179,23 @@ export async function updateMyAssistantSettings(settings: {
   return data as AssistantClient
 }
 
+/**
+ * Admin-only: grants a user a real BizKey Sourcing plan — a subscription
+ * replaces the credit pool (expiring any prior active one), a PAYG plan
+ * tops up on top of whatever they already have. Same mechanism a real
+ * checkout would use, never a hand-typed number.
+ */
+export async function adminAssignSourcingPlan(userId: string, planId: string): Promise<Profile> {
+  const { data, error } = await supabase.rpc('admin_assign_sourcing_plan', { p_user_id: userId, p_plan_id: planId }).single()
+  if (error) throw error
+  return data as Profile
+}
+
+/** Admin-only: grants (or updates) a user's Assistant subscription. Pass assistantPlanId null to revoke (cancels rather than deletes, so their conversation/FAQ history survives). */
+export async function adminAssignAssistantPlan(userId: string, assistantPlanId: string | null): Promise<AssistantClient | null> {
+  const { data, error } = await supabase.rpc('admin_assign_assistant_plan', { p_user_id: userId, p_assistant_plan_id: assistantPlanId }).maybeSingle()
+  if (error) throw error
+  return data as AssistantClient | null
+}
+
 
