@@ -22,8 +22,12 @@ function resolveResponseText(rule: WhatsAppAutoReply, kbArticles: WhatsAppKbArti
  * from a real WhatsApp webhook handler later — no live API account exists
  * yet, so this is the part of the product that's testable without one.
  *
- * Priority: greeting rules first, then keyword rules (in sort_order), then
- * a single fallback rule if nothing else matched.
+ * Priority: keyword rules first (in sort_order), then greeting, then a
+ * single fallback rule if nothing else matched. Keyword before greeting is
+ * deliberate — a real message is almost never a bare "bonjour", it's
+ * "bonjour, combien pour X" or similar, and the specific answer is always
+ * more useful than a generic welcome even though the message also contains
+ * a greeting word.
  */
 export function matchAutoReply(
   incomingMessage: string,
@@ -35,19 +39,19 @@ export function matchAutoReply(
 
   const active = [...rules].filter(r => r.is_active).sort((a, b) => a.sort_order - b.sort_order)
 
-  const isGreeting = GREETING_PATTERNS.some(g => normalized.includes(g))
-  if (isGreeting) {
-    for (const rule of active.filter(r => r.trigger_type === 'greeting')) {
-      const text = resolveResponseText(rule, kbArticles)
-      if (text) return { rule, responseText: text, matchedVia: 'greeting' }
-    }
-  }
-
   for (const rule of active.filter(r => r.trigger_type === 'keyword')) {
     if (!rule.trigger_value) continue
     if (normalized.includes(rule.trigger_value.trim().toLowerCase())) {
       const text = resolveResponseText(rule, kbArticles)
       if (text) return { rule, responseText: text, matchedVia: 'keyword' }
+    }
+  }
+
+  const isGreeting = GREETING_PATTERNS.some(g => normalized.includes(g))
+  if (isGreeting) {
+    for (const rule of active.filter(r => r.trigger_type === 'greeting')) {
+      const text = resolveResponseText(rule, kbArticles)
+      if (text) return { rule, responseText: text, matchedVia: 'greeting' }
     }
   }
 

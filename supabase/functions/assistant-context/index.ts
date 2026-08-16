@@ -61,23 +61,25 @@ function resolveResponseText(rule: AutoReplyRule, kb: KbArticle[]): string | nul
 
 // Ported from src/lib/whatsappBot.ts — Deno can't import the frontend's
 // Vite-resolved module graph directly, keep matching logic identical if
-// that file changes.
+// that file changes. Keyword before greeting is deliberate: a real message
+// is almost never a bare "bonjour", it's "bonjour, combien pour X" and the
+// specific answer is always more useful than a generic welcome.
 function matchAutoReply(incoming: string, rules: AutoReplyRule[], kb: KbArticle[]) {
   const normalized = incoming.trim().toLowerCase()
   if (!normalized) return null
 
   const active = [...rules].filter(r => r.is_active).sort((a, b) => a.sort_order - b.sort_order)
 
-  if (GREETING_PATTERNS.some(g => normalized.includes(g))) {
-    for (const rule of active.filter(r => r.trigger_type === 'greeting')) {
+  for (const rule of active.filter(r => r.trigger_type === 'keyword')) {
+    if (!rule.trigger_value) continue
+    if (normalized.includes(rule.trigger_value.trim().toLowerCase())) {
       const text = resolveResponseText(rule, kb)
       if (text) return { rule, responseText: text }
     }
   }
 
-  for (const rule of active.filter(r => r.trigger_type === 'keyword')) {
-    if (!rule.trigger_value) continue
-    if (normalized.includes(rule.trigger_value.trim().toLowerCase())) {
+  if (GREETING_PATTERNS.some(g => normalized.includes(g))) {
+    for (const rule of active.filter(r => r.trigger_type === 'greeting')) {
       const text = resolveResponseText(rule, kb)
       if (text) return { rule, responseText: text }
     }
