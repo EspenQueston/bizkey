@@ -107,7 +107,7 @@ export async function analyzeFree(input: { type: 'url'; value: string } | { type
   return data.report
 }
 
-async function getFunctionErrorMessage(error: unknown): Promise<string> {
+export async function getFunctionErrorMessage(error: unknown): Promise<string> {
   const context = (error as { context?: unknown })?.context
 
   if (context instanceof Response) {

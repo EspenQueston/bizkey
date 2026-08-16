@@ -102,6 +102,9 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
  * Guards the WhatsApp Assistant pages that both admin and a subscribed
  * business owner can reach — RLS is what actually scopes the data each of
  * them sees, this just keeps a non-subscriber from landing on an empty page.
+ * A business owner needs status 'active' specifically — trial/suspended/
+ * cancelled accounts don't get portal access, matching admin's own gating
+ * of who counts as a paying client elsewhere.
  */
 function AssistantAccessRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, assistantClient, loading } = useAuth()
@@ -120,7 +123,34 @@ function AssistantAccessRoute({ children }: { children: React.ReactNode }) {
   )
 
   if (!user) return <Navigate to="/login" replace />
-  if (!profile?.is_admin && !assistantClient) return <Navigate to="/app" replace />
+  if (!profile?.is_admin && assistantClient?.status !== 'active') return <Navigate to="/app" replace />
+
+  return <>{children}</>
+}
+
+/**
+ * Guards Settings/Billing specifically: these are "manage my own business"
+ * pages, meaningless for admin (who isn't a subscriber of their own
+ * product) — unlike AssistantAccessRoute, admin does NOT bypass here.
+ */
+function AssistantOwnerRoute({ children }: { children: React.ReactNode }) {
+  const { user, assistantClient, loading } = useAuth()
+  const [timedOut, setTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (!loading) return
+    const timer = setTimeout(() => setTimedOut(true), 8000)
+    return () => clearTimeout(timer)
+  }, [loading])
+
+  if (loading && !timedOut) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  )
+
+  if (!user) return <Navigate to="/login" replace />
+  if (assistantClient?.status !== 'active') return <Navigate to="/app" replace />
 
   return <>{children}</>
 }
@@ -220,8 +250,8 @@ function AppRoutes() {
         <Route path="assistant/conversations" element={<AssistantAccessRoute><WhatsAppConversations /></AssistantAccessRoute>} />
         <Route path="assistant/knowledge-base" element={<AssistantAccessRoute><WhatsAppKnowledgeBase /></AssistantAccessRoute>} />
         <Route path="assistant/auto-replies" element={<AssistantAccessRoute><WhatsAppAutoReplies /></AssistantAccessRoute>} />
-        <Route path="assistant/settings" element={<AssistantAccessRoute><WhatsAppAssistantSettings /></AssistantAccessRoute>} />
-        <Route path="assistant/billing" element={<AssistantAccessRoute><WhatsAppAssistantBilling /></AssistantAccessRoute>} />
+        <Route path="assistant/settings" element={<AssistantOwnerRoute><WhatsAppAssistantSettings /></AssistantOwnerRoute>} />
+        <Route path="assistant/billing" element={<AssistantOwnerRoute><WhatsAppAssistantBilling /></AssistantOwnerRoute>} />
         <Route path="assistant/clients" element={<AdminRoute><AssistantClients /></AdminRoute>} />
       </Route>
 

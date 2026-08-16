@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import { supabase } from '@/lib/supabase'
+import { getFunctionErrorMessage } from '@/lib/api'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Database } from '@/lib/supabase'
@@ -135,18 +136,24 @@ export default function AdminUsers() {
   async function deleteUser(userId: string) {
     setDeletingId(userId)
     try {
-      // Delete related data first
-      await supabase.from('negotiations').delete().eq('user_id', userId)
-      await supabase.from('comparisons').delete().eq('user_id', userId)
-      await supabase.from('analyses').delete().eq('user_id', userId)
-      const { error } = await supabase.from('profiles').delete().eq('id', userId)
-      if (error) throw error
+      // Deletes the auth account itself (service-role only, hence the edge
+      // function) — cascades to the profile and every owned record via the
+      // FKs in 20260817230000_profile_deletion_cascade.sql. A plain
+      // `profiles` delete used to leave the auth account able to log in
+      // with no profile, and failed outright for any user with order/quote
+      // history since those FKs had no cascade rule at all.
+      const { data, error } = await supabase.functions.invoke<{ success?: boolean; error?: string }>('admin-users', {
+        body: { action: 'delete', userId },
+      })
+      if (error) throw new Error(await getFunctionErrorMessage(error))
+      if (!data?.success) throw new Error(data?.error ?? 'Échec de la suppression')
+
       setUsers(prev => prev.filter(u => u.id !== userId))
       toast.success('Utilisateur supprimé')
       setConfirmDeleteUser(null)
     } catch (err) {
       console.error(err)
-      toast.error('Erreur lors de la suppression')
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
     } finally {
       setDeletingId(null)
     }
@@ -361,7 +368,7 @@ export default function AdminUsers() {
         open={!!confirmDeleteUser}
         onOpenChange={(v) => { if (!v) setConfirmDeleteUser(null) }}
         title="Supprimer cet utilisateur ?"
-        description={`${confirmDeleteUser?.name ?? confirmDeleteUser?.email ?? ''} sera définitivement supprimé, avec ses analyses, comparaisons et négociations. Cette action est irréversible.`}
+        description={`${confirmDeleteUser?.name ?? confirmDeleteUser?.email ?? ''} sera définitivement supprimé — compte, analyses, commandes, paiements et abonnement associés. Cette action est irréversible.`}
         loading={deletingId === confirmDeleteUser?.id}
         onConfirm={() => confirmDeleteUser && deleteUser(confirmDeleteUser.id)}
       />

@@ -27,6 +27,8 @@ interface NavItem {
   end?: boolean
   /** Hidden from non-admins even when the parent section is shared. */
   adminOnly?: boolean
+  /** Hidden from admins even when the parent section is shared — for "manage my own business" items that make no sense for the platform operator, who isn't a subscriber of their own product. */
+  hideForAdmin?: boolean
 }
 
 type NavGroup = 'sourcing' | 'assistant' | 'shared'
@@ -112,8 +114,8 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
         { icon: MessageSquare, label: 'Conversations',      to: '/app/assistant/conversations'             },
         { icon: BookOpen,   label: 'Base de connaissances', to: '/app/assistant/knowledge-base'            },
         { icon: Bot,        label: 'Réponses automatiques', to: '/app/assistant/auto-replies'              },
-        { icon: Settings,   label: 'Réglages',              to: '/app/assistant/settings'                  },
-        { icon: CreditCard, label: 'Facturation',           to: '/app/assistant/billing'                   },
+        { icon: Settings,   label: 'Réglages',              to: '/app/assistant/settings',       hideForAdmin: true },
+        { icon: CreditCard, label: 'Facturation',           to: '/app/assistant/billing',        hideForAdmin: true },
       ],
     },
     {
@@ -231,17 +233,20 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   }
 
   const isAdmin = profile?.is_admin === true
-  const hasAssistantClient = !!assistantClient
+  // Portal access requires an *activated* plan — trial/suspended/cancelled
+  // business owners don't get the Assistant nav, matching AssistantAccessRoute.
+  const hasActiveAssistantClient = assistantClient?.status === 'active'
 
   // Filter by role first (section-level, then per-item), then by the search box.
   const filteredSections = buildNavSections(isAdmin)
     .filter(section => (section.adminOnly ? isAdmin : true))
-    .filter(section => (section.requiresAssistantAccess ? (isAdmin || hasAssistantClient) : true))
+    .filter(section => (section.requiresAssistantAccess ? (isAdmin || hasActiveAssistantClient) : true))
     .filter(section => (section.hideForAdmin ? !isAdmin : true))
     .map(section => ({
       ...section,
       items: section.items
         .filter(item => (item.adminOnly ? isAdmin : true))
+        .filter(item => (item.hideForAdmin ? !isAdmin : true))
         .filter(item => !searchQuery || item.label.toLowerCase().includes(searchQuery.toLowerCase())),
     }))
     .filter(section => section.items.length > 0)
