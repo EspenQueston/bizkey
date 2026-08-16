@@ -5,7 +5,7 @@ import {
   BarChart3, LogOut, Settings, ShoppingCart, Truck,
   Home, Menu, X, ChevronDown, Search, UserRound,
   GitCompare, MessageSquare, Crown, Building2, FileText,
-  Smartphone, BookOpen, Bot, PanelLeftClose, PanelLeftOpen,
+  Smartphone, BookOpen, Bot, PanelLeftClose, PanelLeftOpen, ArrowUpRight,
 } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
@@ -237,6 +237,15 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   // business owners don't get the Assistant nav, matching AssistantAccessRoute.
   const hasActiveAssistantClient = assistantClient?.status === 'active'
 
+  // BizKey Sourcing stays open to every signed-up user (3 free credits on
+  // signup, no subscription required) — this is the deliberate free-trial
+  // funnel, so the nav is never hidden for it. Instead the group header
+  // just surfaces where the user actually stands: same formula as
+  // Analyze.tsx's own "X crédits restants" so the two never disagree.
+  const isFreeTier = !isAdmin && (profile?.subscription_tier ?? 'free') === 'free'
+  const sourcingCreditsLeft = (profile?.basic_credits_remaining ?? profile?.credits_remaining ?? 0) + (profile?.payg_basic_credits ?? 0)
+  const sourcingCreditsExhausted = isFreeTier && sourcingCreditsLeft <= 0
+
   // Filter by role first (section-level, then per-item), then by the search box.
   const filteredSections = buildNavSections(isAdmin)
     .filter(section => (section.adminOnly ? isAdmin : true))
@@ -302,9 +311,27 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
                 <span className={`flex items-center gap-2 text-sm font-bold ${meta.accent}`}>
                   <meta.icon className="h-4 w-4" />
                   {meta.label}
+                  {group === 'sourcing' && isFreeTier && (
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] font-medium normal-case ${sourcingCreditsExhausted ? 'text-destructive border-destructive/30' : 'text-muted-foreground border-border'}`}
+                    >
+                      {sourcingCreditsExhausted ? '0 crédit' : `${sourcingCreditsLeft} crédit${sourcingCreditsLeft > 1 ? 's' : ''}`}
+                    </Badge>
+                  )}
                 </span>
                 <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${groupCollapsed ? '-rotate-90' : ''}`} />
               </button>
+              {group === 'sourcing' && sourcingCreditsExhausted && (
+                <Link
+                  to="/pricing"
+                  onClick={onClose}
+                  className="flex items-center justify-between px-3 py-2 mb-1 rounded-xl border border-primary/25 bg-primary/5 text-xs font-medium text-primary hover:bg-primary/10 transition"
+                >
+                  Crédits épuisés — passer à un forfait payant
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
               {!groupCollapsed && groupSections.map(section => {
                 const isCollapsed = !section.flat && collapsedSections[section.title]
                 return (
