@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient } from './supabase'
+import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone } from './supabase'
 import { matchAutoReply } from './whatsappBot'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -1162,6 +1162,21 @@ export async function getMyAssistantClient(userId: string): Promise<AssistantCli
 export async function activateAssistantSubscription(transactionId: string): Promise<void> {
   const { error } = await supabase.rpc('activate_assistant_subscription', { p_transaction_id: transactionId })
   if (error) throw error
+}
+
+/** Updates the caller's own tone/hours/requested-number — never plan_id or status, which stay admin/RPC-only. */
+export async function updateMyAssistantSettings(settings: {
+  tone: AssistantTone
+  businessHours: Record<string, unknown> | null
+  requestedWhatsappNumber: string | null
+}): Promise<AssistantClient> {
+  const { data, error } = await supabase.rpc('update_my_assistant_settings', {
+    p_tone: settings.tone,
+    p_business_hours: settings.businessHours,
+    p_requested_whatsapp_number: settings.requestedWhatsappNumber,
+  }).single()
+  if (error) throw error
+  return data as AssistantClient
 }
 
 

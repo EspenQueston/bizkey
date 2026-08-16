@@ -468,6 +468,8 @@ export interface WhatsAppNumber {
   phone_number: string
   status: WhatsAppNumberStatus
   business_account_id: string | null
+  /** null = BizKey's own number. Admin-assigned via AssistantClients.tsx, kept in sync by a DB trigger. */
+  client_id?: string | null
   created_at: string
 }
 
@@ -485,6 +487,8 @@ export interface WhatsAppConversation {
   assigned_to: string | null
   created_at: string
   channel: WhatsAppChannel
+  /** null = BizKey's own conversation. */
+  client_id?: string | null
 }
 
 export type WhatsAppMessageDirection = 'inbound' | 'outbound'
@@ -503,6 +507,7 @@ export interface WhatsAppMessage {
   tracking_number?: string | null
   carrier?: string | null
   media_url?: string | null
+  client_id?: string | null
 }
 
 export interface WhatsAppKbArticle {
@@ -513,6 +518,8 @@ export interface WhatsAppKbArticle {
   is_active: boolean
   created_at: string
   updated_at: string
+  /** null = BizKey's own article (also the one publicly readable on /aide). */
+  client_id?: string | null
 }
 
 export type WhatsAppTriggerType = 'greeting' | 'keyword' | 'fallback'
@@ -526,6 +533,8 @@ export interface WhatsAppAutoReply {
   is_active: boolean
   sort_order: number
   created_at: string
+  /** null = BizKey's own rule. */
+  client_id?: string | null
 }
 
 export interface AssistantPlan {
@@ -546,6 +555,8 @@ export interface AssistantPlan {
 
 export type AssistantClientStatus = 'trial' | 'active' | 'suspended' | 'cancelled'
 
+export type AssistantTone = 'professional' | 'friendly' | 'commercial'
+
 export interface AssistantClient {
   id: string
   company_name: string
@@ -556,6 +567,9 @@ export interface AssistantClient {
   plan_id: string | null
   whatsapp_number_id: string | null
   profile_id: string | null
+  tone: AssistantTone
+  business_hours: Record<string, unknown> | null
+  requested_whatsapp_number: string | null
   notes: string | null
   created_at: string
   updated_at: string

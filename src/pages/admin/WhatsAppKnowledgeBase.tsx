@@ -5,12 +5,16 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import { getWhatsAppKbArticles, createWhatsAppKbArticle, updateWhatsAppKbArticle, deleteWhatsAppKbArticle } from '@/lib/db'
+import { useAuth } from '@/contexts/AuthContext'
 import type { WhatsAppKbArticle } from '@/lib/supabase'
 
 const EMPTY = { title: '', keywords: '', answer: '', is_active: true }
 
 export default function WhatsAppKnowledgeBasePage() {
+  const { profile, assistantClient } = useAuth()
+  const isAdmin = profile?.is_admin === true
   const [articles, setArticles] = useState<WhatsAppKbArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -19,10 +23,17 @@ export default function WhatsAppKnowledgeBasePage() {
   const [form, setForm] = useState({ ...EMPTY })
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
-    getWhatsAppKbArticles().then(setArticles).catch(console.error).finally(() => setLoading(false))
-  }, [])
+    // The public BizKey FAQ (client_id null) also matches the reader's own
+    // `_own` policy scope incidentally via the separate public-read policy —
+    // filter it back out here so a business owner only manages their own rows.
+    getWhatsAppKbArticles()
+      .then(all => setArticles(isAdmin ? all : all.filter(a => a.client_id === assistantClient?.id)))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [isAdmin, assistantClient?.id])
 
   function openCreate() {
     setEditing(null)
@@ -50,7 +61,7 @@ export default function WhatsAppKnowledgeBasePage() {
         const updated = await updateWhatsAppKbArticle(editing.id, payload)
         setArticles(prev => prev.map(a => a.id === editing.id ? updated : a))
       } else {
-        const created = await createWhatsAppKbArticle(payload)
+        const created = await createWhatsAppKbArticle({ ...payload, client_id: isAdmin ? null : assistantClient?.id ?? null })
         setArticles(prev => [created, ...prev])
       }
       setShowModal(false)
@@ -62,7 +73,6 @@ export default function WhatsAppKnowledgeBasePage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer cet article ?')) return
     setDeletingId(id)
     try {
       await deleteWhatsAppKbArticle(id)
@@ -71,6 +81,7 @@ export default function WhatsAppKnowledgeBasePage() {
       console.error(err)
     } finally {
       setDeletingId(null)
+      setConfirmDeleteId(null)
     }
   }
 
@@ -132,7 +143,7 @@ export default function WhatsAppKnowledgeBasePage() {
                     size="sm"
                     variant="ghost"
                     className="h-7 text-xs rounded-lg gap-1 hover:text-destructive"
-                    onClick={() => handleDelete(a.id)}
+                    onClick={() => setConfirmDeleteId(a.id)}
                     disabled={deletingId === a.id}
                   >
                     {deletingId === a.id ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <Trash2 className="h-3 w-3" />}
@@ -186,6 +197,15 @@ export default function WhatsAppKnowledgeBasePage() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(v) => { if (!v) setConfirmDeleteId(null) }}
+        title="Supprimer cet article ?"
+        description="Cet article sera définitivement supprimé de la base de connaissances. Cette action est irréversible."
+        loading={deletingId === confirmDeleteId}
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+      />
     </div>
   )
 }

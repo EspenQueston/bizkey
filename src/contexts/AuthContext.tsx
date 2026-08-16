@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { Database } from '@/lib/supabase'
+import type { Database, AssistantClient } from '@/lib/supabase'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -9,6 +9,8 @@ interface AuthContextValue {
   session: Session | null
   user: User | null
   profile: Profile | null
+  /** The caller's own BizKey WhatsApp Assistant subscription, if they have one — null for everyone else, including admins (admin access doesn't depend on this). Single fetch shared by route guards and nav visibility. */
+  assistantClient: AssistantClient | null
   loading: boolean
   /** Resolves `true` when the account has 2FA and still needs a TOTP code. */
   signIn: (email: string, password: string) => Promise<boolean>
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [assistantClient, setAssistantClient] = useState<AssistantClient | null>(null)
   const [loading, setLoading] = useState(true)
   const mountedRef = useRef(true)
 
@@ -47,6 +50,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Not every account has an Assistant subscription — a plain select that
+  // finds nothing is the common case, not an error path.
+  const loadAssistantClient = useCallback(async (userId: string) => {
+    try {
+      const { data } = await supabase.from('assistant_clients').select('*').eq('profile_id', userId).maybeSingle()
+      if (mountedRef.current) setAssistantClient(data as AssistantClient | null)
+    } catch {
+      if (mountedRef.current) setAssistantClient(null)
+    }
+  }, [])
+
   useEffect(() => {
     mountedRef.current = true
     let ignore = false
@@ -66,7 +80,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession?.user ?? null)
 
         if (initialSession?.user) {
-          await loadProfile(initialSession.user.id)
+          // Both must resolve before `loading` flips to false — route guards
+          // key off assistantClient too, and a premature false would redirect
+          // a real business owner away before their subscription loads.
+          await Promise.all([
+            loadProfile(initialSession.user.id),
+            loadAssistantClient(initialSession.user.id),
+          ])
         }
       } catch (err) {
         console.error('Auth init error:', err)
@@ -89,13 +109,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (newSession?.user) {
           // Load profile in background — don't block navigation
           loadProfile(newSession.user.id)
+          loadAssistantClient(newSession.user.id)
         } else {
           setProfile(null)
+          setAssistantClient(null)
         }
 
         // On sign out, clear everything immediately
         if (event === 'SIGNED_OUT') {
           setProfile(null)
+          setAssistantClient(null)
           setSession(null)
           setUser(null)
         }
@@ -107,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mountedRef.current = false
       subscription.unsubscribe()
     }
-  }, [loadProfile])
+  }, [loadProfile, loadAssistantClient])
 
   async function signIn(email: string, password: string): Promise<boolean> {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -160,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     // Immediately clear state so UI unblocks
     setProfile(null)
+    setAssistantClient(null)
     setSession(null)
     setUser(null)
     try {
@@ -170,11 +194,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const refreshProfile = useCallback(async () => {
-    if (user) await loadProfile(user.id)
-  }, [user, loadProfile])
+    if (user) {
+      await loadProfile(user.id)
+      // So the Assistant nav appears immediately after a successful
+      // subscription payment, without a full page reload.
+      loadAssistantClient(user.id)
+    }
+  }, [user, loadProfile, loadAssistantClient])
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signIn, signUp, signOut, refreshProfile, verifyMfaCode }}>
+    <AuthContext.Provider value={{ session, user, profile, assistantClient, loading, signIn, signUp, signOut, refreshProfile, verifyMfaCode }}>
       {children}
     </AuthContext.Provider>
   )

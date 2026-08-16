@@ -43,6 +43,8 @@ import WhatsAppConversations from '@/pages/admin/WhatsAppConversations'
 import WhatsAppKnowledgeBase from '@/pages/admin/WhatsAppKnowledgeBase'
 import WhatsAppAutoReplies from '@/pages/admin/WhatsAppAutoReplies'
 import AssistantClients from '@/pages/admin/AssistantClients'
+import WhatsAppAssistantSettings from '@/pages/assistant/AssistantSettings'
+import WhatsAppAssistantBilling from '@/pages/assistant/AssistantBilling'
 
 // Re-use existing ERP pages
 import ClientsPage from '@/pages/erp/Clients'
@@ -92,6 +94,33 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   // Straight to the panel root rather than the retired /dashboard path, which
   // would only bounce through an extra redirect to land in the same place.
   if (!profile?.is_admin) return <Navigate to="/app" replace />
+
+  return <>{children}</>
+}
+
+/**
+ * Guards the WhatsApp Assistant pages that both admin and a subscribed
+ * business owner can reach — RLS is what actually scopes the data each of
+ * them sees, this just keeps a non-subscriber from landing on an empty page.
+ */
+function AssistantAccessRoute({ children }: { children: React.ReactNode }) {
+  const { user, profile, assistantClient, loading } = useAuth()
+  const [timedOut, setTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (!loading) return
+    const timer = setTimeout(() => setTimedOut(true), 8000)
+    return () => clearTimeout(timer)
+  }, [loading])
+
+  if (loading && !timedOut) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  )
+
+  if (!user) return <Navigate to="/login" replace />
+  if (!profile?.is_admin && !assistantClient) return <Navigate to="/app" replace />
 
   return <>{children}</>
 }
@@ -182,12 +211,17 @@ function AppRoutes() {
         <Route path="clients" element={<AdminRoute><ClientsPage /></AdminRoute>} />
         <Route path="quote-requests" element={<AdminRoute><QuotesPage /></AdminRoute>} />
 
-        {/* BizKey WhatsApp Assistant */}
-        <Route path="assistant" element={<AdminRoute><WhatsAppOverview /></AdminRoute>} />
+        {/* BizKey WhatsApp Assistant — shared by admin (sees every tenant)
+            and a subscribed business owner (RLS scopes them to their own
+            data automatically); numbers/clients stay admin-only since those
+            are the cross-tenant inventory/CRM views. */}
+        <Route path="assistant" element={<AssistantAccessRoute><WhatsAppOverview /></AssistantAccessRoute>} />
         <Route path="assistant/numbers" element={<AdminRoute><WhatsAppNumbers /></AdminRoute>} />
-        <Route path="assistant/conversations" element={<AdminRoute><WhatsAppConversations /></AdminRoute>} />
-        <Route path="assistant/knowledge-base" element={<AdminRoute><WhatsAppKnowledgeBase /></AdminRoute>} />
-        <Route path="assistant/auto-replies" element={<AdminRoute><WhatsAppAutoReplies /></AdminRoute>} />
+        <Route path="assistant/conversations" element={<AssistantAccessRoute><WhatsAppConversations /></AssistantAccessRoute>} />
+        <Route path="assistant/knowledge-base" element={<AssistantAccessRoute><WhatsAppKnowledgeBase /></AssistantAccessRoute>} />
+        <Route path="assistant/auto-replies" element={<AssistantAccessRoute><WhatsAppAutoReplies /></AssistantAccessRoute>} />
+        <Route path="assistant/settings" element={<AssistantAccessRoute><WhatsAppAssistantSettings /></AssistantAccessRoute>} />
+        <Route path="assistant/billing" element={<AssistantAccessRoute><WhatsAppAssistantBilling /></AssistantAccessRoute>} />
         <Route path="assistant/clients" element={<AdminRoute><AssistantClients /></AdminRoute>} />
       </Route>
 

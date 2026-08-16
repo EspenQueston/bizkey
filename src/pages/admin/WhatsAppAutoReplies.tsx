@@ -5,7 +5,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import { getWhatsAppAutoReplies, createWhatsAppAutoReply, updateWhatsAppAutoReply, deleteWhatsAppAutoReply, getWhatsAppKbArticles } from '@/lib/db'
+import { useAuth } from '@/contexts/AuthContext'
 import { matchAutoReply, type BotMatchResult } from '@/lib/whatsappBot'
 import type { WhatsAppAutoReply, WhatsAppKbArticle, WhatsAppTriggerType } from '@/lib/supabase'
 
@@ -25,6 +27,9 @@ const EMPTY = {
 }
 
 export default function WhatsAppAutoRepliesPage() {
+  const { profile, assistantClient } = useAuth()
+  const isAdmin = profile?.is_admin === true
+  const myClientId = assistantClient?.id ?? null
   const [rules, setRules] = useState<WhatsAppAutoReply[]>([])
   const [kbArticles, setKbArticles] = useState<WhatsAppKbArticle[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,16 +38,21 @@ export default function WhatsAppAutoRepliesPage() {
   const [form, setForm] = useState({ ...EMPTY })
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const [testMessage, setTestMessage] = useState('')
   const [testResult, setTestResult] = useState<BotMatchResult | null | 'none-tested'>('none-tested')
 
   useEffect(() => {
+    // Same-tenant-only scoping as the KB page: a business owner's rules and
+    // eligible KB articles must both be their own — an auto-reply can never
+    // point at another tenant's article (enforced server-side too, by
+    // check_auto_reply_kb_article_tenant).
     Promise.allSettled([getWhatsAppAutoReplies(), getWhatsAppKbArticles()]).then(([r, kb]) => {
-      if (r.status === 'fulfilled') setRules(r.value)
-      if (kb.status === 'fulfilled') setKbArticles(kb.value)
+      if (r.status === 'fulfilled') setRules(isAdmin ? r.value : r.value.filter(rule => rule.client_id === myClientId))
+      if (kb.status === 'fulfilled') setKbArticles(isAdmin ? kb.value : kb.value.filter(a => a.client_id === myClientId))
     }).finally(() => setLoading(false))
-  }, [])
+  }, [isAdmin, myClientId])
 
   function openCreate() {
     setEditing(null)
@@ -82,7 +92,7 @@ export default function WhatsAppAutoRepliesPage() {
         const updated = await updateWhatsAppAutoReply(editing.id, payload)
         setRules(prev => prev.map(r => r.id === editing.id ? updated : r))
       } else {
-        const created = await createWhatsAppAutoReply(payload)
+        const created = await createWhatsAppAutoReply({ ...payload, client_id: isAdmin ? null : myClientId })
         setRules(prev => [...prev, created])
       }
       setShowModal(false)
@@ -94,7 +104,6 @@ export default function WhatsAppAutoRepliesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer cette règle ?')) return
     setDeletingId(id)
     try {
       await deleteWhatsAppAutoReply(id)
@@ -103,6 +112,7 @@ export default function WhatsAppAutoRepliesPage() {
       console.error(err)
     } finally {
       setDeletingId(null)
+      setConfirmDeleteId(null)
     }
   }
 
@@ -199,7 +209,7 @@ export default function WhatsAppAutoRepliesPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg" onClick={() => openEdit(r)}><Edit2 className="h-3 w-3" /></Button>
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg hover:text-destructive" onClick={() => handleDelete(r.id)} disabled={deletingId === r.id}>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-lg hover:text-destructive" onClick={() => setConfirmDeleteId(r.id)} disabled={deletingId === r.id}>
                               {deletingId === r.id ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <Trash2 className="h-3 w-3" />}
                             </Button>
                           </div>
@@ -304,6 +314,15 @@ export default function WhatsAppAutoRepliesPage() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(v) => { if (!v) setConfirmDeleteId(null) }}
+        title="Supprimer cette règle ?"
+        description="Cette règle de réponse automatique sera définitivement supprimée. Cette action est irréversible."
+        loading={deletingId === confirmDeleteId}
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+      />
     </div>
   )
 }

@@ -37,6 +37,8 @@ interface NavSection {
   group: NavGroup
   /** Hidden from non-admins; the routes are guarded independently. */
   adminOnly?: boolean
+  /** Visible to admins AND to a subscribed Assistant business owner — everyone else is hidden. Used instead of adminOnly for the shared /app/assistant* pages now that they're multi-tenant. */
+  requiresAssistantAccess?: boolean
   /** Hidden from admins — they are never billed. */
   hideForAdmin?: boolean
   /** Skip this section's own collapsible sub-header — used when the group header already names it (e.g. "Système" section inside the "Système" group) and a second identical label would be redundant. */
@@ -103,13 +105,15 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
     {
       title: 'Assistant WhatsApp',
       group: 'assistant',
-      adminOnly: true,
+      requiresAssistantAccess: true,
       items: [
         { icon: Bot,        label: "Vue d'ensemble",        to: '/app/assistant',               end: true },
-        { icon: Smartphone, label: 'Numéros WhatsApp',      to: '/app/assistant/numbers'                   },
+        { icon: Smartphone, label: 'Numéros WhatsApp',      to: '/app/assistant/numbers',        adminOnly: true },
         { icon: MessageSquare, label: 'Conversations',      to: '/app/assistant/conversations'             },
         { icon: BookOpen,   label: 'Base de connaissances', to: '/app/assistant/knowledge-base'            },
         { icon: Bot,        label: 'Réponses automatiques', to: '/app/assistant/auto-replies'              },
+        { icon: Settings,   label: 'Réglages',              to: '/app/assistant/settings'                  },
+        { icon: CreditCard, label: 'Facturation',           to: '/app/assistant/billing'                   },
       ],
     },
     {
@@ -206,7 +210,7 @@ function AccountMenu() {
 }
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
-  const { profile, signOut } = useAuth()
+  const { profile, assistantClient, signOut } = useAuth()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
@@ -227,10 +231,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   }
 
   const isAdmin = profile?.is_admin === true
+  const hasAssistantClient = !!assistantClient
 
   // Filter by role first (section-level, then per-item), then by the search box.
   const filteredSections = buildNavSections(isAdmin)
     .filter(section => (section.adminOnly ? isAdmin : true))
+    .filter(section => (section.requiresAssistantAccess ? (isAdmin || hasAssistantClient) : true))
     .filter(section => (section.hideForAdmin ? !isAdmin : true))
     .map(section => ({
       ...section,
