@@ -5,9 +5,10 @@ export interface LogoProps {
    * 'monogram' — icon square only, no wordmark (e.g. AnalysisResult's badge,
    * the ERP sidebar's icon tile). Kept as a real square crop since a wide
    * lockup image doesn't fit those compact contexts.
-   * 'lockup' / 'lockup-tagline' — the full brand mark (public/brand/new-logo.png),
-   * icon and "BizKey — New Vision" name fused into one image. Same asset for
-   * both, since the wordmark is already baked into the artwork.
+   * 'lockup' / 'lockup-tagline' — the full brand mark, icon and "BizKey — New
+   * Vision" name fused into one image: image.png (navy) in light mode,
+   * new-logo.png (gold) in dark mode — navy-on-white reads far better than
+   * gold-on-white, while gold is the one that pops on the dark navy body.
    */
   variant?: 'monogram' | 'lockup' | 'lockup-tagline'
   size?: 'sm' | 'md' | 'lg'
@@ -37,9 +38,8 @@ const LOCKUP_HEIGHT_MAP = {
 /**
  * Single source of truth for the BizKey mark. 'monogram' renders the square
  * icon crop (public/brand/logo2.png light / bizkey-monogram.png dark);
- * 'lockup'/'lockup-tagline' render the full new-logo.png lockup — same image
- * in both themes, since it's already gold-on-transparent and reads fine on
- * both a light and a navy background.
+ * 'lockup'/'lockup-tagline' render the full lockup image, swapped per theme
+ * (public/brand/image.png light / new-logo.png dark).
  */
 export function Logo({
   variant = 'lockup',
@@ -62,11 +62,18 @@ export function Logo({
         <img src="/brand/bizkey-monogram.png" alt="BizKey" className="hidden h-full w-full object-contain drop-shadow-sm dark:block" />
       </div>
     ) : (
-      <img
-        src="/brand/new-logo.png"
-        alt="BizKey — New Vision"
-        className={`${LOCKUP_HEIGHT_MAP[size]} w-auto object-contain ${animated ? 'transition-transform duration-300 group-hover:scale-105' : ''}`}
-      />
+      <span className={`inline-flex items-center ${LOCKUP_HEIGHT_MAP[size]}`}>
+        <img
+          src="/brand/image.png"
+          alt="BizKey — New Vision"
+          className={`h-full w-auto object-contain dark:hidden ${animated ? 'transition-transform duration-300 group-hover:scale-105' : ''}`}
+        />
+        <img
+          src="/brand/new-logo.png"
+          alt="BizKey — New Vision"
+          className={`hidden h-full w-auto object-contain dark:block ${animated ? 'transition-transform duration-300 group-hover:scale-105' : ''}`}
+        />
+      </span>
     )
 
   if (!asLink) return <div className={className}>{content}</div>
