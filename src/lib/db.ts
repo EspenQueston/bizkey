@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone } from './supabase'
 import { matchAutoReply } from './whatsappBot'
+import { getFunctionErrorMessage } from './api'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Analysis = Database['public']['Tables']['analyses']['Row']
@@ -957,20 +958,20 @@ export async function getWhatsAppMessagesForAnalytics(limit = 1000): Promise<Wha
   return (data ?? []) as WhatsAppMessage[]
 }
 
-export async function sendWhatsAppAgentReply(conversationId: string, body: string): Promise<WhatsAppMessage> {
-  const { data: convo } = await supabase
-    .from('whatsapp_conversations')
-    .select('channel')
-    .eq('id', conversationId)
-    .single()
-  const { data, error } = await supabase
-    .from('whatsapp_messages')
-    .insert({ conversation_id: conversationId, direction: 'outbound', sender_type: 'agent', body, channel: convo?.channel ?? 'whatsapp' })
-    .select()
-    .single()
-  if (error) throw error
-  await supabase.from('whatsapp_conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conversationId)
-  return data as WhatsAppMessage
+/**
+ * Sends an agent reply — saves it (always) and, for real WhatsApp
+ * conversations, forwards it to n8n so it's actually delivered to the
+ * customer's phone via the edge function's WHATSAPP_AGENT_REPLY webhook.
+ * `delivered: false` means the message is saved in BizKey but never
+ * reached WhatsApp — the caller should surface that, not treat it as sent.
+ */
+export async function sendWhatsAppAgentReply(conversationId: string, body: string): Promise<{ message: WhatsAppMessage; delivered: boolean; deliveryError?: string }> {
+  const { data, error } = await supabase.functions.invoke<{ message: WhatsAppMessage; delivered: boolean; deliveryError?: string; error?: string }>('whatsapp-agent-reply', {
+    body: { conversationId, body },
+  })
+  if (error) throw new Error(await getFunctionErrorMessage(error))
+  if (!data?.message) throw new Error(data?.error ?? "Échec de l'envoi")
+  return { message: data.message, delivered: data.delivered, deliveryError: data.deliveryError }
 }
 
 /**

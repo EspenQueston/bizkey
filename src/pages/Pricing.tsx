@@ -135,9 +135,8 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {product === 'sourcing' && (
-        <>
-        {/* Currency switcher */}
+        {/* Currency switcher — shared by both products so the Assistant tab's
+            ¥ prices convert the same way Sourcing's already do. */}
         <div className="flex justify-center gap-2 flex-wrap">
           {(['CNY', 'XOF', 'USD', 'EUR'] as const).map(c => (
             <Button
@@ -152,6 +151,8 @@ export default function PricingPage() {
           ))}
         </div>
 
+        {product === 'sourcing' && (
+        <>
         <Tabs value={tab} onValueChange={v => setTab(v as typeof tab)} className="w-full">
           <TabsList className="grid w-full max-w-sm mx-auto grid-cols-2">
             <TabsTrigger value="subscription">Abonnement</TabsTrigger>
@@ -404,12 +405,9 @@ export default function PricingPage() {
                     <CardContent className="space-y-4">
                       <div>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-4xl font-extrabold tracking-tight">¥{plan.price_yuan}</span>
+                          <span className="text-4xl font-extrabold tracking-tight">{formatPrice(Number(plan.price_yuan))}</span>
                           <span className={`font-medium ${plan.is_popular ? 'text-white/70' : 'text-muted-foreground'}`}>/mois</span>
                         </div>
-                        <p className={`text-xs mt-1 ${plan.is_popular ? 'text-white/80' : 'text-muted-foreground'}`}>
-                          ≈ {plan.price_xof.toLocaleString('fr-FR')} FCFA/mois
-                        </p>
                         <div className="flex gap-2 text-xs mt-2 flex-wrap">
                           <span className={`rounded-full px-2.5 py-0.5 font-medium ${plan.is_popular ? 'bg-white/15' : 'bg-muted'}`}>{plan.max_numbers} numéro{plan.max_numbers > 1 ? 's' : ''}</span>
                           <span className={`rounded-full px-2.5 py-0.5 font-medium ${plan.is_popular ? 'bg-white/15' : 'bg-muted'}`}>{plan.max_conversations_per_month.toLocaleString('fr-FR')} conv./mois</span>

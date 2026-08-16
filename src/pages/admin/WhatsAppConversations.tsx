@@ -10,6 +10,7 @@ import {
   updateWhatsAppConversation, simulateIncomingWhatsAppMessage, getWhatsAppNumbers,
 } from '@/lib/db'
 import type { WhatsAppConversation, WhatsAppConversationStatus, WhatsAppMessage, WhatsAppNumber } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 const STATUS_META: Record<WhatsAppConversationStatus, { label: string; color: string; icon: string }> = {
   open:          { label: 'Ouverte',           color: 'bg-blue-500/15 text-blue-600',   icon: '💬' },
@@ -52,12 +53,16 @@ export default function WhatsAppConversationsPage() {
     if (!selectedId || !reply.trim()) return
     setSending(true)
     try {
-      const msg = await sendWhatsAppAgentReply(selectedId, reply.trim())
+      const { message: msg, delivered, deliveryError } = await sendWhatsAppAgentReply(selectedId, reply.trim())
       setMessages(prev => [...prev, msg])
       setReply('')
       setConversations(prev => prev.map(c => c.id === selectedId ? { ...c, last_message_at: msg.created_at } : c))
+      if (!delivered) {
+        toast.error(`Message enregistré mais pas livré sur WhatsApp — ${deliveryError ?? 'webhook n8n non configuré'}`)
+      }
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'envoi")
     } finally {
       setSending(false)
     }

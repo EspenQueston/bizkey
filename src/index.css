@@ -14,32 +14,36 @@
      yellow cast that hurt text legibility. Navy-on-gold ~11:1, well over
      WCAG AA. */
   --card: #ffffff;
-  --ring: #f2c94c;
+  --ring: #e3b83e;
   --input: #e5e7eb;
   --muted: #f5f5f5;
   --accent: #eef0f3;
   --border: #e5e7eb;
   --radius: 0.5rem;
-  --chart-1: #f2c94c;
+  --chart-1: #e3b83e;
   --chart-2: #b99a3f;
   --chart-3: #7c7550;
   --chart-4: #3e5075;
   --chart-5: #0a1b33;
   --popover: #ffffff;
-  --primary: #f2c94c;
+  --primary: #e3b83e;
   --sidebar: #ffffff;
   --font-mono: "IBM Plex Mono", monospace;
   --font-sans: "DM Sans", sans-serif;
   --secondary: #f3f4f6;
-  --background: #ffffff;
+  /* Body background only — barely-there warm tint, not the ivory family
+     the note above warns about (that shifted card/secondary/accent/muted
+     too and read as a platform-wide yellow cast). Everything else here
+     stays neutral white/gray on purpose. */
+  --background: #fffdf6;
   --font-serif: "Playfair Display", serif;
   --foreground: #0a1b33;
   --destructive: #ef4444;
-  --sidebar-ring: #f2c94c;
+  --sidebar-ring: #e3b83e;
   --sidebar-accent: #f3f4f6;
   --sidebar-border: #e5e7eb;
   --card-foreground: #0a1b33;
-  --sidebar-primary: #f2c94c;
+  --sidebar-primary: #e3b83e;
   --muted-foreground: #667085;
   --accent-foreground: #0a1b33;
   --popover-foreground: #0a1b33;

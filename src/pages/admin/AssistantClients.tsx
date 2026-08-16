@@ -7,10 +7,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import {
   getAssistantClients, createAssistantClient, updateAssistantClient, deleteAssistantClient,
   getAllAssistantPlans, getWhatsAppNumbers,
 } from '@/lib/db'
+import { toast } from 'sonner'
 import type { AssistantClient, AssistantClientStatus, AssistantPlan, WhatsAppNumber } from '@/lib/supabase'
 
 const EMPTY: Omit<AssistantClient, 'id' | 'created_at' | 'updated_at'> = {
@@ -37,6 +39,7 @@ export default function AssistantClientsPage() {
   const [form, setForm] = useState({ ...EMPTY })
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<AssistantClient | null>(null)
 
   useEffect(() => {
     Promise.allSettled([getAssistantClients(), getAllAssistantPlans(), getWhatsAppNumbers()]).then(([c, p, n]) => {
@@ -82,15 +85,17 @@ export default function AssistantClientsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer ce client de l\'assistant WhatsApp ?')) return
     setDeletingId(id)
     try {
       await deleteAssistantClient(id)
       setClients(prev => prev.filter(c => c.id !== id))
+      toast.success('Client supprimé')
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
     } finally {
       setDeletingId(null)
+      setConfirmDelete(null)
     }
   }
 
@@ -180,7 +185,7 @@ export default function AssistantClientsPage() {
                     <Button size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs gap-1" onClick={() => openEdit(client)}>
                       <Edit2 className="h-3 w-3" />Modifier
                     </Button>
-                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:text-destructive hover:border-destructive/30" onClick={() => handleDelete(client.id)} disabled={deletingId === client.id}>
+                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:text-destructive hover:border-destructive/30" onClick={() => setConfirmDelete(client)} disabled={deletingId === client.id}>
                       {deletingId === client.id ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <Trash2 className="h-3 w-3" />}
                     </Button>
                   </div>
@@ -271,6 +276,15 @@ export default function AssistantClientsPage() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(v) => { if (!v) setConfirmDelete(null) }}
+        title="Supprimer ce client ?"
+        description={`${confirmDelete?.company_name ?? ''} sera définitivement supprimé — conversations, base de connaissances et règles associées. Leur numéro WhatsApp est libéré, pas supprimé. Cette action est irréversible.`}
+        loading={deletingId === confirmDelete?.id}
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete.id)}
+      />
     </div>
   )
 }
