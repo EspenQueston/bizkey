@@ -80,16 +80,39 @@ serve(async (req) => {
   return json({ error: 'unknown event type' }, 400)
 })
 
+// Evolution API (Baileys) reports its own message-type vocabulary
+// ("conversation", "extendedTextMessage", "audioMessage", ...), not the
+// simplified text/audio/image the rest of BizKey works with. n8n passes the
+// raw value through as-is; this is the one place that translates it, so
+// n8n's node config never has to hardcode per-branch literals.
+const MESSAGE_TYPE_MAP: Record<string, 'text' | 'audio' | 'image'> = {
+  conversation: 'text',
+  extendedTextMessage: 'text',
+  audioMessage: 'audio',
+  pttMessage: 'audio',
+  imageMessage: 'image',
+}
+
+function normalizeMessageType(raw: string): 'text' | 'audio' | 'image' | null {
+  if (raw === 'text' || raw === 'audio' || raw === 'image') return raw
+  return MESSAGE_TYPE_MAP[raw] ?? null
+}
+
 // deno-lint-ignore no-explicit-any
 async function handleInbound(supabase: any, body: InboundBody) {
   const {
     providerEventId, providerMessageId, whatsappNumber, businessNumber,
-    customerName, messageType, imageIntent, messageText,
+    customerName, imageIntent, messageText,
     trackingNumber, carrier, mediaUrl, receivedAt,
   } = body
 
-  if (!providerEventId || !whatsappNumber || !messageType) {
+  if (!providerEventId || !whatsappNumber || !body.messageType) {
     return json({ error: 'missing required fields: providerEventId, whatsappNumber, messageType' }, 400)
+  }
+
+  const messageType = normalizeMessageType(body.messageType)
+  if (!messageType) {
+    return json({ error: `unrecognized messageType: "${body.messageType}" — add it to MESSAGE_TYPE_MAP` }, 400)
   }
 
   // Dedup — a webhook retry or n8n re-execution must never double-log a
