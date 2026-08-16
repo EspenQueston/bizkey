@@ -946,6 +946,17 @@ export async function getWhatsAppMessages(conversationId: string): Promise<Whats
   return (data ?? []) as WhatsAppMessage[]
 }
 
+/** Flat message feed across every conversation, for the overview dashboard's charts — channel/type/sender are all denormalized onto whatsapp_messages so this needs no join. */
+export async function getWhatsAppMessagesForAnalytics(limit = 1000): Promise<WhatsAppMessage[]> {
+  const { data, error } = await supabase
+    .from('whatsapp_messages')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []) as WhatsAppMessage[]
+}
+
 export async function sendWhatsAppAgentReply(conversationId: string, body: string): Promise<WhatsAppMessage> {
   const { data: convo } = await supabase
     .from('whatsapp_conversations')

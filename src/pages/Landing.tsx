@@ -510,60 +510,10 @@ function Faq() {
   return <FaqSection items={LANDING_FAQ} />
 }
 
-function FinalCta() {
-  return (
-    <section className="py-24">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-gradient-to-br from-[#0A1B33] to-[#162B49] text-white p-10 sm:p-16 text-center shadow-xl shadow-[#0A1B33]/20">
-          <Badge className="rounded-full mb-6 bg-primary/15 text-primary border-primary/30 hover:bg-primary/15">
-            <Sparkles className="h-3.5 w-3.5" /> Démarre aujourd'hui
-          </Badge>
-          <h2 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl mx-auto">
-            Tu veux des produits de Chine livrés chez toi, sans te compliquer la vie ?
-          </h2>
-          <p className="mt-6 text-lg text-white/75 max-w-2xl mx-auto leading-relaxed">
-            Des centaines de commerçants africains commandent déjà depuis la Chine avec BizKey — sans parler chinois, sans carte Visa, et sans risquer leur argent. On s'occupe de tout, de la recherche du produit jusqu'à la livraison à ton adresse. Il ne te reste qu'une chose à faire.
-          </p>
-
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="rounded-full text-base h-14 px-8 shadow-lg shadow-primary/20 group"
-            >
-              <Link to="/login">
-                <Sparkles className="h-5 w-5" />
-                Commencer — 3 analyses gratuites
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </Button>
-          </div>
-          <p className="mt-4 text-sm text-white/60">
-            C'est gratuit et sans engagement
-          </p>
-
-          <div className="mt-10 pt-8 border-t border-white/10 grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {[
-              { icon: ShieldCheck, label: "Paiement sécurisé" },
-              { icon: Truck, label: "Livraison suivie" },
-              { icon: MessageCircle, label: "Support 24h" },
-            ].map((i, k) => (
-              <div key={k} className="flex items-center justify-center gap-2 text-sm text-white/80">
-                <i.icon className="h-4 w-4 text-primary" />
-                <span>{i.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 export default function LandingPage() {
   return (
     <div className="min-h-svh bg-background text-foreground overflow-x-hidden">
-      <SiteNavbar overDark />
+      <SiteNavbar />
       <main>
         <Hero />
         <Credibility />
@@ -571,7 +521,6 @@ export default function LandingPage() {
         <HowItWorks />
         <Testimonials />
         <Faq />
-        <FinalCta />
       </main>
       <SiteFooter />
     </div>

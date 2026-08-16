@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -23,6 +24,7 @@ export default function AdminUsers() {
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState({
     name: '',
     email: '',
@@ -122,12 +124,15 @@ export default function AdminUsers() {
     }
   }
 
-  async function deleteUser(userId: string) {
-    if (userId === currentUser?.id) {
+  function requestDeleteUser(user: UserProfile) {
+    if (user.id === currentUser?.id) {
       toast.error('Vous ne pouvez pas supprimer votre propre compte')
       return
     }
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.')) return
+    setConfirmDeleteUser(user)
+  }
+
+  async function deleteUser(userId: string) {
     setDeletingId(userId)
     try {
       // Delete related data first
@@ -138,6 +143,7 @@ export default function AdminUsers() {
       if (error) throw error
       setUsers(prev => prev.filter(u => u.id !== userId))
       toast.success('Utilisateur supprimé')
+      setConfirmDeleteUser(null)
     } catch (err) {
       console.error(err)
       toast.error('Erreur lors de la suppression')
@@ -338,7 +344,7 @@ export default function AdminUsers() {
                       variant="ghost"
                       className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
                       disabled={u.id === currentUser?.id || deletingId === u.id}
-                      onClick={() => deleteUser(u.id)}
+                      onClick={() => requestDeleteUser(u)}
                       title="Supprimer"
                     >
                       {deletingId === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -350,6 +356,15 @@ export default function AdminUsers() {
           })}
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={!!confirmDeleteUser}
+        onOpenChange={(v) => { if (!v) setConfirmDeleteUser(null) }}
+        title="Supprimer cet utilisateur ?"
+        description={`${confirmDeleteUser?.name ?? confirmDeleteUser?.email ?? ''} sera définitivement supprimé, avec ses analyses, comparaisons et négociations. Cette action est irréversible.`}
+        loading={deletingId === confirmDeleteUser?.id}
+        onConfirm={() => confirmDeleteUser && deleteUser(confirmDeleteUser.id)}
+      />
     </div>
   )
 }
