@@ -147,13 +147,16 @@ serve(async (req) => {
 
   const whatsappNumber = visitorToNumber(visitorId)
 
+  // This is BizKey's own site-wide widget (client_id null), not a
+  // subscribed business's — routed through the same RPC whatsapp-sync uses
+  // since whatsapp_contacts' uniqueness is now (client_id, number) via an
+  // expression index that a plain .upsert({onConflict}) can't target.
   const { data: contact, error: contactError } = await supabase
-    .from('whatsapp_contacts')
-    .upsert(
-      { whatsapp_number: whatsappNumber, display_name: visitorName ?? null },
-      { onConflict: 'whatsapp_number', ignoreDuplicates: false },
-    )
-    .select('id')
+    .rpc('upsert_whatsapp_contact', {
+      p_client_id: null,
+      p_whatsapp_number: whatsappNumber,
+      p_display_name: visitorName ?? null,
+    })
     .single()
   if (contactError) return json({ error: contactError.message }, 500)
 
@@ -200,9 +203,12 @@ serve(async (req) => {
   })
   if (inMsgError) return json({ error: inMsgError.message }, 500)
 
+  // client_id is null: this widget is BizKey's own — without this filter a
+  // subscribed business's private rules/FAQ could match and leak to a
+  // random website visitor who never talked to that business.
   const [{ data: rules }, { data: kb }] = await Promise.all([
-    supabase.from('whatsapp_auto_replies').select('*'),
-    supabase.from('whatsapp_kb_articles').select('id, answer, is_active'),
+    supabase.from('whatsapp_auto_replies').select('*').is('client_id', null),
+    supabase.from('whatsapp_kb_articles').select('id, answer, is_active').is('client_id', null),
   ])
 
   const match = matchAutoReply(message, (rules ?? []) as AutoReplyRule[], (kb ?? []) as KbArticle[])

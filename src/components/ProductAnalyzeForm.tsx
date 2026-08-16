@@ -404,7 +404,7 @@ export function ProductAnalyzeForm() {
                 </div>
                 <div className="space-y-2.5">
                   <Button asChild className="w-full h-12 rounded-full text-base shadow-lg shadow-primary/20 gap-2">
-                    <Link to="/app/billing"><Zap className="h-5 w-5" />Passer à Pro maintenant</Link>
+                    <Link to="/pricing"><Zap className="h-5 w-5" />Passer à Pro maintenant</Link>
                   </Button>
                   <Button variant="ghost" className="w-full h-10 rounded-full text-sm text-muted-foreground" onClick={() => setShowUpgradeModal(false)}>
                     Peut-être plus tard

@@ -231,7 +231,7 @@ export default function ProfilePage() {
                       <div className="text-2xl font-bold font-serif text-primary">{profile?.credits_remaining ?? 0}</div>
                     </div>
                     <Button asChild size="sm" className="rounded-full">
-                      <Link to="/app/billing">Passer à Pro →</Link>
+                      <Link to="/pricing">Passer à Pro →</Link>
                     </Button>
                   </div>
                 )}

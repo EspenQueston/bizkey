@@ -21,7 +21,6 @@ import ProfilePage from '@/pages/Profile'
 import SettingsPage from '@/pages/Settings'
 import CheckoutPage from '@/pages/Checkout'
 import CheckoutAssistantPage from '@/pages/CheckoutAssistant'
-import DashboardPricingPage from '@/pages/DashboardPricing'
 
 // Unified ERP Panel
 import ERPPanelLayout from '@/pages/erp-panel/ERPPanelLayout'
@@ -227,7 +226,6 @@ function AppRoutes() {
         {/* Account */}
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="billing" element={<DashboardPricingPage />} />
 
         {/* Administration */}
         <Route path="overview" element={<AdminRoute><ERPPanelDashboard /></AdminRoute>} />
@@ -256,7 +254,8 @@ function AppRoutes() {
       </Route>
 
       {/* Legacy redirects — every old path keeps working */}
-      <Route path="/dashboard/pricing" element={<Navigate to="/app/billing" replace />} />
+      <Route path="/dashboard/pricing" element={<Navigate to="/pricing" replace />} />
+      <Route path="/app/billing" element={<Navigate to="/app/settings" replace />} />
       <Route path="/dashboard" element={<Navigate to="/app" replace />} />
       <Route path="/dashboard/*" element={<Navigate to="/app" replace />} />
       <Route path="/analyze" element={<Navigate to="/app/analyze" replace />} />

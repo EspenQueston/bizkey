@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, CreditCard, Tag, Webhook,
   BarChart3, LogOut, Settings, ShoppingCart, Truck,
   Home, Menu, X, ChevronDown, Search, UserRound,
-  GitCompare, MessageSquare, Crown, Building2, FileText,
+  GitCompare, MessageSquare, Building2, FileText,
   Smartphone, BookOpen, Bot, PanelLeftClose, PanelLeftOpen, ArrowUpRight,
 } from 'lucide-react'
 import {
@@ -133,15 +133,6 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
       flat: true,
       items: [
         { icon: Users, label: 'Utilisateurs', to: '/app/users' },
-      ],
-    },
-    {
-      title: 'Facturation',
-      group: 'shared',
-      hideForAdmin: true,
-      flat: true,
-      items: [
-        { icon: Crown, label: 'Paiement & plans', to: '/app/billing' },
       ],
     },
     {

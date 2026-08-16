@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Bell, Lock, Palette, Globe, Shield,
   Trash2, Save, Eye, EyeOff, AlertTriangle, Check,
-  Sun, Moon, Monitor
+  Sun, Moon, Monitor, Crown, ArrowUpRight, CalendarClock, Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -15,10 +16,12 @@ import { ModeToggle } from '@/components/mode-toggle'
 import { Logo } from '@/components/Logo'
 import { TwoFactorSettings } from '@/components/TwoFactorSettings'
 import { useAuth } from '@/contexts/AuthContext'
+import { getUserSubscription, getAllPlans } from '@/lib/db'
+import type { Plan, Subscription } from '@/lib/supabase'
 
 import { supabase } from '@/lib/supabase'
 
-type Section = 'notifications' | 'security' | 'appearance' | 'language' | 'danger'
+type Section = 'subscription' | 'notifications' | 'security' | 'appearance' | 'language' | 'danger'
 
 function SectionButton({ id, current, icon: Icon, label, onClick }: {
   id: Section; current: Section; icon: React.ElementType; label: string; onClick: () => void
@@ -36,10 +39,36 @@ function SectionButton({ id, current, icon: Icon, label, onClick }: {
   )
 }
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  orange_money: 'Orange Money',
+  mtn_money: 'MTN Mobile Money',
+  moov_money: 'Moov Money',
+  wave: 'Wave',
+  stripe: 'Carte bancaire',
+}
+
+const SUBSCRIPTION_STATUS_META: Record<Subscription['status'], { label: string; color: string }> = {
+  active: { label: 'Actif', color: 'text-primary border-primary/30' },
+  pending: { label: 'En attente', color: 'text-amber-600 border-amber-500/30' },
+  expired: { label: 'Expiré', color: 'text-muted-foreground border-border' },
+  cancelled: { label: 'Résilié', color: 'text-destructive border-destructive/30' },
+}
+
 export default function SettingsPage() {
-  const { user, signOut } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const [section, setSection] = useState<Section>('notifications')
+  const [section, setSection] = useState<Section>('subscription')
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [loadingSub, setLoadingSub] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+    Promise.allSettled([getUserSubscription(user.id), getAllPlans()]).then(([sub, p]) => {
+      if (sub.status === 'fulfilled') setSubscription(sub.value)
+      if (p.status === 'fulfilled') setPlans(p.value)
+    }).finally(() => setLoadingSub(false))
+  }, [user])
 
   // Notification prefs
   const [notifEmail, setNotifEmail] = useState(true)
@@ -110,6 +139,7 @@ export default function SettingsPage() {
           <aside className="lg:w-52 flex-shrink-0">
             <Card>
               <CardContent className="p-2 flex flex-row lg:flex-col gap-1 overflow-x-auto">
+                <SectionButton id="subscription" current={section} icon={Crown} label="Abonnement" onClick={() => setSection('subscription')} />
                 <SectionButton id="notifications" current={section} icon={Bell} label="Notifications" onClick={() => setSection('notifications')} />
                 <SectionButton id="security" current={section} icon={Lock} label="Sécurité" onClick={() => setSection('security')} />
                 <SectionButton id="appearance" current={section} icon={Palette} label="Apparence" onClick={() => setSection('appearance')} />
@@ -122,6 +152,98 @@ export default function SettingsPage() {
 
           {/* Content */}
           <div className="flex-1 min-w-0 space-y-4">
+
+            {/* SUBSCRIPTION */}
+            {section === 'subscription' && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-primary" />
+                    Abonnement BizKey Sourcing
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {loadingSub ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      <div className="h-5 w-5 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto mb-2" />
+                      Chargement...
+                    </div>
+                  ) : profile?.is_admin ? (
+                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm">
+                      Compte administrateur — accès illimité, non soumis à un abonnement.
+                    </div>
+                  ) : subscription ? (
+                    (() => {
+                      const plan = plans.find(p => p.id === subscription.plan_id)
+                      const statusMeta = SUBSCRIPTION_STATUS_META[subscription.status]
+                      return (
+                        <>
+                          <div className="flex items-start justify-between gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Formule actuelle</p>
+                              <p className="text-lg font-bold mt-0.5">{plan?.display_name ?? 'Formule inconnue'}</p>
+                            </div>
+                            <Badge variant="outline" className={`text-xs shrink-0 ${statusMeta.color}`}>{statusMeta.label}</Badge>
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="p-3 rounded-xl bg-secondary/40 border border-border">
+                              <p className="text-xs text-muted-foreground">Crédits Basic restants</p>
+                              <p className="text-base font-semibold mt-0.5">{subscription.basic_credits_remaining}</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-secondary/40 border border-border">
+                              <p className="text-xs text-muted-foreground">Crédits Advanced restants</p>
+                              <p className="text-base font-semibold mt-0.5">{subscription.advanced_credits_remaining}</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between py-2 border-b border-border">
+                              <span className="text-muted-foreground flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" /> Moyen de paiement</span>
+                              <span className="font-medium">
+                                {subscription.payment_method ? (PAYMENT_METHOD_LABELS[subscription.payment_method] ?? subscription.payment_method) : '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between py-2 border-b border-border">
+                              <span className="text-muted-foreground flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> Débuté le</span>
+                              <span className="font-medium">{new Date(subscription.started_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-2 border-b border-border">
+                              <span className="text-muted-foreground flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> Expire le</span>
+                              <span className="font-medium">
+                                {subscription.expires_at
+                                  ? new Date(subscription.expires_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+                                  : 'Sans expiration'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between py-2">
+                              <span className="text-muted-foreground">Renouvellement automatique</span>
+                              <span className="font-medium">{subscription.auto_renew ? 'Activé' : 'Désactivé'}</span>
+                            </div>
+                          </div>
+
+                          <Button asChild variant="outline" className="w-full rounded-full gap-1.5">
+                            <Link to="/pricing"><ArrowUpRight className="h-4 w-4" /> Changer de formule</Link>
+                          </Button>
+                        </>
+                      )
+                    })()
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-secondary/40 border border-border text-sm">
+                        <p className="font-medium">Plan gratuit</p>
+                        <p className="text-muted-foreground text-xs mt-1">
+                          {(profile?.basic_credits_remaining ?? profile?.credits_remaining ?? 0)} crédits Basic restants · aucun abonnement actif
+                        </p>
+                      </div>
+                      <Button asChild className="w-full rounded-full gap-1.5">
+                        <Link to="/pricing"><ArrowUpRight className="h-4 w-4" /> Voir les formules</Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* NOTIFICATIONS */}
             {section === 'notifications' && (
