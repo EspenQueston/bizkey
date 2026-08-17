@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, Navigate, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Users, CreditCard, Tag, Webhook,
@@ -19,6 +19,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { getAllAssistantPlans } from '@/lib/db'
+import type { AssistantPlan } from '@/lib/supabase'
 
 interface NavItem {
   icon: React.FC<{ className?: string }>
@@ -46,12 +48,6 @@ interface NavSection {
   /** Skip this section's own collapsible sub-header — used when the group header already names it (e.g. "Système" section inside the "Système" group) and a second identical label would be redundant. */
   flat?: boolean
   items: NavItem[]
-}
-
-const GROUP_META: Record<NavGroup, { label: string; icon: React.FC<{ className?: string }>; accent: string }> = {
-  sourcing: { label: 'BizKey Sourcing', icon: Search, accent: 'text-primary' },
-  assistant: { label: 'BizKey WhatsApp Assistant', icon: Bot, accent: 'text-blue-500 dark:text-blue-400' },
-  shared: { label: 'Système', icon: Settings, accent: 'text-muted-foreground' },
 }
 
 // Two products under one panel, plus a shared account area that belongs to
@@ -155,7 +151,8 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
 function AccountMenu() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const initials = (profile?.name ?? profile?.email ?? 'A').slice(0, 2).toUpperCase()
+  const isAdmin = profile?.is_admin === true
+  const initials = (profile?.name ?? profile?.email ?? 'U').slice(0, 2).toUpperCase()
 
   async function handleSignOut() {
     await signOut()
@@ -177,7 +174,7 @@ function AccountMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium truncate">{profile?.name ?? 'Administrateur'}</span>
+            <span className="text-sm font-medium truncate">{profile?.name ?? (isAdmin ? 'Administrateur' : 'Utilisateur')}</span>
             <span className="text-xs text-muted-foreground truncate">{profile?.email}</span>
           </div>
         </DropdownMenuLabel>
@@ -202,12 +199,27 @@ function AccountMenu() {
   )
 }
 
+/** Which of the two products the current URL belongs to — drives which
+ * product's sections the sidebar shows. Shared/unmatched routes default to
+ * Sourcing, since that's every user's actual landing product. */
+function scopeFromPath(pathname: string, isAdmin: boolean): 'sourcing' | 'assistant' {
+  const match = buildNavSections(isAdmin)
+    .flatMap(s => s.items.map(item => ({ item, group: s.group })))
+    .find(({ item }) => (item.end ? pathname === item.to : pathname.startsWith(item.to)))
+  return match?.group === 'assistant' ? 'assistant' : 'sourcing'
+}
+
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const { profile, assistantClient, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<NavGroup, boolean>>({ sourcing: false, assistant: false, shared: false })
+  const [assistantPlans, setAssistantPlans] = useState<AssistantPlan[]>([])
+
+  useEffect(() => {
+    getAllAssistantPlans().then(setAssistantPlans).catch(() => {})
+  }, [])
 
   async function handleSignOut() {
     await signOut()
@@ -219,23 +231,33 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     setCollapsedSections(prev => ({ ...prev, [title]: !prev[title] }))
   }
 
-  function toggleGroup(group: NavGroup) {
-    setCollapsedGroups(prev => ({ ...prev, [group]: !prev[group] }))
-  }
-
   const isAdmin = profile?.is_admin === true
   // Portal access requires an *activated* plan — trial/suspended/cancelled
   // business owners don't get the Assistant nav, matching AssistantAccessRoute.
   const hasActiveAssistantClient = assistantClient?.status === 'active'
+  const showAssistantTab = isAdmin || hasActiveAssistantClient
 
   // BizKey Sourcing stays open to every signed-up user (3 free credits on
   // signup, no subscription required) — this is the deliberate free-trial
-  // funnel, so the nav is never hidden for it. Instead the group header
+  // funnel, so the nav is never hidden for it. Instead the switcher tab
   // just surfaces where the user actually stands: same formula as
   // Analyze.tsx's own "X crédits restants" so the two never disagree.
   const isFreeTier = !isAdmin && (profile?.subscription_tier ?? 'free') === 'free'
   const sourcingCreditsLeft = (profile?.basic_credits_remaining ?? profile?.credits_remaining ?? 0) + (profile?.payg_basic_credits ?? 0)
   const sourcingCreditsExhausted = isFreeTier && sourcingCreditsLeft <= 0
+  // subscription_tier is synced to the real plans.name by admin_assign_sourcing_plan
+  // / the checkout flow — prettify it directly rather than fetching plans just for a label.
+  const sourcingPlanName = profile?.subscription_tier
+    ? profile.subscription_tier.charAt(0).toUpperCase() + profile.subscription_tier.slice(1)
+    : null
+  const assistantPlanName = assistantPlans.find(p => p.id === assistantClient?.plan_id)?.display_name ?? null
+
+  const activeScope = scopeFromPath(location.pathname, isAdmin)
+
+  function goToProduct(group: 'sourcing' | 'assistant') {
+    navigate(group === 'assistant' ? '/app/assistant' : (isAdmin ? '/app' : '/app/analyze'))
+    onClose?.()
+  }
 
   // Filter by role first (section-level, then per-item), then by the search box.
   const filteredSections = buildNavSections(isAdmin)
@@ -250,6 +272,62 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         .filter(item => !searchQuery || item.label.toLowerCase().includes(searchQuery.toLowerCase())),
     }))
     .filter(section => section.items.length > 0)
+
+  // Only the active product's sections show at a time — Système/Mon compte
+  // ("common features") render unconditionally below them regardless of
+  // which product is selected, per the panel's own shared-account area.
+  const scopedSections = filteredSections.filter(s => s.group === activeScope)
+  const sharedSections = filteredSections.filter(s => s.group === 'shared')
+
+  function renderSection(section: NavSection) {
+    const isCollapsed = !section.flat && collapsedSections[section.title]
+    return (
+      <div key={section.title} className="pl-1">
+        {!section.flat && (
+          <button
+            onClick={() => toggleSection(section.title)}
+            className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 hover:text-foreground transition"
+          >
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-sky-400 to-blue-600" />
+              {section.title}
+            </span>
+            <ChevronDown className={`h-3 w-3 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+          </button>
+        )}
+        {!isCollapsed && (
+          <div className="space-y-0.5 mt-0.5">
+            {section.items.map(item => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `group/nav relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-primary/20 to-blue-500/10 text-primary shadow-sm shadow-primary/10'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {/* Vivid active rail makes the current section obvious at a glance */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-gradient-to-b from-sky-400 to-blue-600 shadow-lg shadow-blue-500/50" />
+                    )}
+                    <item.icon className={`h-4 w-4 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover/nav:scale-110'}`} />
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -284,97 +362,72 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      {/* Nav sections, grouped into three big collapsible accordions: BizKey
-          Sourcing, BizKey WhatsApp Assistant, Système. Collapsing a group
-          hides every section inside it in one click. */}
-      <nav className="flex-1 p-3 space-y-1">
-        {(['sourcing', 'assistant', 'shared'] as const).map(group => {
-          const groupSections = filteredSections.filter(s => s.group === group)
-          if (groupSections.length === 0) return null
-          const meta = GROUP_META[group]
-          const groupCollapsed = collapsedGroups[group]
-          return (
-            <div key={group} className="mb-2">
-              <button
-                onClick={() => toggleGroup(group)}
-                className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl bg-secondary/60 hover:bg-secondary transition mb-1"
-              >
-                <span className={`flex items-center gap-2 text-sm font-bold ${meta.accent}`}>
-                  <meta.icon className="h-4 w-4" />
-                  {meta.label}
-                  {group === 'sourcing' && isFreeTier && (
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] font-medium normal-case ${sourcingCreditsExhausted ? 'text-destructive border-destructive/30' : 'text-muted-foreground border-border'}`}
-                    >
-                      {sourcingCreditsExhausted ? '0 crédit' : `${sourcingCreditsLeft} crédit${sourcingCreditsLeft > 1 ? 's' : ''}`}
-                    </Badge>
-                  )}
-                </span>
-                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${groupCollapsed ? '-rotate-90' : ''}`} />
-              </button>
-              {group === 'sourcing' && sourcingCreditsExhausted && (
-                <Link
-                  to="/pricing"
-                  onClick={onClose}
-                  className="flex items-center justify-between px-3 py-2 mb-1 rounded-xl border border-primary/25 bg-primary/5 text-xs font-medium text-primary hover:bg-primary/10 transition"
-                >
-                  Crédits épuisés — passer à un forfait payant
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </Link>
-              )}
-              {!groupCollapsed && groupSections.map(section => {
-                const isCollapsed = !section.flat && collapsedSections[section.title]
-                return (
-                  <div key={section.title} className="pl-1">
-              {!section.flat && (
-              <button
-                onClick={() => toggleSection(section.title)}
-                className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 hover:text-foreground transition"
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-sky-400 to-blue-600" />
-                  {section.title}
-                </span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
-              </button>
-              )}
-              {!isCollapsed && (
-                <div className="space-y-0.5 mt-0.5">
-                  {section.items.map(item => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.end}
-                      onClick={onClose}
-                      className={({ isActive }) =>
-                        `group/nav relative flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                          isActive
-                            ? 'bg-gradient-to-r from-primary/20 to-blue-500/10 text-primary shadow-sm shadow-primary/10'
-                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          {/* Vivid active rail makes the current section obvious at a glance */}
-                          {isActive && (
-                            <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-gradient-to-b from-sky-400 to-blue-600 shadow-lg shadow-blue-500/50" />
-                          )}
-                          <item.icon className={`h-4 w-4 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover/nav:scale-110'}`} />
-                          {item.label}
-                        </>
-                      )}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
+      {/* Product switcher — navigates into a dedicated space per product
+          (only that product's sections show below) and doubles as an
+          at-a-glance subscription indicator for both. */}
+      <div className="p-3 pb-1">
+        <div className={`grid gap-1.5 ${showAssistantTab ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <button
+            onClick={() => goToProduct('sourcing')}
+            className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-xl border transition-all ${
+              activeScope === 'sourcing'
+                ? 'border-primary/40 bg-primary/10 shadow-sm shadow-primary/10'
+                : 'border-border bg-secondary/40 hover:bg-secondary'
+            }`}
+          >
+            <span className={`flex items-center gap-1.5 text-xs font-bold ${activeScope === 'sourcing' ? 'text-primary' : 'text-foreground'}`}>
+              <Search className="h-3.5 w-3.5" /> Sourcing
+            </span>
+            {isFreeTier ? (
+              <span className={`text-[10px] font-medium ${sourcingCreditsExhausted ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {sourcingCreditsExhausted ? '0 crédit' : `${sourcingCreditsLeft} crédit${sourcingCreditsLeft > 1 ? 's' : ''}`}
+              </span>
+            ) : (
+              <span className="text-[10px] font-medium text-muted-foreground">{isAdmin ? 'Illimité' : sourcingPlanName}</span>
+            )}
+          </button>
+          {showAssistantTab && (
+            <button
+              onClick={() => goToProduct('assistant')}
+              className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-xl border transition-all ${
+                activeScope === 'assistant'
+                  ? 'border-blue-500/40 bg-blue-500/10 shadow-sm shadow-blue-500/10'
+                  : 'border-border bg-secondary/40 hover:bg-secondary'
+              }`}
+            >
+              <span className={`flex items-center gap-1.5 text-xs font-bold ${activeScope === 'assistant' ? 'text-blue-500 dark:text-blue-400' : 'text-foreground'}`}>
+                <Bot className="h-3.5 w-3.5" /> Assistant
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                {isAdmin ? 'Illimité' : (
+                  <><span className="h-1.5 w-1.5 rounded-full bg-green-500" /> {assistantPlanName ?? 'Actif'}</>
+                )}
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Only the selected product's nav shows here — Système / Mon compte
+          stay visible below regardless of which product is active. */}
+      <nav className="flex-1 p-3 pt-1 space-y-0.5">
+        {activeScope === 'sourcing' && sourcingCreditsExhausted && (
+          <Link
+            to="/pricing"
+            onClick={onClose}
+            className="flex items-center justify-between px-3 py-2 mb-1 rounded-xl border border-primary/25 bg-primary/5 text-xs font-medium text-primary hover:bg-primary/10 transition"
+          >
+            Crédits épuisés — passer à un forfait payant
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+        {scopedSections.map(renderSection)}
+
+        {sharedSections.length > 0 && (
+          <div className="pt-2 mt-2 border-t border-border/60 space-y-0.5">
+            {sharedSections.map(renderSection)}
+          </div>
+        )}
       </nav>
 
       {/* Bottom actions */}

@@ -332,13 +332,25 @@ export default function AdminUsers() {
                 </p>
                 {loadingPlanState ? (
                   <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-1"><Loader2 className="h-3 w-3 animate-spin" /> Chargement…</div>
+                ) : currentAssistantClient && currentAssistantClient.status !== 'cancelled' ? (
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <p>
+                      Actuel : <strong className="text-foreground">{assistantPlans.find(p => p.id === currentAssistantClient.plan_id)?.display_name ?? 'Formule inconnue'}</strong>
+                      {' '}— statut {currentAssistantClient.status}
+                    </p>
+                    <p>Client depuis le {new Date(currentAssistantClient.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                    <p>
+                      Période en cours : {currentAssistantClient.current_period_start
+                        ? new Date(currentAssistantClient.current_period_start).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+                        : '—'}
+                      {' → '}
+                      {currentAssistantClient.current_period_end
+                        ? new Date(currentAssistantClient.current_period_end).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </p>
+                  </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
-                    {currentAssistantClient && currentAssistantClient.status !== 'cancelled' ? (
-                      <>Actuel : <strong className="text-foreground">{assistantPlans.find(p => p.id === currentAssistantClient.plan_id)?.display_name ?? 'Formule inconnue'}</strong>
-                        {' '}— statut {currentAssistantClient.status}</>
-                    ) : 'Aucun accès Assistant WhatsApp'}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Aucun accès Assistant WhatsApp</p>
                 )}
                 <div className="flex gap-2">
                   <select

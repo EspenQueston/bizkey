@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Plus, Search, Edit2, Trash2, X, Save, Phone, Mail, Building2, Smartphone,
+  Plus, Search, Edit2, Trash2, X, Save, Phone, Mail, Building2, Smartphone, CalendarClock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -177,6 +177,13 @@ export default function AssistantClientsPage() {
                     {client.contact_email && <div className="flex items-center gap-2"><Mail className="h-3 w-3 flex-shrink-0" />{client.contact_email}</div>}
                     {client.contact_phone && <div className="flex items-center gap-2"><Phone className="h-3 w-3 flex-shrink-0" />{client.contact_phone}</div>}
                     {number && <div className="flex items-center gap-2"><Smartphone className="h-3 w-3 flex-shrink-0" />{number.phone_number}</div>}
+                    <div className="flex items-center gap-2"><CalendarClock className="h-3 w-3 flex-shrink-0" />Client depuis le {new Date(client.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                    {client.current_period_start && client.current_period_end && (
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="h-3 w-3 flex-shrink-0" />
+                        Période : {new Date(client.current_period_start).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })} → {new Date(client.current_period_end).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                    )}
                   </div>
                   {plan && (
                     <Badge variant="outline" className="mt-2 text-[10px] text-primary border-primary/30">{plan.display_name}</Badge>

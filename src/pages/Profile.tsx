@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, User, Mail, Calendar, Crown, Zap, Star,
+  User, Mail, Calendar, Crown, Zap, Star,
   TrendingUp, MessageSquare, GitCompare, Edit2, Save, X,
   Shield, LogOut, Camera
 } from 'lucide-react'
@@ -11,8 +11,6 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { ModeToggle } from '@/components/mode-toggle'
-import { Logo } from '@/components/Logo'
 import { useAuth } from '@/contexts/AuthContext'
 import { updateProfile } from '@/lib/db'
 
@@ -66,20 +64,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <Link to="/app" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition">
-          <ArrowLeft className="h-4 w-4" />
-          Tableau de bord
-        </Link>
-        <div className="flex items-center gap-3">
-          <ModeToggle />
-          <Logo variant="lockup" size="sm" wordClassName="hidden sm:inline" />
-        </div>
-      </header>
-
-      <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+    <div>
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
         {/* ── PROFILE CARD ── */}
         <Card className="overflow-hidden">
@@ -181,64 +167,6 @@ export default function ProfilePage() {
             </Card>
           ))}
         </div>
-
-        {/* ── PLAN ── Admins have no plan or credits to manage, so the whole
-             billing block is replaced by their access status. */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              {isAdmin
-                ? <Shield className="h-4 w-4 text-primary" />
-                : planMeta.icon ? <planMeta.icon className="h-4 w-4 text-primary" /> : <Zap className="h-4 w-4 text-primary" />}
-              {isAdmin ? 'Accès plateforme' : 'Plan & Crédits'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {isAdmin ? (
-              <>
-                <div className="flex items-center justify-between p-4 rounded-xl bg-primary/10 border border-primary/20">
-                  <div>
-                    <div className="font-semibold flex items-center gap-1.5">
-                      Administrateur
-                      <Badge className="bg-primary/15 text-primary text-[10px] py-0 px-1.5 h-4">Illimité</Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Contrôle complet de la plateforme
-                    </div>
-                  </div>
-                  <span className="text-2xl font-bold font-serif text-primary">∞</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Aucun crédit n'est décompté sur vos analyses et aucun rechargement n'est nécessaire. La gestion des formules et des paiements se fait depuis l'ERP Panel.
-                </p>
-                <Button asChild size="sm" variant="outline" className="rounded-full">
-                  <Link to="/app">Ouvrir l'ERP Panel →</Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 border border-border">
-                  <div>
-                    <div className="font-semibold">{planMeta.label}</div>
-                    <div className="text-sm text-muted-foreground">{planMeta.desc}</div>
-                  </div>
-                  <Badge variant="outline" className={planMeta.color}>Actif</Badge>
-                </div>
-                {tier === 'free' && (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-medium">Crédits restants</div>
-                      <div className="text-2xl font-bold font-serif text-primary">{profile?.credits_remaining ?? 0}</div>
-                    </div>
-                    <Button asChild size="sm" className="rounded-full">
-                      <Link to="/pricing">Passer à Pro →</Link>
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
 
         {/* ── ACTIONS ── */}
         <Card>

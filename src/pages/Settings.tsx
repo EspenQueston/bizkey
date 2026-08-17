@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Bell, Lock, Palette, Globe, Shield,
+  Bell, Lock, Palette, Globe, Shield,
   Trash2, Save, Eye, EyeOff, AlertTriangle, Check,
-  Sun, Moon, Monitor, Crown, ArrowUpRight, CalendarClock, Wallet,
+  Sun, Moon, Monitor, Crown, ArrowUpRight, CalendarClock, Wallet, Bot,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,11 +13,10 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { ModeToggle } from '@/components/mode-toggle'
-import { Logo } from '@/components/Logo'
 import { TwoFactorSettings } from '@/components/TwoFactorSettings'
 import { useAuth } from '@/contexts/AuthContext'
-import { getUserSubscription, getAllPlans } from '@/lib/db'
-import type { Plan, Subscription } from '@/lib/supabase'
+import { getUserSubscription, getAllPlans, getAllAssistantPlans } from '@/lib/db'
+import type { Plan, Subscription, AssistantPlan, AssistantClientStatus } from '@/lib/supabase'
 
 import { supabase } from '@/lib/supabase'
 
@@ -54,19 +53,28 @@ const SUBSCRIPTION_STATUS_META: Record<Subscription['status'], { label: string; 
   cancelled: { label: 'Résilié', color: 'text-destructive border-destructive/30' },
 }
 
+const ASSISTANT_STATUS_META: Record<AssistantClientStatus, { label: string; color: string }> = {
+  trial: { label: 'Essai', color: 'text-blue-600 border-blue-500/30' },
+  active: { label: 'Actif', color: 'text-primary border-primary/30' },
+  suspended: { label: 'Suspendu', color: 'text-amber-600 border-amber-500/30' },
+  cancelled: { label: 'Résilié', color: 'text-destructive border-destructive/30' },
+}
+
 export default function SettingsPage() {
-  const { user, profile, signOut } = useAuth()
+  const { user, profile, assistantClient, signOut } = useAuth()
   const navigate = useNavigate()
   const [section, setSection] = useState<Section>('subscription')
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [plans, setPlans] = useState<Plan[]>([])
+  const [assistantPlans, setAssistantPlans] = useState<AssistantPlan[]>([])
   const [loadingSub, setLoadingSub] = useState(true)
 
   useEffect(() => {
     if (!user) return
-    Promise.allSettled([getUserSubscription(user.id), getAllPlans()]).then(([sub, p]) => {
+    Promise.allSettled([getUserSubscription(user.id), getAllPlans(), getAllAssistantPlans()]).then(([sub, p, ap]) => {
       if (sub.status === 'fulfilled') setSubscription(sub.value)
       if (p.status === 'fulfilled') setPlans(p.value)
+      if (ap.status === 'fulfilled') setAssistantPlans(ap.value)
     }).finally(() => setLoadingSub(false))
   }, [user])
 
@@ -116,19 +124,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/80 backdrop-blur px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <Link to="/app" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition">
-          <ArrowLeft className="h-4 w-4" />
-          Tableau de bord
-        </Link>
-        <div className="flex items-center gap-3">
-          <ModeToggle />
-          <Logo variant="lockup" size="sm" wordClassName="hidden sm:inline" />
-        </div>
-      </header>
-
-      <div className="max-w-5xl mx-auto px-4 py-10">
+    <div>
+      <div className="max-w-5xl mx-auto px-4 py-6">
         <div className="mb-6">
           <h1 className="font-serif text-2xl font-bold">Paramètres</h1>
           <p className="text-sm text-muted-foreground mt-1">Gérez votre compte et vos préférences</p>
@@ -238,6 +235,100 @@ export default function SettingsPage() {
                       </div>
                       <Button asChild className="w-full rounded-full gap-1.5">
                         <Link to="/pricing"><ArrowUpRight className="h-4 w-4" /> Voir les formules</Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* SUBSCRIPTION — Assistant */}
+            {section === 'subscription' && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                    Abonnement BizKey WhatsApp Assistant
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {loadingSub ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      <div className="h-5 w-5 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto mb-2" />
+                      Chargement...
+                    </div>
+                  ) : profile?.is_admin ? (
+                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm">
+                      Compte administrateur — accès illimité, non soumis à un abonnement.
+                    </div>
+                  ) : assistantClient ? (
+                    (() => {
+                      const plan = assistantPlans.find(p => p.id === assistantClient.plan_id)
+                      const statusMeta = ASSISTANT_STATUS_META[assistantClient.status]
+                      return (
+                        <>
+                          <div className="flex items-start justify-between gap-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Formule actuelle</p>
+                              <p className="text-lg font-bold mt-0.5">{plan?.display_name ?? 'Formule inconnue'}</p>
+                            </div>
+                            <Badge variant="outline" className={`text-xs shrink-0 ${statusMeta.color}`}>{statusMeta.label}</Badge>
+                          </div>
+                          {plan && (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="p-3 rounded-xl bg-secondary/40 border border-border">
+                                <p className="text-xs text-muted-foreground">Numéro(s) WhatsApp</p>
+                                <p className="text-base font-semibold mt-0.5">{plan.max_numbers}</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-secondary/40 border border-border">
+                                <p className="text-xs text-muted-foreground">Conversations / mois</p>
+                                <p className="text-base font-semibold mt-0.5">{plan.max_conversations_per_month.toLocaleString('fr-FR')}</p>
+                              </div>
+                            </div>
+                          )}
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between py-2 border-b border-border">
+                              <span className="text-muted-foreground flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> Client depuis</span>
+                              <span className="font-medium">{new Date(assistantClient.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-2 border-b border-border">
+                              <span className="text-muted-foreground flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> Période en cours — débutée le</span>
+                              <span className="font-medium">
+                                {assistantClient.current_period_start
+                                  ? new Date(assistantClient.current_period_start).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+                                  : '—'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between py-2">
+                              <span className="text-muted-foreground flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> Période en cours — expire le</span>
+                              <span className="font-medium">
+                                {assistantClient.current_period_end
+                                  ? new Date(assistantClient.current_period_end).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+                                  : '—'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button asChild variant="outline" className="flex-1 rounded-full gap-1.5">
+                              <Link to="/app/assistant/billing">Voir la facturation</Link>
+                            </Button>
+                            <Button asChild variant="outline" className="flex-1 rounded-full gap-1.5">
+                              <Link to="/pricing?product=assistant"><ArrowUpRight className="h-4 w-4" /> Changer de formule</Link>
+                            </Button>
+                          </div>
+                        </>
+                      )
+                    })()
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-xl bg-secondary/40 border border-border text-sm">
+                        <p className="font-medium">Aucun abonnement actif</p>
+                        <p className="text-muted-foreground text-xs mt-1">
+                          Connectez votre numéro WhatsApp Business à un assistant automatisé.
+                        </p>
+                      </div>
+                      <Button asChild className="w-full rounded-full gap-1.5">
+                        <Link to="/pricing?product=assistant"><ArrowUpRight className="h-4 w-4" /> Voir les formules</Link>
                       </Button>
                     </div>
                   )}

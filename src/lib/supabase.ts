@@ -571,6 +571,9 @@ export interface AssistantClient {
   business_hours: Record<string, unknown> | null
   requested_whatsapp_number: string | null
   notes: string | null
+  /** Set by activate_assistant_subscription / admin_assign_assistant_plan on each activation — null until the business has ever been on a paid plan. */
+  current_period_start: string | null
+  current_period_end: string | null
   created_at: string
   updated_at: string
 }

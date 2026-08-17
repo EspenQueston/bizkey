@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ACCENTS, type AccentName } from '@/lib/accentPalette'
+import { DASHBOARD_ACCENTS, type AccentName } from '@/lib/accentPalette'
 import {
   getWhatsAppNumbers, getWhatsAppConversations, getWhatsAppMessagesForAnalytics,
   getWhatsAppKbArticles, getWhatsAppAutoReplies,
@@ -26,7 +26,7 @@ interface MetricCardProps {
 }
 
 function MetricCard({ title, value, sub, icon: Icon, accent }: MetricCardProps) {
-  const a = ACCENTS[accent]
+  const a = DASHBOARD_ACCENTS[accent]
   return (
     <Card className={`relative overflow-hidden border-border ${a.ring} hover:shadow-lg transition-all duration-300`}>
       <span className={`absolute inset-x-0 top-0 h-1 ${a.bar}`} />

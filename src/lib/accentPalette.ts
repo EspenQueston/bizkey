@@ -87,3 +87,57 @@ export const ACCENTS = {
 } as const satisfies Record<string, Accent>
 
 export type AccentName = keyof typeof ACCENTS
+
+/**
+ * Dashboard-only remap of the same 7 accent slots — sapphire/sky stay blue
+ * per an explicit request to keep those, everything else moves onto the
+ * platform's own gold family plus navy (gold's true complement, per the
+ * note above) instead of the unrelated teal/violet/rose/indigo hues. Same
+ * `AccentName` keys, same Accent shape, so MetricCard usages elsewhere
+ * (analyses/analytics pages) are untouched — only the two dashboards that
+ * import this instead of ACCENTS pick up the new look.
+ */
+export const DASHBOARD_ACCENTS: Record<AccentName, Accent> = {
+  sapphire: ACCENTS.sapphire,
+  sky: ACCENTS.sky,
+  amber: {
+    gradient: 'bg-gradient-to-br from-[#F2CD5C] to-[#F2B138]',
+    glow: 'shadow-lg shadow-[#F2B138]/40',
+    text: 'text-[#8C7A42] dark:text-[#F2CD5C]',
+    bar: 'bg-gradient-to-r from-[#F2CD5C] to-[#F2B138]',
+    wash: 'from-[#F2CD5C]/10 to-transparent',
+    ring: 'hover:border-[#F2B138]/50',
+  },
+  teal: {
+    gradient: 'bg-gradient-to-br from-[#8C7A42] to-[#5f5329]',
+    glow: 'shadow-lg shadow-[#8C7A42]/40',
+    text: 'text-[#6b5c30] dark:text-[#c4b48a]',
+    bar: 'bg-gradient-to-r from-[#8C7A42] to-[#5f5329]',
+    wash: 'from-[#8C7A42]/10 to-transparent',
+    ring: 'hover:border-[#8C7A42]/50',
+  },
+  rose: {
+    gradient: 'bg-gradient-to-br from-[#F2B138] to-[#c2792a]',
+    glow: 'shadow-lg shadow-[#F2B138]/40',
+    text: 'text-[#a86e22] dark:text-[#F2B138]',
+    bar: 'bg-gradient-to-r from-[#F2B138] to-[#c2792a]',
+    wash: 'from-[#F2B138]/10 to-transparent',
+    ring: 'hover:border-[#F2B138]/50',
+  },
+  violet: {
+    gradient: 'bg-gradient-to-br from-[#12335e] to-[#021D40]',
+    glow: 'shadow-lg shadow-[#021D40]/40',
+    text: 'text-[#021D40] dark:text-[#9ab3d6]',
+    bar: 'bg-gradient-to-r from-[#12335e] to-[#021D40]',
+    wash: 'from-[#021D40]/10 to-transparent',
+    ring: 'hover:border-[#021D40]/50',
+  },
+  indigo: {
+    gradient: 'bg-gradient-to-br from-[#021D40] to-[#011126]',
+    glow: 'shadow-lg shadow-[#011126]/50',
+    text: 'text-[#021D40] dark:text-[#7f9bc4]',
+    bar: 'bg-gradient-to-r from-[#021D40] to-[#011126]',
+    wash: 'from-[#021D40]/10 to-transparent',
+    ring: 'hover:border-[#021D40]/50',
+  },
+}

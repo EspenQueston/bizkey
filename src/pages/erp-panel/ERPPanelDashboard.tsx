@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ChartEmpty } from '@/components/admin/ChartEmpty'
-import { ACCENTS, type AccentName } from '@/lib/accentPalette'
+import { DASHBOARD_ACCENTS, type AccentName } from '@/lib/accentPalette'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   getAdminStats, getAllPlans, getAllUsers, getAllTransactions,
@@ -32,7 +32,7 @@ interface MetricCardProps {
 }
 
 function MetricCard({ title, value, sub, icon: Icon, accent, trend, to }: MetricCardProps) {
-  const a = ACCENTS[accent]
+  const a = DASHBOARD_ACCENTS[accent]
   return (
     <Link to={to} className="group">
       <Card className={`relative overflow-hidden border-border ${a.ring} hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full`}>
@@ -532,7 +532,7 @@ export default function ERPPanelDashboard() {
               { icon: Truck,        label: 'Livraisons',   to: '/app/delivery',   accent: 'indigo'  },
               { icon: BarChart3,    label: 'Analytiques',  to: '/app/analytics',  accent: 'sapphire' },
             ] as const).map(action => {
-              const a = ACCENTS[action.accent]
+              const a = DASHBOARD_ACCENTS[action.accent]
               return (
                 <Button key={action.label} asChild variant="outline"
                   className={`group/qa h-auto py-3.5 flex-col gap-2 rounded-xl ${a.ring} hover:shadow-lg transition-all duration-300 hover:-translate-y-1 text-xs font-medium`}>
