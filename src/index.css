@@ -190,9 +190,9 @@
   .animate-gradient-shift {
     animation: gradient-shift 18s ease-in-out infinite;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .animate-gradient-shift { animation: none; }
-  }
+  /* Superseded by the global reduced-motion block at the end of this file,
+     which covers every animation rather than this one class. Kept as a
+     no-op would be dead code, so it's removed — see that block instead. */
 
   @keyframes marquee {
     from { transform: translateX(0); }
@@ -389,10 +389,13 @@
   }
 
   /* ── Scroll-reveal — paired with the useInView hook ─────────────────────── */
+  /* Only opacity/transform, both GPU-composited — nothing here triggers a
+     layout recalc. 450ms lands inside the 300–500ms band where an entrance
+     reads as intentional without delaying readability. */
   .reveal {
     opacity: 0;
-    transform: translateY(28px);
-    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateY(24px);
+    transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .reveal-visible {
     opacity: 1;
@@ -405,5 +408,58 @@
   }
   .animate-orbit {
     animation: orbit linear infinite;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────
+   Previously only .animate-gradient-shift honoured this preference, while
+   nine separate infinite animations (marquee, floaty, aurora ×3, shimmer,
+   spin-slow, orbit) kept running — exactly the perpetual movement that
+   triggers discomfort for motion-sensitive users.
+
+   Deliberately NOT `animation: none` on everything: a spinner that stops
+   spinning reads as a frozen/broken app. Infinite decorative loops are
+   cancelled outright, while transitions collapse to ~1ms so state changes
+   still land instantly rather than not at all. Framer Motion is handled
+   separately via <MotionConfig reducedMotion="user"> in App.tsx, which
+   this can't reach (it animates through inline styles). */
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-shift,
+  .animate-marquee,
+  .animate-floaty,
+  .animate-shimmer,
+  .animate-orbit,
+  .aurora-bg::before,
+  .aurora-bg::after,
+  .aurora-bg .aurora-blob-3,
+  .glow-border::before {
+    animation: none !important;
+  }
+
+  /* Reveal-on-scroll must never leave content stuck invisible — the
+     useInView hook already resolves true immediately under this
+     preference, and this guarantees the painted result regardless. */
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* Halting the testimonial marquee would otherwise strand every card past
+     the first screenful with no way to reach them — swapping the auto-scroll
+     for a real scrollbar keeps the content reachable under this preference. */
+  .marquee-viewport {
+    overflow-x: auto !important;
+  }
+
+  .tilt-card:hover {
+    transform: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

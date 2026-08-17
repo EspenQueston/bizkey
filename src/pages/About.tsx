@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { ParticlesBackground } from '@/components/ParticlesBackground'
 import { FaqSection, type FaqItem } from '@/components/FaqSection'
-import { useInView } from '@/hooks/use-in-view'
+import { Reveal, StaggerGrid } from '@/components/motion/Reveal'
 
 const ABOUT_FAQ: FaqItem[] = [
   {
@@ -54,13 +54,6 @@ const TEAM = [
 ]
 
 export default function AboutPage() {
-  const hero = useInView<HTMLDivElement>()
-  const mission = useInView<HTMLDivElement>()
-  const story = useInView<HTMLDivElement>()
-  const values = useInView<HTMLDivElement>()
-  const team = useInView<HTMLDivElement>()
-  const cta = useInView<HTMLDivElement>()
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteNavbar />
@@ -71,7 +64,7 @@ export default function AboutPage() {
           <ParticlesBackground density={45} />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
           <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-          <div ref={hero.ref} className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center reveal ${hero.inView ? 'reveal-visible' : ''}`}>
+          <Reveal className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
             <Badge variant="secondary" className="rounded-full mb-6">
               <Sparkles className="h-3.5 w-3.5 text-primary mr-1" />
               Notre histoire
@@ -83,13 +76,13 @@ export default function AboutPage() {
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Rendre le commerce Chine-Afrique accessible à tous les entrepreneurs africains, quelle que soit leur taille ou leur capital.
             </p>
-          </div>
+          </Reveal>
         </section>
 
         {/* Mission */}
         <section className="py-16 border-y border-border bg-card/50">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div ref={mission.ref} className={`grid md:grid-cols-2 gap-12 items-center reveal ${mission.inView ? 'reveal-visible' : ''}`}>
+            <Reveal className="grid md:grid-cols-2 gap-12 items-center">
               <div>
                 <Badge variant="secondary" className="rounded-full mb-4">Notre mission</Badge>
                 <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight mb-5">
@@ -104,19 +97,19 @@ export default function AboutPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {STATS.map((s, i) => (
-                  <div key={i} style={{ transitionDelay: `${i * 70}ms` }} className="p-5 rounded-2xl border border-border bg-card text-center hover:border-primary/40 hover:-translate-y-1 transition-all">
+                  <div key={i} className="p-5 rounded-2xl border border-border bg-card text-center hover:border-primary/40 hover:-translate-y-1 transition-all duration-200">
                     <div className="font-serif text-3xl font-bold text-primary mb-1">{s.value}</div>
                     <div className="text-sm text-muted-foreground">{s.label}</div>
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
 
         {/* Story */}
         <section className="py-20">
-          <div ref={story.ref} className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 reveal ${story.inView ? 'reveal-visible' : ''}`}>
+          <Reveal className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <Badge variant="secondary" className="rounded-full mb-6">Notre histoire</Badge>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight mb-8">
               De l'idée à la plateforme
@@ -132,22 +125,21 @@ export default function AboutPage() {
                 Aujourd'hui, nous avons accompagné plus de 300 commandes réussies dans 8 pays d'Afrique francophone. Notre objectif est d'en faire 10 000 d'ici 2026, en aidant chaque entrepreneur africain à accéder aux meilleurs produits chinois sans risque et sans barrières.
               </p>
             </div>
-          </div>
+          </Reveal>
         </section>
 
         {/* Values */}
         <section className="py-20 bg-secondary/40">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
+            <Reveal className="text-center mb-12">
               <Badge variant="secondary" className="rounded-full bg-card mb-4">Nos valeurs</Badge>
               <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight">Ce qui nous guide</h2>
-            </div>
-            <div ref={values.ref} className={`grid sm:grid-cols-2 lg:grid-cols-4 gap-5 reveal ${values.inView ? 'reveal-visible' : ''}`}>
+            </Reveal>
+            <StaggerGrid className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {VALUES.map((v, i) => (
                 <Card
                   key={i}
-                  style={{ transitionDelay: `${i * 70}ms` }}
-                  className="group relative overflow-hidden border-border hover:border-primary/40 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/10"
+                  className="group relative overflow-hidden border-border hover:border-primary/40 transition-all duration-200 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/10"
                 >
                   {/* Number watermark reinforces the sequence without extra chrome */}
                   <span className="absolute -right-3 -top-4 text-6xl font-serif font-bold text-primary/[0.07] select-none leading-none">
@@ -163,23 +155,22 @@ export default function AboutPage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+            </StaggerGrid>
           </div>
         </section>
 
         {/* Team */}
         <section className="py-20">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
+            <Reveal className="text-center mb-12">
               <Badge variant="secondary" className="rounded-full mb-4">Notre équipe</Badge>
               <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight">Des experts à votre service</h2>
-            </div>
-            <div ref={team.ref} className={`grid sm:grid-cols-3 gap-6 reveal ${team.inView ? 'reveal-visible' : ''}`}>
+            </Reveal>
+            <StaggerGrid className="grid sm:grid-cols-3 gap-6" step={80}>
               {TEAM.map((m, i) => (
                 <Card
                   key={i}
-                  style={{ transitionDelay: `${i * 80}ms` }}
-                  className="group border-border text-center overflow-hidden hover:border-primary/40 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/10"
+                  className="group border-border text-center overflow-hidden hover:border-primary/40 transition-all duration-200 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/10"
                 >
                   <CardContent className="p-8 relative">
                     <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -196,7 +187,7 @@ export default function AboutPage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+            </StaggerGrid>
           </div>
         </section>
 
@@ -209,7 +200,7 @@ export default function AboutPage() {
         />
 
         <section className="py-20 bg-primary/5 border-t border-border">
-          <div ref={cta.ref} className={`max-w-3xl mx-auto px-4 text-center reveal ${cta.inView ? 'reveal-visible' : ''}`}>
+          <Reveal className="max-w-3xl mx-auto px-4 text-center">
             <h2 className="font-serif text-3xl font-bold mb-4">Prêt à commander depuis la Chine ?</h2>
             <p className="text-muted-foreground mb-8">Testez gratuitement — 3 analyses offertes, sans compte requis.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -224,7 +215,7 @@ export default function AboutPage() {
                 <Link to="/contact">Nous contacter</Link>
               </Button>
             </div>
-          </div>
+          </Reveal>
         </section>
       </main>
 

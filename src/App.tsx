@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { MotionConfig } from 'framer-motion'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
@@ -281,15 +282,22 @@ function AppRoutes() {
 export function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="bizkey-theme">
-      <AuthProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <AppRoutes />
-          <WhatsAppChatWidget />
-          <ScrollTools />
-          <Toaster richColors position="top-right" />
-        </BrowserRouter>
-      </AuthProvider>
+      {/* reducedMotion="user" makes every Framer Motion component in the app
+          honour the OS setting without each one opting in individually —
+          it can't be done in CSS because Motion animates through inline
+          styles. The CSS @media block in index.css covers the pure-CSS
+          animations that this can't reach. */}
+      <MotionConfig reducedMotion="user">
+        <AuthProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <AppRoutes />
+            <WhatsAppChatWidget />
+            <ScrollTools />
+            <Toaster richColors position="top-right" />
+          </BrowserRouter>
+        </AuthProvider>
+      </MotionConfig>
     </ThemeProvider>
   )
 }

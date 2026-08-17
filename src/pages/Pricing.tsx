@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getPlans, getExchangeRates, getAssistantPlans } from '@/lib/db'
 import { formatCurrencyFromCny, DEFAULT_RATE_FALLBACK, CURRENCY_LABELS, type Currency } from '@/lib/currency'
 import type { Plan, AssistantPlan } from '@/lib/supabase'
-import { useInView } from '@/hooks/use-in-view'
+import { Reveal } from '@/components/motion/Reveal'
 
 type Product = 'sourcing' | 'assistant'
 
@@ -38,7 +38,6 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [assistantPlans, setAssistantPlans] = useState<AssistantPlan[]>([])
   const [loading, setLoading] = useState(true)
-  const hero = useInView<HTMLDivElement>()
 
   useEffect(() => {
     Promise.allSettled([
@@ -97,7 +96,7 @@ export default function PricingPage() {
         <ParticlesBackground density={45} />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
         <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-        <div ref={hero.ref} className={`relative max-w-6xl mx-auto w-full px-4 text-center space-y-3 reveal ${hero.inView ? 'reveal-visible' : ''}`}>
+        <Reveal className="relative max-w-6xl mx-auto w-full px-4 text-center space-y-3">
           <Badge variant="secondary" className="rounded-full mb-2">
             <Sparkles className="h-3.5 w-3.5 text-primary mr-1" />
             Tarifs transparents
@@ -108,7 +107,7 @@ export default function PricingPage() {
           <p className="text-muted-foreground max-w-xl mx-auto">
             Abonnement mensuel ou recharge à la carte — payez uniquement ce que vous utilisez.
           </p>
-        </div>
+        </Reveal>
       </section>
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 pb-12 space-y-10">

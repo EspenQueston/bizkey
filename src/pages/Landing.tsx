@@ -1,15 +1,8 @@
 import { useRef, useState } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { Link } from "react-router-dom"
 import { ArrowRight, ShoppingBag, Clock, Globe as Globe2, Wallet, Search, CreditCard, PackageCheck, MessageCircle, ShieldCheck, CircleCheck as CheckCircle2, Truck, Star, Send, Sparkles, Quote, ChevronRight, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { SiteNavbar } from "@/components/SiteNavbar"
@@ -17,7 +10,7 @@ import { ParticlesBackground } from "@/components/ParticlesBackground"
 import { FaqSection, type FaqItem } from "@/components/FaqSection"
 import { SiteFooter } from "@/components/SiteFooter"
 import { ProductChoiceDialog } from "@/components/ProductChoiceDialog"
-import { useInView } from "@/hooks/use-in-view"
+import { Reveal, StaggerGrid } from "@/components/motion/Reveal"
 
 // Twinkling accent dots — LIGHT MODE ONLY (wrapped in a dark:hidden parent
 // below). Dark mode keeps its previous aurora-only look completely
@@ -196,15 +189,13 @@ function Credibility() {
     { icon: Globe2, value: "8 pays desservis", label: "Sénégal, Côte d'Ivoire, Cameroun, Guinée, Mali, Togo, RDC, Bénin" },
     { icon: Wallet, value: "Mobile Money", label: "Orange Money, Wave, MTN, Moov acceptés" },
   ]
-  const { ref, inView } = useInView<HTMLDivElement>()
   return (
     <section className="py-16 border-y border-border bg-card/50 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={ref} className={`grid grid-cols-2 lg:grid-cols-4 gap-6 reveal ${inView ? 'reveal-visible' : ''}`}>
+        <StaggerGrid className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {items.map((item, i) => (
             <div
               key={i}
-              style={{ transitionDelay: `${i * 80}ms` }}
               className="tilt-card group relative p-6 rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 transition-colors"
             >
               <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary grid place-items-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/30 transition-all">
@@ -214,7 +205,7 @@ function Credibility() {
               <div className="text-sm text-muted-foreground mt-1 leading-snug">{item.label}</div>
             </div>
           ))}
-        </div>
+        </StaggerGrid>
       </div>
     </section>
   )
@@ -241,23 +232,21 @@ function ValueProps() {
       tag: "Livraison suivie",
     },
   ]
-  const { ref, inView } = useInView<HTMLDivElement>()
   return (
     <section id="valeur" className="py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mb-16">
+        <Reveal className="max-w-2xl mb-16">
           <Badge variant="secondary" className="rounded-full mb-4">Pourquoi BizKey</Badge>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
             Trois problèmes résolus, <span className="text-gradient">zéro galère.</span>
           </h2>
-        </div>
+        </Reveal>
 
-        <div ref={ref} className={`grid md:grid-cols-3 gap-6 reveal ${inView ? 'reveal-visible' : ''}`}>
+        <StaggerGrid className="grid md:grid-cols-3 gap-6" step={90}>
           {blocs.map((b, i) => (
             <Card
               key={i}
-              style={{ transitionDelay: `${i * 100}ms` }}
-              className="tilt-card group relative overflow-hidden border-border hover:border-primary/40 transition-colors duration-500 hover:shadow-2xl hover:shadow-primary/10"
+              className="tilt-card group relative overflow-hidden border-border hover:border-primary/40 transition-colors duration-200 hover:shadow-2xl hover:shadow-primary/10"
             >
               <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-primary via-chart-2 to-chart-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               <CardContent className="p-8">
@@ -279,7 +268,7 @@ function ValueProps() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </StaggerGrid>
       </div>
     </section>
   )
@@ -306,26 +295,24 @@ function HowItWorks() {
       text: "On gère tout : achat, contrôle qualité, expédition, suivi et livraison jusqu'à toi. Tu reçois des updates réguliers et ta commande arrive à ton adresse en Afrique.",
     },
   ]
-  const { ref, inView } = useInView<HTMLDivElement>()
   return (
     <section id="process" className="py-24 bg-secondary/40 relative overflow-hidden">
       <div className="absolute inset-0 bg-grid opacity-30" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="max-w-2xl mb-16">
+        <Reveal className="max-w-2xl mb-16">
           <Badge variant="secondary" className="rounded-full bg-card mb-4">Comment ça marche</Badge>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
             Trois étapes. <span className="text-gradient">C'est tout.</span>
           </h2>
-        </div>
+        </Reveal>
 
         <div className="relative">
           <div className="hidden lg:block absolute top-24 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <div ref={ref} className={`grid lg:grid-cols-3 gap-6 lg:gap-8 relative reveal ${inView ? 'reveal-visible' : ''}`}>
+          <StaggerGrid className="grid lg:grid-cols-3 gap-6 lg:gap-8 relative" step={90}>
             {steps.map((s, i) => (
               <div
                 key={i}
-                style={{ transitionDelay: `${i * 100}ms` }}
-                className="tilt-card glass-card relative p-8 rounded-3xl border border-border hover:border-primary/50 transition-colors duration-300 hover:shadow-2xl hover:shadow-primary/10 group"
+                className="tilt-card glass-card relative p-8 rounded-3xl border border-border hover:border-primary/50 transition-colors duration-200 hover:shadow-2xl hover:shadow-primary/10 group"
               >
                 <div className="absolute -top-5 left-8">
                   <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-lg shadow-primary/30 font-serif font-bold text-lg">
@@ -348,7 +335,7 @@ function HowItWorks() {
                 )}
               </div>
             ))}
-          </div>
+          </StaggerGrid>
         </div>
       </div>
     </section>
@@ -465,7 +452,7 @@ function Testimonials() {
       {/* Auto-scrolling row, cards flowing in from the right — pauses on
           hover so a review can actually be read, and each card also lifts
           individually on hover. */}
-      <div className="relative">
+      <div className="relative marquee-viewport">
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 z-10 bg-gradient-to-r from-background to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 z-10 bg-gradient-to-l from-background to-transparent" />
 

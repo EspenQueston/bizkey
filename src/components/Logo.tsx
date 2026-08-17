@@ -57,21 +57,35 @@ export function Logo({
         }`}
       >
         {/* Light mode uses the newer glossy mark (logo2.png); dark mode keeps
-            the original monogram — pure CSS swap, no theme flash. */}
-        <img src="/brand/logo2.png" alt="BizKey" className="h-full w-full object-contain drop-shadow-sm dark:hidden" />
-        <img src="/brand/bizkey-monogram.png" alt="BizKey" className="hidden h-full w-full object-contain drop-shadow-sm dark:block" />
+            the original monogram — pure CSS swap, no theme flash.
+            width/height are the assets' real pixel dimensions (1254², 1:1):
+            CSS still controls the rendered size, but declaring them lets the
+            browser reserve the box before the bytes arrive instead of
+            reflowing everything around it on load. */}
+        <img src="/brand/logo2.png" alt="BizKey" width={1254} height={1254} className="h-full w-full object-contain drop-shadow-sm dark:hidden" />
+        <img src="/brand/bizkey-monogram.png" alt="BizKey" width={1254} height={1254} className="hidden h-full w-full object-contain drop-shadow-sm dark:block" />
       </div>
     ) : (
+      // aspect-[2/1] pairs with the h-full/w-auto sizing to hold the lockup's
+      // horizontal space from first paint. Without it the width starts at 0
+      // and snaps to the image's natural ratio once decoded, shoving the nav
+      // items beside it sideways — the most visible layout shift on the site,
+      // since the logo sits in the header of every page. 1774×887 is the
+      // assets' real size, exactly 2:1.
       <span className={`inline-flex items-center ${LOCKUP_HEIGHT_MAP[size]}`}>
         <img
           src="/brand/image.png"
           alt="BizKey — New Vision"
-          className={`h-full w-auto object-contain dark:hidden ${animated ? 'transition-transform duration-300 group-hover:scale-105' : ''}`}
+          width={1774}
+          height={887}
+          className={`h-full w-auto aspect-[2/1] object-contain dark:hidden ${animated ? 'transition-transform duration-300 group-hover:scale-105' : ''}`}
         />
         <img
           src="/brand/new-logo.png"
           alt="BizKey — New Vision"
-          className={`hidden h-full w-auto object-contain dark:block ${animated ? 'transition-transform duration-300 group-hover:scale-105' : ''}`}
+          width={1774}
+          height={887}
+          className={`hidden h-full w-auto aspect-[2/1] object-contain dark:block ${animated ? 'transition-transform duration-300 group-hover:scale-105' : ''}`}
         />
       </span>
     )

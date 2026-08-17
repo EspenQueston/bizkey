@@ -10,7 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { useInView } from '@/hooks/use-in-view'
+import { Reveal } from '@/components/motion/Reveal'
 
 export interface FaqItem {
   q: string
@@ -40,7 +40,6 @@ export function FaqSection({
 }: Props) {
   const [query, setQuery] = useState('')
   const enableSearch = searchable ?? items.length > 5
-  const { ref, inView } = useInView<HTMLDivElement>()
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -52,7 +51,7 @@ export function FaqSection({
 
   return (
     <section id="faq" className={`py-24 bg-secondary/40 ${className}`}>
-      <div ref={ref} className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 reveal ${inView ? 'reveal-visible' : ''}`}>
+      <Reveal className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <Badge variant="secondary" className="rounded-full bg-card mb-4 gap-1.5">
             <HelpCircle className="h-3.5 w-3.5 text-primary" />
@@ -131,7 +130,7 @@ export function FaqSection({
             </Button>
           </div>
         )}
-      </div>
+      </Reveal>
     </section>
   )
 }

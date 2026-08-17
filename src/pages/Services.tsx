@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { ParticlesBackground } from '@/components/ParticlesBackground'
 import { FaqSection, type FaqItem } from '@/components/FaqSection'
-import { useInView } from '@/hooks/use-in-view'
+import { Reveal } from '@/components/motion/Reveal'
 
 const SERVICES_FAQ: FaqItem[] = [
   {
@@ -111,14 +111,10 @@ type Service = (typeof SERVICES)[number]
  * keeps a long list from reading as a monotonous stack.
  */
 function ServiceRow({ service, index }: { service: Service; index: number }) {
-  const { ref, inView } = useInView<HTMLDivElement>()
   const flipped = index % 2 === 1
 
   return (
-    <div
-      ref={ref}
-      className={`grid lg:grid-cols-2 gap-8 lg:gap-14 items-center reveal ${inView ? 'reveal-visible' : ''}`}
-    >
+    <Reveal className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
       {/* Visual panel */}
       <div className={flipped ? 'lg:order-2' : ''}>
         <div className={`relative rounded-3xl border border-border bg-gradient-to-br ${service.color} p-8 sm:p-10 overflow-hidden group transition-all duration-200 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1`}>
@@ -162,14 +158,11 @@ function ServiceRow({ service, index }: { service: Service; index: number }) {
           </Link>
         </Button>
       </div>
-    </div>
+    </Reveal>
   )
 }
 
 export default function ServicesPage() {
-  const hero = useInView<HTMLDivElement>()
-  const cta = useInView<HTMLDivElement>()
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteNavbar />
@@ -180,7 +173,7 @@ export default function ServicesPage() {
           <ParticlesBackground density={45} />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
           <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-          <div ref={hero.ref} className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center reveal ${hero.inView ? 'reveal-visible' : ''}`}>
+          <Reveal className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
             <Badge variant="secondary" className="rounded-full mb-6">
               <Search className="h-3.5 w-3.5 text-primary mr-1" />
               Nos services
@@ -192,7 +185,7 @@ export default function ServicesPage() {
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               De la recherche du produit jusqu'à la livraison à votre porte — BizKey couvre toute la chaîne du commerce Chine-Afrique.
             </p>
-          </div>
+          </Reveal>
         </section>
 
         {/* Services — alternating showcase, each row revealing on scroll */}
@@ -213,7 +206,7 @@ export default function ServicesPage() {
 
         {/* CTA */}
         <section className="py-20 bg-primary/5 border-t border-border">
-          <div ref={cta.ref} className={`max-w-3xl mx-auto px-4 text-center reveal ${cta.inView ? 'reveal-visible' : ''}`}>
+          <Reveal className="max-w-3xl mx-auto px-4 text-center">
             <h2 className="font-serif text-3xl font-bold mb-4">Commencez dès maintenant — c'est gratuit</h2>
             <p className="text-muted-foreground mb-8">3 analyses gratuites sans inscription requise. Testez la puissance de BizKey.</p>
             <Button asChild size="lg" className="rounded-full gap-2 shadow-xl shadow-primary/25">
@@ -223,7 +216,7 @@ export default function ServicesPage() {
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
-          </div>
+          </Reveal>
         </section>
       </main>
 
