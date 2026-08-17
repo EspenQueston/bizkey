@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import {
   getAssistantClients, createAssistantClient, updateAssistantClient, deleteAssistantClient,
-  getAllAssistantPlans, getWhatsAppNumbers,
+  getAllAssistantPlans, getWhatsAppNumbers, syncSubscriptionStatus,
 } from '@/lib/db'
 import { toast } from 'sonner'
 import type { AssistantClient, AssistantClientStatus, AssistantPlan, WhatsAppNumber } from '@/lib/supabase'
@@ -30,6 +30,7 @@ const STATUS_META: Record<AssistantClientStatus, { label: string; color: string 
   active:    { label: 'Actif',     color: 'bg-primary/15 text-primary' },
   suspended: { label: 'Suspendu',  color: 'bg-amber-500/15 text-amber-600' },
   cancelled: { label: 'Résilié',   color: 'bg-destructive/15 text-destructive' },
+  expired:   { label: 'Expiré',    color: 'bg-secondary text-muted-foreground' },
 }
 
 export default function AssistantClientsPage() {
@@ -47,11 +48,16 @@ export default function AssistantClientsPage() {
   const [confirmDelete, setConfirmDelete] = useState<AssistantClient | null>(null)
 
   useEffect(() => {
-    Promise.allSettled([getAssistantClients(), getAllAssistantPlans(), getWhatsAppNumbers()]).then(([c, p, n]) => {
-      if (c.status === 'fulfilled') setClients(c.value)
-      if (p.status === 'fulfilled') setPlans(p.value)
-      if (n.status === 'fulfilled') setNumbers(n.value)
-    }).finally(() => setLoading(false))
+    // Best-effort, awaited before the list loads — a business whose period
+    // lapsed since the last hourly sweep should show "Expiré" the moment an
+    // admin opens this page, not whatever stale status it had before.
+    syncSubscriptionStatus().catch(err => console.warn('syncSubscriptionStatus failed:', err)).finally(() => {
+      Promise.allSettled([getAssistantClients(), getAllAssistantPlans(), getWhatsAppNumbers()]).then(([c, p, n]) => {
+        if (c.status === 'fulfilled') setClients(c.value)
+        if (p.status === 'fulfilled') setPlans(p.value)
+        if (n.status === 'fulfilled') setNumbers(n.value)
+      }).finally(() => setLoading(false))
+    })
   }, [])
 
   function openCreate() {

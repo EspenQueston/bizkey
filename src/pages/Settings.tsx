@@ -58,6 +58,7 @@ const ASSISTANT_STATUS_META: Record<AssistantClientStatus, { label: string; colo
   active: { label: 'Actif', color: 'text-primary border-primary/30' },
   suspended: { label: 'Suspendu', color: 'text-amber-600 border-amber-500/30' },
   cancelled: { label: 'Résilié', color: 'text-destructive border-destructive/30' },
+  expired: { label: 'Expiré', color: 'text-muted-foreground border-border' },
 }
 
 export default function SettingsPage() {

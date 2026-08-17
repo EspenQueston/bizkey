@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { getFunctionErrorMessage } from '@/lib/api'
 import {
   getAllPlans, getAllAssistantPlans, getUserSubscription, getMyAssistantClient,
-  adminAssignSourcingPlan, adminAssignAssistantPlan,
+  adminAssignSourcingPlan, adminAssignAssistantPlan, syncSubscriptionStatus,
 } from '@/lib/db'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -48,6 +48,10 @@ export default function AdminUsers() {
   const [applyingAssistant, setApplyingAssistant] = useState(false)
 
   useEffect(() => {
+    // Best-effort — catches up anyone whose subscription/assistant period
+    // lapsed since the last sweep, so the plan state this page reads for
+    // each user (once opened) is never reading a stale "Actif" label.
+    syncSubscriptionStatus().catch(err => console.warn('syncSubscriptionStatus failed:', err))
     loadUsers()
     Promise.allSettled([getAllPlans(), getAllAssistantPlans()]).then(([p, ap]) => {
       if (p.status === 'fulfilled') setSourcingPlans(p.value.filter(x => x.is_active))

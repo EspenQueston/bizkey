@@ -13,6 +13,7 @@ const STATUS_META: Record<AssistantClientStatus, { label: string; color: string 
   active:    { label: 'Actif',     color: 'bg-primary/15 text-primary' },
   suspended: { label: 'Suspendu',  color: 'bg-amber-500/15 text-amber-600' },
   cancelled: { label: 'Résilié',   color: 'bg-destructive/15 text-destructive' },
+  expired:   { label: 'Expiré',    color: 'bg-secondary text-muted-foreground' },
 }
 
 const TX_STATUS_META: Record<PaymentTransaction['status'], { label: string; color: string }> = {

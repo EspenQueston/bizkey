@@ -517,7 +517,7 @@ export interface AssistantPlan {
   created_at: string
 }
 
-export type AssistantClientStatus = 'trial' | 'active' | 'suspended' | 'cancelled'
+export type AssistantClientStatus = 'trial' | 'active' | 'suspended' | 'cancelled' | 'expired'
 
 export type AssistantTone = 'professional' | 'friendly' | 'commercial'
 
@@ -540,6 +540,25 @@ export interface AssistantClient {
   current_period_end: string | null
   created_at: string
   updated_at: string
+}
+
+/**
+ * `status === 'active'` alone isn't enough to know a subscription is
+ * genuinely current — the sync_subscription_status sweep that flips a
+ * lapsed client to 'expired' runs hourly (and on login), so there's always
+ * a window where the stored status still says 'active' after
+ * current_period_end has actually passed. Re-checking the timestamp here
+ * closes that window without depending on the sweep having run recently —
+ * the same belt-and-suspenders pattern consume_basic_credit/
+ * consume_advanced_credit already use on the Sourcing side (they don't
+ * trust subscriptions.status alone either). Used by both the route guards
+ * that gate access and the sidebar nav that decides whether to show the
+ * Assistant tab at all, so the two never disagree.
+ */
+export function isAssistantSubscriptionLive(client: AssistantClient | null): boolean {
+  if (client?.status !== 'active') return false
+  if (!client.current_period_end) return true
+  return new Date(client.current_period_end) > new Date()
 }
 
 export const ERP_COUNTRY_INFO: Record<ERPCountry, {

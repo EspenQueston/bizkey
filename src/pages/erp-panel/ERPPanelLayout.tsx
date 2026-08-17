@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getAllAssistantPlans } from '@/lib/db'
+import { isAssistantSubscriptionLive } from '@/lib/supabase'
 import type { AssistantPlan } from '@/lib/supabase'
 
 interface NavItem {
@@ -232,9 +233,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   }
 
   const isAdmin = profile?.is_admin === true
-  // Portal access requires an *activated* plan — trial/suspended/cancelled
-  // business owners don't get the Assistant nav, matching AssistantAccessRoute.
-  const hasActiveAssistantClient = assistantClient?.status === 'active'
+  // Portal access requires an *activated, currently-in-period* plan —
+  // trial/suspended/cancelled/expired business owners don't get the
+  // Assistant nav, matching AssistantAccessRoute exactly.
+  const hasActiveAssistantClient = isAssistantSubscriptionLive(assistantClient)
   const showAssistantTab = isAdmin || hasActiveAssistantClient
 
   // BizKey Sourcing stays open to every signed-up user (3 free credits on

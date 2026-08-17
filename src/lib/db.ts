@@ -601,17 +601,33 @@ export async function deletePlan(id: string) {
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
 
+/** The user's most recent subscription regardless of status — not just the active one, so an expired/cancelled plan still displays with its real status badge instead of silently vanishing. */
 export async function getUserSubscription(userId: string): Promise<Subscription | null> {
   const { data, error } = await supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId)
-    .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (error) throw error
   return data as Subscription | null
+}
+
+/**
+ * Corrects any subscription/assistant_client rows whose stored status has
+ * drifted behind their real, already-passed expiry timestamp — see the
+ * subscription_time_sync migration for why this exists (nothing previously
+ * flipped status when a billing period simply ran out). Idempotent and safe
+ * to call anywhere: it can only ever catch up stale rows to a truth that's
+ * already been reached, never expire something early. Pass a userId to
+ * scope the sweep to one account (cheap, called on login); omit it for a
+ * full sweep (used by admin list pages — the same sweep also runs hourly
+ * via pg_cron regardless of whether anyone calls this from the client).
+ */
+export async function syncSubscriptionStatus(userId?: string): Promise<void> {
+  const { error } = await supabase.rpc('sync_subscription_status', { p_user_id: userId ?? null })
+  if (error) throw error
 }
 
 export async function createSubscription(sub: Omit<Subscription, 'id' | 'created_at'>): Promise<Subscription> {

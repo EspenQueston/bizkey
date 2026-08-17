@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { WhatsAppChatWidget } from '@/components/WhatsAppChatWidget'
 import { ScrollToTop } from '@/components/ScrollToTop'
 import { ScrollTools } from '@/components/ScrollTools'
+import { isAssistantSubscriptionLive } from '@/lib/supabase'
 
 // Pages
 import LandingPage from '@/pages/Landing'
@@ -124,7 +125,7 @@ function AssistantAccessRoute({ children }: { children: React.ReactNode }) {
   )
 
   if (!user) return <Navigate to="/login" replace />
-  if (!profile?.is_admin && assistantClient?.status !== 'active') return <Navigate to="/app" replace />
+  if (!profile?.is_admin && !isAssistantSubscriptionLive(assistantClient)) return <Navigate to="/app" replace />
 
   return <>{children}</>
 }
@@ -151,7 +152,7 @@ function AssistantOwnerRoute({ children }: { children: React.ReactNode }) {
   )
 
   if (!user) return <Navigate to="/login" replace />
-  if (assistantClient?.status !== 'active') return <Navigate to="/app" replace />
+  if (!isAssistantSubscriptionLive(assistantClient)) return <Navigate to="/app" replace />
 
   return <>{children}</>
 }

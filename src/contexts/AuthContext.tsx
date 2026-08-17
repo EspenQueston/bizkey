@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Database, AssistantClient } from '@/lib/supabase'
+import { syncSubscriptionStatus } from '@/lib/db'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -80,6 +81,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(initialSession?.user ?? null)
 
         if (initialSession?.user) {
+          // Best-effort — a returning user whose subscription/assistant
+          // period lapsed while they were away gets that corrected before
+          // profile/assistantClient load, so the sidebar badge and status
+          // fields they're about to see aren't reading stale data. Never
+          // blocks sign-in if it fails; the hourly cron sweep and the
+          // Assistant route guards' own time check are the real backstops.
+          try {
+            await syncSubscriptionStatus(initialSession.user.id)
+          } catch (err) {
+            console.warn('syncSubscriptionStatus failed:', err)
+          }
+
           // Both must resolve before `loading` flips to false — route guards
           // key off assistantClient too, and a premature false would redirect
           // a real business owner away before their subscription loads.
@@ -108,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (newSession?.user) {
           // Load profile in background — don't block navigation
+          syncSubscriptionStatus(newSession.user.id).catch(err => console.warn('syncSubscriptionStatus failed:', err))
           loadProfile(newSession.user.id)
           loadAssistantClient(newSession.user.id)
         } else {
