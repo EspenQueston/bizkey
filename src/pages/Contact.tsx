@@ -24,6 +24,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { ParticlesBackground } from '@/components/ParticlesBackground'
 import { FaqSection, type FaqItem } from '@/components/FaqSection'
+import { useInView } from '@/hooks/use-in-view'
 
 const CONTACT_FAQ: FaqItem[] = [
   {
@@ -128,6 +129,8 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [errors, setErrors] = useState<Partial<FormState>>({})
+  const hero = useInView<HTMLDivElement>()
+  const content = useInView<HTMLDivElement>()
 
   function update(field: keyof FormState) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -196,7 +199,7 @@ export default function ContactPage() {
           <ParticlesBackground density={40} />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
           <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
+          <div ref={hero.ref} className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center reveal ${hero.inView ? 'reveal-visible' : ''}`}>
             <Badge variant="secondary" className="rounded-full mb-6">
               <Send className="h-3.5 w-3.5 text-primary mr-1" />
               Contact
@@ -213,7 +216,7 @@ export default function ContactPage() {
         {/* Content */}
         <section className="py-10 pb-24">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-5 gap-10 items-start">
+            <div ref={content.ref} className={`grid md:grid-cols-5 gap-10 items-start reveal ${content.inView ? 'reveal-visible' : ''}`}>
               {/* Left — Contact info */}
               <div className="md:col-span-2 space-y-6">
                 <div>

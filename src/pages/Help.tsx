@@ -6,10 +6,12 @@ import { ParticlesBackground } from '@/components/ParticlesBackground'
 import { FaqSection, type FaqItem } from '@/components/FaqSection'
 import { SiteFooter } from '@/components/SiteFooter'
 import { getPublicKbArticles } from '@/lib/db'
+import { useInView } from '@/hooks/use-in-view'
 
 export default function HelpPage() {
   const [items, setItems] = useState<FaqItem[]>([])
   const [loading, setLoading] = useState(true)
+  const hero = useInView<HTMLDivElement>()
 
   useEffect(() => {
     getPublicKbArticles()
@@ -26,7 +28,7 @@ export default function HelpPage() {
         <ParticlesBackground density={45} />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
         <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-        <div className="relative max-w-4xl mx-auto w-full px-4 text-center space-y-3">
+        <div ref={hero.ref} className={`relative max-w-4xl mx-auto w-full px-4 text-center space-y-3 reveal ${hero.inView ? 'reveal-visible' : ''}`}>
           <Badge variant="secondary" className="rounded-full mb-2">
             <Sparkles className="h-3.5 w-3.5 text-primary mr-1" />
             Centre d'aide

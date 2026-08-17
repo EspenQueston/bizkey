@@ -331,14 +331,29 @@
   .tilt-card {
     transform-style: preserve-3d;
     perspective: 1000px;
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
   }
   .tilt-card:hover {
     transform: rotateX(4deg) rotateY(-4deg) translateY(-4px) scale(1.015);
   }
 
   /* ── Gradient text ──────────────────────────────────────────────────────── */
+  /* Light mode: bronze-gold → navy. Starting from --chart-3 rather than the
+     raw --primary is deliberate — pure gold (--primary, #e3b83e) directly on
+     this cream background measures ~1.8:1 contrast, well under WCAG AA even
+     for large bold text (3:1 minimum); --chart-3 (#7c7550) measures ~4.6:1,
+     clearing AA with room to spare. Reads as more sophisticated than pure
+     gold besides, and stays inside the existing token palette. */
   .text-gradient {
+    background: linear-gradient(90deg, var(--chart-3), var(--foreground) 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Dark mode keeps its original three-stop gold/bronze/blue formula
+     untouched — this page never had the light-mode complaint, so its exact
+     prior appearance is restated here rather than inherited. */
+  .dark .text-gradient {
     background: linear-gradient(90deg, var(--primary), var(--chart-2) 45%, var(--chart-4));
     -webkit-background-clip: text;
     background-clip: text;

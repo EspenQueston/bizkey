@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Search, BarChart3, Users, Truck, Sparkles, CheckCircle, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { ParticlesBackground } from '@/components/ParticlesBackground'
 import { FaqSection, type FaqItem } from '@/components/FaqSection'
@@ -122,7 +121,7 @@ function ServiceRow({ service, index }: { service: Service; index: number }) {
     >
       {/* Visual panel */}
       <div className={flipped ? 'lg:order-2' : ''}>
-        <div className={`relative rounded-3xl border border-border bg-gradient-to-br ${service.color} p-8 sm:p-10 overflow-hidden group`}>
+        <div className={`relative rounded-3xl border border-border bg-gradient-to-br ${service.color} p-8 sm:p-10 overflow-hidden group transition-all duration-200 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1`}>
           <div className="absolute inset-0 bg-grid opacity-30 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
           <div className="absolute -right-8 -top-8 text-[7rem] font-serif font-bold text-primary/10 select-none leading-none">
             {service.id}
@@ -168,6 +167,9 @@ function ServiceRow({ service, index }: { service: Service; index: number }) {
 }
 
 export default function ServicesPage() {
+  const hero = useInView<HTMLDivElement>()
+  const cta = useInView<HTMLDivElement>()
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteNavbar />
@@ -178,7 +180,7 @@ export default function ServicesPage() {
           <ParticlesBackground density={45} />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
           <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
+          <div ref={hero.ref} className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center reveal ${hero.inView ? 'reveal-visible' : ''}`}>
             <Badge variant="secondary" className="rounded-full mb-6">
               <Search className="h-3.5 w-3.5 text-primary mr-1" />
               Nos services
@@ -211,7 +213,7 @@ export default function ServicesPage() {
 
         {/* CTA */}
         <section className="py-20 bg-primary/5 border-t border-border">
-          <div className="max-w-3xl mx-auto px-4 text-center">
+          <div ref={cta.ref} className={`max-w-3xl mx-auto px-4 text-center reveal ${cta.inView ? 'reveal-visible' : ''}`}>
             <h2 className="font-serif text-3xl font-bold mb-4">Commencez dès maintenant — c'est gratuit</h2>
             <p className="text-muted-foreground mb-8">3 analyses gratuites sans inscription requise. Testez la puissance de BizKey.</p>
             <Button asChild size="lg" className="rounded-full gap-2 shadow-xl shadow-primary/25">

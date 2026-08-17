@@ -4,6 +4,8 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
 import { WhatsAppChatWidget } from '@/components/WhatsAppChatWidget'
+import { ScrollToTop } from '@/components/ScrollToTop'
+import { ScrollTools } from '@/components/ScrollTools'
 
 // Pages
 import LandingPage from '@/pages/Landing'
@@ -280,8 +282,10 @@ export function App() {
     <ThemeProvider defaultTheme="light" storageKey="bizkey-theme">
       <AuthProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <AppRoutes />
           <WhatsAppChatWidget />
+          <ScrollTools />
           <Toaster richColors position="top-right" />
         </BrowserRouter>
       </AuthProvider>

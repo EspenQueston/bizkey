@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { useInView } from '@/hooks/use-in-view'
 
 export interface FaqItem {
   q: string
@@ -39,6 +40,7 @@ export function FaqSection({
 }: Props) {
   const [query, setQuery] = useState('')
   const enableSearch = searchable ?? items.length > 5
+  const { ref, inView } = useInView<HTMLDivElement>()
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -50,7 +52,7 @@ export function FaqSection({
 
   return (
     <section id="faq" className={`py-24 bg-secondary/40 ${className}`}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div ref={ref} className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 reveal ${inView ? 'reveal-visible' : ''}`}>
         <div className="text-center mb-10">
           <Badge variant="secondary" className="rounded-full bg-card mb-4 gap-1.5">
             <HelpCircle className="h-3.5 w-3.5 text-primary" />
@@ -95,7 +97,7 @@ export function FaqSection({
               <AccordionItem
                 key={it.q}
                 value={`faq-${i}`}
-                className="rounded-2xl border border-border bg-card px-5 sm:px-6 transition-shadow data-[state=open]:border-primary/40 data-[state=open]:shadow-lg data-[state=open]:shadow-primary/5"
+                className="rounded-2xl border border-border bg-card px-5 sm:px-6 transition-all duration-200 hover:border-primary/30 data-[state=open]:border-primary/40 data-[state=open]:shadow-lg data-[state=open]:shadow-primary/5"
               >
                 <AccordionTrigger className="text-left font-serif text-base sm:text-lg font-semibold hover:no-underline py-5 gap-3">
                   <span className="flex items-start gap-3">

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { Eye, EyeOff, LogIn, UserPlus, Sparkles, ArrowLeft, Check, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -94,7 +95,12 @@ export default function LoginPage() {
         <ArrowLeft className="h-4 w-4" />
       </Link>
 
-      <div className="w-full max-w-md relative">
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="w-full max-w-md relative"
+      >
         <div className="mb-5 flex items-center justify-center gap-2">
           <Logo variant="lockup-tagline" size="lg" asLink={false} />
           <Badge variant="secondary" className="rounded-full px-3 py-0.5 ml-1 text-xs hidden sm:inline-flex">
@@ -305,7 +311,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }

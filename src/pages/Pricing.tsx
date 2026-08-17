@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getPlans, getExchangeRates, getAssistantPlans } from '@/lib/db'
 import { formatCurrencyFromCny, DEFAULT_RATE_FALLBACK, CURRENCY_LABELS, type Currency } from '@/lib/currency'
 import type { Plan, AssistantPlan } from '@/lib/supabase'
+import { useInView } from '@/hooks/use-in-view'
 
 type Product = 'sourcing' | 'assistant'
 
@@ -37,6 +38,7 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [assistantPlans, setAssistantPlans] = useState<AssistantPlan[]>([])
   const [loading, setLoading] = useState(true)
+  const hero = useInView<HTMLDivElement>()
 
   useEffect(() => {
     Promise.allSettled([
@@ -95,7 +97,7 @@ export default function PricingPage() {
         <ParticlesBackground density={45} />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
         <div className="absolute inset-0 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-        <div className="relative max-w-6xl mx-auto w-full px-4 text-center space-y-3">
+        <div ref={hero.ref} className={`relative max-w-6xl mx-auto w-full px-4 text-center space-y-3 reveal ${hero.inView ? 'reveal-visible' : ''}`}>
           <Badge variant="secondary" className="rounded-full mb-2">
             <Sparkles className="h-3.5 w-3.5 text-primary mr-1" />
             Tarifs transparents
@@ -264,10 +266,15 @@ export default function PricingPage() {
                       whileHover={{ y: -4 }}
                     >
                       <Card
-                        className={`relative border cursor-pointer transition-shadow duration-300 h-full ${
+                        role="button"
+                        tabIndex={0}
+                        className={`relative border cursor-pointer transition-shadow duration-300 h-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                           popular ? 'border-primary/40 ring-1 ring-primary/20 shadow-md shadow-primary/10' : 'hover:shadow-md'
                         }`}
                         onClick={() => handleSelectPlan(pack.name)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectPlan(pack.name) }
+                        }}
                       >
                         {popular && (
                           <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
