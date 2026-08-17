@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   TrendingUp, Users, CreditCard, Zap, ShoppingCart, Truck,
-  Tag, Settings, BarChart3, Activity, DollarSign, Search,
+  Tag, BarChart3, Activity, DollarSign, Search,
   Loader2, ArrowUpRight, Webhook, RefreshCw, Bell,
   CheckCircle2, AlertCircle, ChevronRight,
 } from 'lucide-react'
@@ -14,10 +14,10 @@ import { ChartEmpty } from '@/components/admin/ChartEmpty'
 import { DASHBOARD_ACCENTS, type AccentName } from '@/lib/accentPalette'
 import { useAuth } from '@/contexts/AuthContext'
 import {
-  getAdminStats, getAllPlans, getAllUsers, getAllTransactions,
+  getAdminStats, getAllUsers, getAllTransactions,
   getAllPromoCodes, getERPOrders, getERPDeliveries,
 } from '@/lib/db'
-import type { Plan, PaymentTransaction, PromoCode } from '@/lib/supabase'
+import type { PaymentTransaction, PromoCode } from '@/lib/supabase'
 import type { ERPOrder, ERPDelivery } from '@/lib/supabase'
 
 // ─── Metric card ─────────────────────────────────────────────────────────────
@@ -95,7 +95,6 @@ export default function ERPPanelDashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [adminStats, setAdminStats] = useState<Awaited<ReturnType<typeof getAdminStats>> | null>(null)
-  const [plans, setPlans] = useState<Plan[]>([])
   const [users, setUsers] = useState<{ id: string; email: string; name: string | null; is_admin: boolean; created_at: string }[]>([])
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
   const [promos, setPromos] = useState<PromoCode[]>([])
@@ -107,12 +106,11 @@ export default function ERPPanelDashboard() {
     setRefreshing(true)
     await Promise.allSettled([
       getAdminStats().then(setAdminStats).catch(console.warn),
-      getAllPlans().then(setPlans).catch(console.warn),
       getAllUsers().then(v => setUsers(v as typeof users)).catch(console.warn),
       getAllTransactions().then(setTransactions).catch(console.warn),
       getAllPromoCodes().then(setPromos).catch(console.warn),
-      getERPOrders(user.id).then(setOrders).catch(console.warn),
-      getERPDeliveries(user.id).then(setDeliveries).catch(console.warn),
+      getERPOrders().then(setOrders).catch(console.warn),
+      getERPDeliveries().then(setDeliveries).catch(console.warn),
     ])
     setLoading(false)
     setRefreshing(false)

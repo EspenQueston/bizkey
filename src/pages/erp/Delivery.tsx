@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   Plus, X, Save, Truck, Package, CheckCircle2,
-  Clock, MapPin, Smartphone, AlertTriangle
+  Clock, MapPin, Smartphone, AlertTriangle, Edit2, Trash2, Undo2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
+import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
-import { getERPDeliveries, getERPOrders, createERPDelivery, updateERPDelivery } from '@/lib/db'
+import { getERPDeliveries, getERPOrders, createERPDelivery, updateERPDelivery, deleteERPDelivery } from '@/lib/db'
 import type { ERPDelivery, ERPOrder, ERPCountry, ERPDeliveryStatus } from '@/lib/supabase'
 import { ERP_COUNTRY_INFO } from '@/lib/supabase'
 import { getPaymentMethodLabel } from '@/lib/paymentMethods'
@@ -31,7 +33,7 @@ const CARRIERS = [
   'China Post EMS', 'SF International', 'YTO Express',
 ]
 
-const EMPTY: Omit<ERPDelivery, 'id' | 'user_id' | 'created_at'> = {
+const EMPTY: Omit<ERPDelivery, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
   order_id: '', tracking_number: null, carrier: null, status: 'pending',
   origin_country: 'China', destination_country: 'benin', destination_city: null,
   estimated_days: null, dispatched_at: null, delivered_at: null, notes: null,
@@ -43,27 +45,62 @@ export default function DeliveryPage() {
   const [orders, setOrders] = useState<ERPOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<ERPDelivery | null>(null)
   const [form, setForm] = useState({ ...EMPTY })
   const [saving, setSaving] = useState(false)
   const [countryFilter, setCountryFilter] = useState<string>('all')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<ERPDelivery | null>(null)
 
   useEffect(() => {
     if (!user) return
-    Promise.allSettled([getERPDeliveries(user.id), getERPOrders(user.id)]).then(([d, o]) => {
+    Promise.allSettled([getERPDeliveries(), getERPOrders()]).then(([d, o]) => {
       if (d.status === 'fulfilled') setDeliveries(d.value)
       if (o.status === 'fulfilled') setOrders(o.value)
     }).finally(() => setLoading(false))
   }, [user])
 
+  function openCreate() {
+    setEditing(null)
+    setForm({ ...EMPTY })
+    setShowModal(true)
+  }
+
+  function openEdit(delivery: ERPDelivery) {
+    setEditing(delivery)
+    setForm({
+      order_id: delivery.order_id, tracking_number: delivery.tracking_number, carrier: delivery.carrier,
+      status: delivery.status, origin_country: delivery.origin_country, destination_country: delivery.destination_country,
+      destination_city: delivery.destination_city, estimated_days: delivery.estimated_days,
+      dispatched_at: delivery.dispatched_at, delivered_at: delivery.delivered_at, notes: delivery.notes,
+    })
+    setShowModal(true)
+  }
+
   async function handleSave() {
     if (!user) return
     setSaving(true)
     try {
-      const created = await createERPDelivery(user.id, form)
-      setDeliveries(prev => [created, ...prev])
+      if (editing) {
+        // Tracking/carrier/city/delay/notes only — order_id and status change
+        // through dedicated actions below, not this form, once a delivery exists.
+        const updated = await updateERPDelivery(editing.id, {
+          tracking_number: form.tracking_number, carrier: form.carrier,
+          destination_city: form.destination_city, estimated_days: form.estimated_days,
+          notes: form.notes,
+        })
+        setDeliveries(prev => prev.map(d => d.id === editing.id ? updated : d))
+        toast.success('Livraison mise à jour')
+      } else {
+        const created = await createERPDelivery(user.id, form)
+        setDeliveries(prev => [created, ...prev])
+        toast.success('Livraison créée')
+      }
       setShowModal(false)
-    } catch (err) { console.error(err) }
-    finally { setSaving(false) }
+    } catch (err) {
+      console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de l’enregistrement de la livraison')
+    } finally { setSaving(false) }
   }
 
   async function handleStatusAdvance(delivery: ERPDelivery) {
@@ -73,11 +110,49 @@ export default function DeliveryPage() {
     const updates: Partial<ERPDelivery> = { status: newStatus }
     if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString()
     if (newStatus === 'dispatched') updates.dispatched_at = new Date().toISOString()
-    const updated = await updateERPDelivery(delivery.id, updates)
-    setDeliveries(prev => prev.map(d => d.id === delivery.id ? updated : d))
+    try {
+      const updated = await updateERPDelivery(delivery.id, updates)
+      setDeliveries(prev => prev.map(d => d.id === delivery.id ? updated : d))
+    } catch (err) {
+      console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la mise à jour du statut')
+    }
+  }
+
+  async function handleMarkReturned(delivery: ERPDelivery) {
+    try {
+      const updated = await updateERPDelivery(delivery.id, { status: 'returned' })
+      setDeliveries(prev => prev.map(d => d.id === delivery.id ? updated : d))
+      toast.success('Livraison marquée comme retournée')
+    } catch (err) {
+      console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Erreur lors du marquage comme retournée')
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setDeletingId(id)
+    try {
+      await deleteERPDelivery(id)
+      setDeliveries(prev => prev.filter(d => d.id !== id))
+      toast.success('Livraison supprimée')
+    } catch (err) {
+      console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression de la livraison')
+    } finally {
+      setDeletingId(null)
+      setConfirmDelete(null)
+    }
   }
 
   const filtered = countryFilter === 'all' ? deliveries : deliveries.filter(d => d.destination_country === countryFilter)
+
+  // Orders eligible for a brand-new delivery: not already terminal, and not
+  // already linked to one — erp_deliveries_order_id_unique now enforces this
+  // at the DB level too, this just keeps the picker from offering a dead end.
+  const availableOrders = orders.filter(o =>
+    !['delivered', 'cancelled'].includes(o.status) && !deliveries.some(d => d.order_id === o.id)
+  )
 
   // Live breakdown by real payment method used on the linked order — this is
   // what makes the page reflect actual payment state instead of a static list.
@@ -99,7 +174,7 @@ export default function DeliveryPage() {
             {' '}{deliveries.filter(d => d.status === 'delivered').length} livrées
           </p>
         </div>
-        <Button onClick={() => { setForm({ ...EMPTY }); setShowModal(true) }} className="rounded-full gap-2">
+        <Button onClick={openCreate} className="rounded-full gap-2">
           <Plus className="h-4 w-4" />
           Nouvelle livraison
         </Button>
@@ -163,7 +238,7 @@ export default function DeliveryPage() {
         <div className="py-16 text-center">
           <Truck className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-sm font-medium">Aucune livraison</p>
-          <Button onClick={() => { setForm({ ...EMPTY }); setShowModal(true) }} size="sm" className="mt-3 rounded-full"><Plus className="h-4 w-4 mr-1" />Créer</Button>
+          <Button onClick={openCreate} size="sm" className="mt-3 rounded-full"><Plus className="h-4 w-4 mr-1" />Créer</Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -214,7 +289,7 @@ export default function DeliveryPage() {
                       {/* Progress bar */}
                       <div className="mt-3 flex items-center gap-1">
                         {DELIVERY_STEPS.map((step, i) => {
-                          const done = DELIVERY_STEPS.indexOf(delivery.status) >= i
+                          const done = delivery.status !== 'returned' && DELIVERY_STEPS.indexOf(delivery.status) >= i
                           return (
                             <div key={step} className="flex items-center flex-1">
                               <div className={`h-2 flex-1 rounded-full transition-all ${done ? 'bg-primary' : 'bg-border'}`} />
@@ -227,19 +302,42 @@ export default function DeliveryPage() {
                         <span>⏳ Attente</span><span>📦 Expédiée</span><span>🚢 Transit</span><span>🏛️ Douane</span><span>✅ Livré</span>
                       </div>
                     </div>
-                    {canAdvance && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-full gap-1.5 text-xs flex-shrink-0"
-                        onClick={() => handleStatusAdvance(delivery)}
-                        disabled={!!blockedByPayment}
-                        title={blockedByPayment ? 'Paiement non confirmé' : undefined}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        {STATUS_META[DELIVERY_STEPS[stepIdx + 1]]?.icon} {STATUS_META[DELIVERY_STEPS[stepIdx + 1]]?.label}
-                      </Button>
-                    )}
+                    <div className="flex flex-col items-stretch sm:items-end gap-1.5 flex-shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        {canAdvance && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-full gap-1.5 text-xs flex-shrink-0"
+                            onClick={() => handleStatusAdvance(delivery)}
+                            disabled={!!blockedByPayment}
+                            title={blockedByPayment ? 'Paiement non confirmé' : undefined}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {STATUS_META[DELIVERY_STEPS[stepIdx + 1]]?.icon} {STATUS_META[DELIVERY_STEPS[stepIdx + 1]]?.label}
+                          </Button>
+                        )}
+                        {delivery.status !== 'returned' && delivery.status !== 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-full gap-1.5 text-xs flex-shrink-0 text-destructive border-destructive/30 hover:bg-destructive/10"
+                            onClick={() => handleMarkReturned(delivery)}
+                          >
+                            <Undo2 className="h-3.5 w-3.5" />
+                            Retournée
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 justify-end">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg" onClick={() => openEdit(delivery)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:text-destructive" onClick={() => setConfirmDelete(delivery)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Country customs info */}
@@ -264,19 +362,31 @@ export default function DeliveryPage() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-border">
-              <h2 className="font-serif font-bold">Nouvelle livraison</h2>
+              <h2 className="font-serif font-bold">{editing ? 'Modifier la livraison' : 'Nouvelle livraison'}</h2>
               <button onClick={() => setShowModal(false)}><X className="h-5 w-5 text-muted-foreground" /></button>
             </div>
             <div className="p-5 space-y-3">
-              <div className="space-y-1.5">
-                <Label>Commande associée</Label>
-                <select value={form.order_id} onChange={e => setForm(f => ({...f, order_id: e.target.value}))} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                  <option value="">Sélectionner une commande</option>
-                  {orders.filter(o => !['delivered','cancelled'].includes(o.status)).map(o => (
-                    <option key={o.id} value={o.id}>#{o.order_number} — {o.product_name}</option>
-                  ))}
-                </select>
-              </div>
+              {editing ? (
+                <div className="space-y-1.5">
+                  <Label>Commande associée</Label>
+                  <div className="h-10 rounded-lg border border-input bg-secondary/40 px-3 flex items-center text-sm text-muted-foreground">
+                    #{orders.find(o => o.id === editing.order_id)?.order_number ?? editing.order_id.slice(0, 8)} — {orders.find(o => o.id === editing.order_id)?.product_name ?? '—'}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>Commande associée</Label>
+                  <select value={form.order_id} onChange={e => setForm(f => ({...f, order_id: e.target.value}))} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                    <option value="">Sélectionner une commande</option>
+                    {availableOrders.map(o => (
+                      <option key={o.id} value={o.id}>#{o.order_number} — {o.product_name}</option>
+                    ))}
+                  </select>
+                  {availableOrders.length === 0 && (
+                    <p className="text-xs text-muted-foreground">Toutes les commandes actives ont déjà une livraison.</p>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Numéro de suivi</Label>
@@ -293,7 +403,7 @@ export default function DeliveryPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Pays de destination</Label>
-                  <select value={form.destination_country} onChange={e => setForm(f => ({...f, destination_country: e.target.value as ERPCountry}))} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                  <select disabled={!!editing} value={form.destination_country} onChange={e => setForm(f => ({...f, destination_country: e.target.value as ERPCountry}))} className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60">
                     {Object.entries(ERP_COUNTRY_INFO).map(([k, i]) => <option key={k} value={k}>{i.flag} {i.label}</option>)}
                   </select>
                 </div>
@@ -316,14 +426,23 @@ export default function DeliveryPage() {
             </div>
             <div className="flex gap-2 p-5 border-t border-border">
               <Button variant="outline" className="flex-1 rounded-full" onClick={() => setShowModal(false)}>Annuler</Button>
-              <Button className="flex-1 rounded-full gap-1.5" onClick={handleSave} disabled={saving || !form.order_id}>
+              <Button className="flex-1 rounded-full gap-1.5" onClick={handleSave} disabled={saving || (!editing && !form.order_id)}>
                 {saving ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <Save className="h-3.5 w-3.5" />}
-                Créer la livraison
+                {editing ? 'Enregistrer' : 'Créer la livraison'}
               </Button>
             </div>
           </div>
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Supprimer cette livraison ?"
+        description={confirmDelete ? `La livraison de la commande #${orders.find(o => o.id === confirmDelete.order_id)?.order_number ?? confirmDelete.order_id.slice(0, 8)} sera définitivement supprimée. La commande elle-même n'est pas affectée.` : ''}
+        loading={!!confirmDelete && deletingId === confirmDelete.id}
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete.id)}
+      />
     </div>
   )
 }

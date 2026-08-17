@@ -229,49 +229,12 @@ export type Database = {
         Insert: Omit<ERPClient, 'id' | 'created_at'>
         Update: Partial<Omit<ERPClient, 'id' | 'user_id' | 'created_at'>>
       }
-      erp_orders: {
-        Row: {
-          id: string
-          user_id: string
-          client_id: string | null
-          order_number: string
-          status: ERPOrderStatus
-          product_name: string
-          product_url: string | null
-          quantity: number
-          unit_price: number
-          currency: string
-          total_amount: number
-          supplier_name: string | null
-          destination_country: ERPCountry
-          destination_city: string | null
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: Omit<ERPOrder, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<ERPOrder, 'id' | 'user_id' | 'created_at'>>
-      }
-      erp_deliveries: {
-        Row: {
-          id: string
-          order_id: string
-          user_id: string
-          tracking_number: string | null
-          carrier: string | null
-          status: ERPDeliveryStatus
-          origin_country: string
-          destination_country: ERPCountry
-          destination_city: string | null
-          estimated_days: number | null
-          dispatched_at: string | null
-          delivered_at: string | null
-          notes: string | null
-          created_at: string
-        }
-        Insert: Omit<ERPDelivery, 'id' | 'created_at'>
-        Update: Partial<Omit<ERPDelivery, 'id' | 'order_id' | 'user_id' | 'created_at'>>
-      }
+      // erp_orders / erp_deliveries: intentionally not duplicated here — this
+      // Database['public']['Tables'] block isn't actually used as a generic
+      // type param anywhere queries against those two tables run (only the
+      // ERPOrder/ERPDelivery interfaces above are), and a second, hand-kept
+      // copy had already drifted out of sync with real columns. Edit
+      // ERPOrder/ERPDelivery directly instead.
     }
   }
 }
@@ -377,7 +340,7 @@ export interface CreditBalance {
 
 // ─── ERP Types ─────────────────────────────────────────────────────────────────
 export type ERPCountry = 'benin' | 'togo' | 'senegal' | 'mali' | 'cote_divoire' | 'niger' | 'cameroun'
-export type ERPOrderStatus = 'draft' | 'confirmed' | 'in_production' | 'shipped' | 'in_transit' | 'customs' | 'delivered' | 'cancelled'
+export type ERPOrderStatus = 'draft' | 'confirmed' | 'in_production' | 'shipped' | 'in_transit' | 'customs' | 'delivered' | 'cancelled' | 'returned'
 export type ERPDeliveryStatus = 'pending' | 'dispatched' | 'in_transit' | 'customs' | 'delivered' | 'returned'
 
 export interface ERPClient {
@@ -432,6 +395,7 @@ export interface ERPDelivery {
   delivered_at: string | null
   notes: string | null
   created_at: string
+  updated_at: string
 }
 
 export type QuoteRequestStatus = 'pending' | 'reviewing' | 'quoted' | 'accepted' | 'rejected' | 'expired'

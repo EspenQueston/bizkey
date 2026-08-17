@@ -36,6 +36,19 @@ export async function updateProfile(userId: string, updates: Database['public'][
   return data
 }
 
+/** Admin-only lookup for linking an order to a real signed-up account (distinct from the erp_clients CRM book, which has no login of its own). */
+export async function searchProfiles(query: string): Promise<Profile[]> {
+  if (!query.trim()) return []
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .or(`email.ilike.%${query}%,name.ilike.%${query}%`)
+    .order('created_at', { ascending: false })
+    .limit(10)
+  if (error) throw error
+  return data ?? []
+}
+
 // ─── Analyses ─────────────────────────────────────────────────────────────────
 
 export async function getUserAnalyses(userId: string): Promise<Analysis[]> {
@@ -267,11 +280,11 @@ export async function getUserNegotiations(userId: string): Promise<Negotiation[]
 
 // ─── ERP: Clients ─────────────────────────────────────────────────────────────
 
-export async function getERPClients(userId: string): Promise<ERPClient[]> {
+/** Admin-wide — every admin shares one client book (RLS already grants any admin full access via is_admin()); filtering by the calling admin's own user_id would silently partition a shared operational record per staff member. */
+export async function getERPClients(): Promise<ERPClient[]> {
   const { data, error } = await supabase
     .from('erp_clients')
     .select('*')
-    .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []) as ERPClient[]
@@ -305,11 +318,11 @@ export async function deleteERPClient(id: string) {
 
 // ─── ERP: Orders ──────────────────────────────────────────────────────────────
 
-export async function getERPOrders(userId: string): Promise<ERPOrder[]> {
+/** Admin-wide — see getERPClients for why this doesn't filter by the calling admin's own user_id. */
+export async function getERPOrders(): Promise<ERPOrder[]> {
   const { data, error } = await supabase
     .from('erp_orders')
     .select('*')
-    .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []) as ERPOrder[]
@@ -354,20 +367,20 @@ export async function getMyERPOrders(customerId: string): Promise<ERPOrder[]> {
 
 // ─── ERP: Deliveries ──────────────────────────────────────────────────────────
 
-export async function getERPDeliveries(userId: string): Promise<ERPDelivery[]> {
+/** Admin-wide — see getERPClients for why this doesn't filter by the calling admin's own user_id. */
+export async function getERPDeliveries(): Promise<ERPDelivery[]> {
   const { data, error } = await supabase
     .from('erp_deliveries')
     .select('*')
-    .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []) as ERPDelivery[]
 }
 
-export async function createERPDelivery(userId: string, delivery: Omit<ERPDelivery, 'id' | 'user_id' | 'created_at'>): Promise<ERPDelivery> {
+export async function createERPDelivery(userId: string, delivery: Omit<ERPDelivery, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<ERPDelivery> {
   const { data, error } = await supabase
     .from('erp_deliveries')
-    .insert({ ...delivery, user_id: userId })
+    .insert({ ...delivery, user_id: userId, updated_at: new Date().toISOString() })
     .select()
     .single()
   if (error) throw error
@@ -377,12 +390,17 @@ export async function createERPDelivery(userId: string, delivery: Omit<ERPDelive
 export async function updateERPDelivery(id: string, updates: Partial<Omit<ERPDelivery, 'id' | 'order_id' | 'user_id' | 'created_at'>>): Promise<ERPDelivery> {
   const { data, error } = await supabase
     .from('erp_deliveries')
-    .update(updates)
+    .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single()
   if (error) throw error
   return data as ERPDelivery
+}
+
+export async function deleteERPDelivery(id: string) {
+  const { error } = await supabase.from('erp_deliveries').delete().eq('id', id)
+  if (error) throw error
 }
 
 /**

@@ -453,7 +453,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 }
 
 export default function ERPPanelLayout() {
-  const { user, profile, loading } = useAuth()
+  const { user, loading } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [sidebarHidden, setSidebarHidden] = useState(() => localStorage.getItem('bizkey_sidebar_hidden') === 'true')
   const location = useLocation()

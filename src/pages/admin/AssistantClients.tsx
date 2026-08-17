@@ -18,6 +18,11 @@ import type { AssistantClient, AssistantClientStatus, AssistantPlan, WhatsAppNum
 const EMPTY: Omit<AssistantClient, 'id' | 'created_at' | 'updated_at'> = {
   company_name: '', contact_name: null, contact_email: null, contact_phone: null,
   status: 'trial', plan_id: null, whatsapp_number_id: null, notes: null,
+  // Owner self-service fields (tone/hours/number-request) and billing-period
+  // dates aren't edited from this admin CRM form — left at their defaults on
+  // create, and preserved as-is (never reset) when editing below.
+  profile_id: null, tone: 'professional', business_hours: null, requested_whatsapp_number: null,
+  current_period_start: null, current_period_end: null,
 }
 
 const STATUS_META: Record<AssistantClientStatus, { label: string; color: string }> = {
@@ -61,6 +66,12 @@ export default function AssistantClientsPage() {
       company_name: c.company_name, contact_name: c.contact_name, contact_email: c.contact_email,
       contact_phone: c.contact_phone, status: c.status, plan_id: c.plan_id,
       whatsapp_number_id: c.whatsapp_number_id, notes: c.notes,
+      // Preserved as-is — this form has no fields for them, so carrying the
+      // existing values through prevents a save here from silently wiping
+      // what the owner set themselves (or what the billing RPCs stamped).
+      profile_id: c.profile_id, tone: c.tone, business_hours: c.business_hours,
+      requested_whatsapp_number: c.requested_whatsapp_number,
+      current_period_start: c.current_period_start, current_period_end: c.current_period_end,
     })
     setShowModal(true)
   }

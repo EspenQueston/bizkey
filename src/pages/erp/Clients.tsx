@@ -38,7 +38,7 @@ export default function ClientsPage() {
 
   useEffect(() => {
     if (!user) return
-    getERPClients(user.id)
+    getERPClients()
       .then(setClients)
       .catch(console.error)
       .finally(() => setLoading(false))

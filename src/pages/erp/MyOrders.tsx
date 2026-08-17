@@ -16,6 +16,7 @@ const STATUS_PIPELINE: { key: ERPOrderStatus; label: string; color: string; icon
   { key: 'in_transit',    label: 'En transit',    color: 'bg-orange-500/15 text-orange-600',      icon: '🚢' },
   { key: 'customs',       label: 'En douane',     color: 'bg-pink-500/15 text-pink-600',          icon: '🏛️' },
   { key: 'delivered',     label: 'Livrée',        color: 'bg-primary/15 text-primary',            icon: '🎉' },
+  { key: 'returned',      label: 'Retournée',     color: 'bg-destructive/15 text-destructive',    icon: '↩️' },
   { key: 'cancelled',     label: 'Annulée',       color: 'bg-destructive/15 text-destructive',    icon: '❌' },
 ]
 
@@ -34,7 +35,7 @@ export default function MyOrdersPage() {
       <div>
         <h1 className="font-serif text-2xl font-bold">🛒 Mes commandes</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {orders.length} commande{orders.length !== 1 ? 's' : ''} · {orders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length} en cours
+          {orders.length} commande{orders.length !== 1 ? 's' : ''} · {orders.filter(o => !['delivered', 'cancelled', 'returned'].includes(o.status)).length} en cours
         </p>
       </div>
 
