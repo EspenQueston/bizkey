@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
-import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket, UsageEventType, UsageSummary, UsageSummaryByTenant, KnowledgeDocument, KnowledgeRecord, KnowledgeRecordData } from './supabase'
-import { matchAutoReply, rankKnowledgeRecords, formatKnowledgeRecordReply } from './whatsappBot'
+import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket, UsageEventType, UsageSummary, UsageSummaryByTenant, KnowledgeDocument, KnowledgeRecord, KnowledgeRecordData, KnowledgeChunk } from './supabase'
+import { matchAutoReply, rankKnowledgeRecords, formatKnowledgeRecordReply, rankKnowledgeChunks } from './whatsappBot'
 import { getFunctionErrorMessage } from './api'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -1131,16 +1131,17 @@ export async function simulateIncomingWhatsAppMessage(params: {
     .insert({ conversation_id: conversation.id, direction: 'inbound', sender_type: 'customer', body: params.body, client_id: clientId })
   if (inboundErr) throw inboundErr
 
-  const [allRules, allKbArticles, allRecords] = await Promise.all([
-    getWhatsAppAutoReplies(), getWhatsAppKbArticles(), getKnowledgeRecords(clientId),
+  const [allRules, allKbArticles, allRecords, allChunks] = await Promise.all([
+    getWhatsAppAutoReplies(), getWhatsAppKbArticles(), getKnowledgeRecords(clientId), getKnowledgeChunks(clientId),
   ])
   const rules = allRules.filter(r => (r.client_id ?? null) === clientId)
   const kbArticles = allKbArticles.filter(a => (a.client_id ?? null) === clientId)
   const match = matchAutoReply(params.body, rules, kbArticles)
-  // Falls back to the imported catalog only when no auto-reply/FAQ rule
-  // fired — a manually-written rule is always a more deliberate answer than
-  // a scored catalog lookup.
+  // Falls back to the imported catalog, then to PDF/DOCX passages, only
+  // when nothing more deliberate fired first — a manually-written rule
+  // beats a scored catalog lookup, which beats a scored text passage.
   const catalogMatch = match ? null : rankKnowledgeRecords(params.body, allRecords, 1)[0]
+  const chunkMatch = match || catalogMatch ? null : rankKnowledgeChunks(params.body, allChunks, 1)[0]
 
   let matched = false
   if (match) {
@@ -1154,6 +1155,12 @@ export async function simulateIncomingWhatsAppMessage(params: {
     const { error: botErr } = await supabase
       .from('whatsapp_messages')
       .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: formatKnowledgeRecordReply(catalogMatch), client_id: clientId })
+    if (botErr) throw botErr
+  } else if (chunkMatch) {
+    matched = true
+    const { error: botErr } = await supabase
+      .from('whatsapp_messages')
+      .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: chunkMatch.content, client_id: clientId })
     if (botErr) throw botErr
   }
 
@@ -1271,6 +1278,57 @@ export async function createKnowledgeDocumentWithRecords(params: {
     }))
     const { error: recErr } = await supabase.from('knowledge_records').insert(rows)
     if (recErr) throw recErr
+  }
+
+  return doc as KnowledgeDocument
+}
+
+export async function getKnowledgeChunks(clientId: string | null): Promise<KnowledgeChunk[]> {
+  let query = supabase.from('knowledge_chunks').select('*')
+  query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []) as KnowledgeChunk[]
+}
+
+/** Same shape as createKnowledgeDocumentWithRecords but for unstructured PDF/DOCX text — chunking already happened client-side (see knowledgeImport.ts), this just persists the result. */
+export async function createKnowledgeDocumentWithChunks(params: {
+  clientId: string
+  sourceType: 'pdf' | 'docx'
+  title: string
+  file: File
+  chunks: string[]
+}): Promise<KnowledgeDocument> {
+  const documentId = crypto.randomUUID()
+  const storagePath = await uploadKnowledgeDocumentFile(params.clientId, documentId, params.file)
+
+  const { data: doc, error: docErr } = await supabase
+    .from('knowledge_documents')
+    .insert({
+      id: documentId,
+      client_id: params.clientId,
+      source_type: params.sourceType,
+      title: params.title,
+      storage_path: storagePath,
+      file_name: params.file.name,
+      mime_type: params.file.type || null,
+      file_size_bytes: params.file.size,
+      row_count: params.chunks.length,
+      status: 'ready',
+    })
+    .select()
+    .single()
+  if (docErr) throw docErr
+
+  if (params.chunks.length > 0) {
+    const rows = params.chunks.map((content, index) => ({
+      client_id: params.clientId,
+      document_id: documentId,
+      chunk_index: index,
+      content,
+    }))
+    const { error: chunkErr } = await supabase.from('knowledge_chunks').insert(rows)
+    if (chunkErr) throw chunkErr
   }
 
   return doc as KnowledgeDocument

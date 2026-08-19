@@ -1,4 +1,4 @@
-import type { WhatsAppAutoReply, WhatsAppKbArticle, KnowledgeRecord } from './supabase'
+import type { WhatsAppAutoReply, WhatsAppKbArticle, KnowledgeRecord, KnowledgeChunk } from './supabase'
 
 const GREETING_PATTERNS = ['bonjour', 'bonsoir', 'salut', 'bjr', 'hello', 'hi', 'coucou', 'cc']
 
@@ -92,6 +92,29 @@ export function rankKnowledgeRecords(query: string, records: KnowledgeRecord[], 
     .sort((a, b) => b.score - a.score)
 
   return scored.slice(0, limit).map(s => s.record)
+}
+
+/** Same scoring as rankKnowledgeRecords, applied to PDF/DOCX text passages instead of structured catalog rows — a chunk quoted back verbatim is the reply, not reformatted like a product card. */
+export function rankKnowledgeChunks(query: string, chunks: KnowledgeChunk[], limit = 1): KnowledgeChunk[] {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return []
+  const queryTokens = normalized.split(/\s+/).filter(t => t.length > 2)
+  if (queryTokens.length === 0) return []
+
+  const scored = chunks
+    .map(chunk => {
+      const content = chunk.content.toLowerCase()
+      let score = 0
+      if (content.includes(normalized)) score += 3
+      for (const t of queryTokens) {
+        if (content.includes(t)) score += 1
+      }
+      return { chunk, score }
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  return scored.slice(0, limit).map(s => s.chunk)
 }
 
 /** Formats a matched catalog record into a WhatsApp-ready reply — one consistent shape, reused by the simulator and (ported) assistant-context. */

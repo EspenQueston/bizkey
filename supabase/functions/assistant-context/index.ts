@@ -16,6 +16,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 //     own generated reply in instead of hallucinating
 //   - the tenant's top-matching imported catalog rows (from an Excel/CSV
 //     product import), same purpose as the FAQ articles above
+//   - the tenant's top-matching PDF/DOCX text passages (from a document
+//     import), same purpose again — raw text for the agent to ground in
 //   - the tenant's configured tone and business hours, to steer the
 //     agent's system prompt per-business instead of one static prompt
 //
@@ -58,6 +60,11 @@ interface KnowledgeRecord {
   data: { name: string; price?: number | null; stock?: number | null; category?: string | null; description?: string | null }
   searchable_text: string
   is_active: boolean
+}
+
+interface KnowledgeChunk {
+  id: string
+  content: string
 }
 
 const GREETING_PATTERNS = ['bonjour', 'bonsoir', 'salut', 'bjr', 'hello', 'hi', 'coucou', 'cc']
@@ -160,6 +167,32 @@ function rankKnowledgeRecords(query: string, records: KnowledgeRecord[], limit: 
   return scored.slice(0, limit).map(s => s.record)
 }
 
+// Ported from src/lib/whatsappBot.ts's rankKnowledgeChunks — same reason as
+// the two ranking functions above. PDF/DOCX passages instead of structured
+// catalog rows; the agent gets the raw text to ground its reply in, not a
+// verbatim answer to parrot.
+function rankKnowledgeChunks(query: string, chunks: KnowledgeChunk[], limit: number): KnowledgeChunk[] {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return []
+  const queryTokens = normalized.split(/\s+/).filter(t => t.length > 2)
+  if (queryTokens.length === 0) return []
+
+  const scored = chunks
+    .map(chunk => {
+      const content = chunk.content.toLowerCase()
+      let score = 0
+      if (content.includes(normalized)) score += 3
+      for (const t of queryTokens) {
+        if (content.includes(t)) score += 1
+      }
+      return { chunk, score }
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  return scored.slice(0, limit).map(s => s.chunk)
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
@@ -220,16 +253,18 @@ serve(async (req) => {
     return clientId ? q.eq('client_id', clientId) : q.is('client_id', null)
   }
 
-  const [{ data: rules }, { data: kb }, { data: records }] = await Promise.all([
+  const [{ data: rules }, { data: kb }, { data: records }, { data: chunks }] = await Promise.all([
     scopedQuery('whatsapp_auto_replies', '*'),
     scopedQuery('whatsapp_kb_articles', 'id, title, keywords, answer, is_active'),
     scopedQuery('knowledge_records', 'id, data, searchable_text, is_active'),
+    scopedQuery('knowledge_chunks', 'id, content'),
   ])
 
   const kbArticles = (kb ?? []) as KbArticle[]
   const autoReplyMatch = matchAutoReply(query, (rules ?? []) as AutoReplyRule[], kbArticles)
   const knowledgeBase = rankKbArticles(query, kbArticles, limit)
   const catalog = rankKnowledgeRecords(query, (records ?? []) as KnowledgeRecord[], limit)
+  const documentPassages = rankKnowledgeChunks(query, (chunks ?? []) as KnowledgeChunk[], limit)
 
   return json({
     clientId,
@@ -241,5 +276,6 @@ serve(async (req) => {
       : { matched: false },
     knowledgeBase: knowledgeBase.map(a => ({ title: a.title, answer: a.answer, keywords: a.keywords })),
     catalog: catalog.map(r => r.data),
+    documentPassages: documentPassages.map(c => c.content),
   })
 })

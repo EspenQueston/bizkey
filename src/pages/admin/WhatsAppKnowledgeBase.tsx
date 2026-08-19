@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, Check, Loader2, PackageSearch } from 'lucide-react'
+import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
-import { getWhatsAppKbArticles, createWhatsAppKbArticle, updateWhatsAppKbArticle, deleteWhatsAppKbArticle, getKnowledgeDocuments, createKnowledgeDocumentWithRecords, deleteKnowledgeDocument } from '@/lib/db'
-import { parseSpreadsheetFile, guessColumnMapping, buildRecordsFromMapping, MAPPABLE_FIELDS, type MappableField } from '@/lib/knowledgeImport'
+import { getWhatsAppKbArticles, createWhatsAppKbArticle, updateWhatsAppKbArticle, deleteWhatsAppKbArticle, getKnowledgeDocuments, createKnowledgeDocumentWithRecords, createKnowledgeDocumentWithChunks, deleteKnowledgeDocument } from '@/lib/db'
+import { parseSpreadsheetFile, guessColumnMapping, buildRecordsFromMapping, extractPdfText, extractDocxText, chunkText, MAPPABLE_FIELDS, type MappableField } from '@/lib/knowledgeImport'
 import { useAuth } from '@/contexts/AuthContext'
 import type { WhatsAppKbArticle, KnowledgeDocument } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -28,13 +28,16 @@ export default function WhatsAppKnowledgeBasePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
-  // Catalog import (Excel/CSV) state
+  // Catalog import (Excel/CSV/PDF/DOCX) state
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([])
   const [loadingDocs, setLoadingDocs] = useState(true)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [pendingKind, setPendingKind] = useState<'spreadsheet' | 'document' | null>(null)
   const [parsedHeaders, setParsedHeaders] = useState<string[]>([])
   const [parsedRows, setParsedRows] = useState<Record<string, unknown>[]>([])
   const [mapping, setMapping] = useState<Partial<Record<MappableField, string>>>({})
+  const [pendingChunks, setPendingChunks] = useState<string[]>([])
+  const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState('')
   const [importing, setImporting] = useState(false)
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
@@ -53,43 +56,67 @@ export default function WhatsAppKnowledgeBasePage() {
     e.target.value = ''
     if (!file) return
     setParseError('')
+    setParsing(true)
     try {
-      const { headers, rows } = await parseSpreadsheetFile(file)
-      setPendingFile(file)
-      setParsedHeaders(headers)
-      setParsedRows(rows)
-      setMapping(guessColumnMapping(headers))
+      if (/\.(csv|xlsx?|xls)$/i.test(file.name)) {
+        const { headers, rows } = await parseSpreadsheetFile(file)
+        setPendingFile(file)
+        setPendingKind('spreadsheet')
+        setParsedHeaders(headers)
+        setParsedRows(rows)
+        setMapping(guessColumnMapping(headers))
+      } else if (/\.pdf$/i.test(file.name)) {
+        const text = await extractPdfText(file)
+        setPendingFile(file)
+        setPendingKind('document')
+        setPendingChunks(chunkText(text))
+      } else if (/\.docx$/i.test(file.name)) {
+        const text = await extractDocxText(file)
+        setPendingFile(file)
+        setPendingKind('document')
+        setPendingChunks(chunkText(text))
+      } else {
+        throw new Error('Format non pris en charge — utilisez .csv, .xlsx, .pdf ou .docx')
+      }
     } catch (err) {
       setParseError(err instanceof Error ? err.message : 'Impossible de lire ce fichier')
       setPendingFile(null)
+      setPendingKind(null)
+    } finally {
+      setParsing(false)
     }
   }
 
   function cancelImport() {
     setPendingFile(null)
+    setPendingKind(null)
     setParsedHeaders([])
     setParsedRows([])
     setMapping({})
+    setPendingChunks([])
     setParseError('')
   }
 
-  const mappedRecords = pendingFile ? buildRecordsFromMapping(parsedRows, mapping) : []
+  const mappedRecords = pendingKind === 'spreadsheet' ? buildRecordsFromMapping(parsedRows, mapping) : []
 
   async function handleImport() {
-    if (!assistantClient || !pendingFile || mappedRecords.length === 0) return
+    if (!assistantClient || !pendingFile) return
     setImporting(true)
     try {
-      const sourceType = /\.csv$/i.test(pendingFile.name) ? 'csv' : 'xlsx'
-      const doc = await createKnowledgeDocumentWithRecords({
-        clientId: assistantClient.id,
-        sourceType,
-        title: pendingFile.name.replace(/\.(csv|xlsx?|xls)$/i, ''),
-        file: pendingFile,
-        records: mappedRecords,
-      })
+      const title = pendingFile.name.replace(/\.(csv|xlsx?|xls|pdf|docx)$/i, '')
+      let doc: KnowledgeDocument
+      if (pendingKind === 'spreadsheet') {
+        if (mappedRecords.length === 0) return
+        const sourceType = /\.csv$/i.test(pendingFile.name) ? 'csv' : 'xlsx'
+        doc = await createKnowledgeDocumentWithRecords({ clientId: assistantClient.id, sourceType, title, file: pendingFile, records: mappedRecords })
+      } else {
+        if (pendingChunks.length === 0) return
+        const sourceType = /\.pdf$/i.test(pendingFile.name) ? 'pdf' : 'docx'
+        doc = await createKnowledgeDocumentWithChunks({ clientId: assistantClient.id, sourceType, title, file: pendingFile, chunks: pendingChunks })
+      }
       setDocuments(prev => [doc, ...prev])
       cancelImport()
-      toast.success(`${doc.row_count} ligne${doc.row_count > 1 ? 's' : ''} importée${doc.row_count > 1 ? 's' : ''}`)
+      toast.success(`${doc.row_count} ${pendingKind === 'spreadsheet' ? 'ligne' : 'passage'}${doc.row_count > 1 ? 's' : ''} importé${doc.row_count > 1 ? 's' : ''}`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Échec de l'import")
     } finally {
@@ -194,26 +221,26 @@ export default function WhatsAppKnowledgeBasePage() {
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <PackageSearch className="h-3.5 w-3.5" /> Catalogue produits (Excel / CSV)
+                <PackageSearch className="h-3.5 w-3.5" /> Documents importés (Excel, CSV, PDF, Word)
               </p>
               {canWriteCatalog && !pendingFile && (
                 <label className="inline-flex">
-                  <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFileSelect} />
-                  <Button size="sm" variant="outline" className="rounded-full gap-1.5 cursor-pointer" asChild>
-                    <span><Upload className="h-3.5 w-3.5" /> Importer un fichier</span>
+                  <input type="file" accept=".csv,.xlsx,.xls,.pdf,.docx" className="hidden" onChange={handleFileSelect} disabled={parsing} />
+                  <Button size="sm" variant="outline" className="rounded-full gap-1.5 cursor-pointer" disabled={parsing} asChild>
+                    <span>{parsing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Importer un fichier</span>
                   </Button>
                 </label>
               )}
             </div>
             <p className="text-xs text-muted-foreground -mt-2">
-              Importez votre catalogue produits/services depuis un fichier Excel ou CSV — l'assistant WhatsApp pourra répondre aux questions de prix et de disponibilité directement à partir de ces données.
+              Importez votre catalogue produits (Excel/CSV) ou vos documents (PDF/Word — menu, tarifs, conditions...) — l'assistant WhatsApp pourra répondre directement à partir de ces données.
             </p>
 
             {parseError && (
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">{parseError}</div>
             )}
 
-            {pendingFile && (
+            {pendingFile && pendingKind === 'spreadsheet' && (
               <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-medium">
@@ -282,6 +309,37 @@ export default function WhatsAppKnowledgeBasePage() {
               </div>
             )}
 
+            {pendingFile && pendingKind === 'document' && (
+              <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <FileText className="h-4 w-4 text-primary" /> {pendingFile.name}
+                    <Badge variant="outline" className="text-[10px]">{pendingChunks.length} passage{pendingChunks.length > 1 ? 's' : ''} extrait{pendingChunks.length > 1 ? 's' : ''}</Badge>
+                  </div>
+                  <button onClick={cancelImport} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+                </div>
+
+                {pendingChunks.length > 0 && (
+                  <div className="rounded-lg border border-border bg-background p-3 text-xs text-muted-foreground max-h-32 overflow-y-auto whitespace-pre-wrap">
+                    {pendingChunks[0]}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" className="rounded-lg" onClick={cancelImport}>Annuler</Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 rounded-lg gap-1.5"
+                    onClick={handleImport}
+                    disabled={importing || pendingChunks.length === 0}
+                  >
+                    {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Importer {pendingChunks.length} passage{pendingChunks.length > 1 ? 's' : ''}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {loadingDocs ? (
               <div className="py-4 text-center text-xs text-muted-foreground">
                 <div className="h-4 w-4 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto" />
@@ -290,10 +348,14 @@ export default function WhatsAppKnowledgeBasePage() {
               <div className="space-y-1.5">
                 {documents.map(doc => (
                   <div key={doc.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5 text-sm">
-                    <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+                    {doc.source_type === 'csv' || doc.source_type === 'xlsx'
+                      ? <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+                      : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{doc.title}</p>
-                      <p className="text-xs text-muted-foreground">{doc.row_count} article{doc.row_count > 1 ? 's' : ''} · {new Date(doc.created_at).toLocaleDateString('fr-FR')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {doc.row_count} {doc.source_type === 'csv' || doc.source_type === 'xlsx' ? 'article' : 'passage'}{doc.row_count > 1 ? 's' : ''} · {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                      </p>
                     </div>
                     {canWriteCatalog && (
                       <Button

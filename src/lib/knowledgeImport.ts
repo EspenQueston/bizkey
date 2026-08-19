@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx'
 import type { KnowledgeRecordData } from './supabase'
 
 export interface ParsedSpreadsheet {
@@ -8,9 +7,14 @@ export interface ParsedSpreadsheet {
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
 
+// xlsx/pdfjs-dist/mammoth are only ever needed on this one admin/tenant
+// page, and pdfjs-dist's worker alone is 2+ MB — dynamic import() keeps
+// all three out of the main app bundle every visitor downloads, loading
+// them only when a file is actually selected here.
 export async function parseSpreadsheetFile(file: File): Promise<ParsedSpreadsheet> {
   if (file.size > MAX_FILE_SIZE_BYTES) throw new Error('Fichier trop volumineux (max 20 Mo)')
 
+  const XLSX = await import('xlsx')
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array' })
   const firstSheetName = workbook.SheetNames[0]
@@ -64,6 +68,72 @@ function toStringOrNull(value: unknown): string | null {
   if (value == null) return null
   const s = String(value).trim()
   return s === '' ? null : s
+}
+
+/**
+ * Text-only extraction — getTextContent() never renders the page or
+ * executes any embedded script/action, unlike PDF.js's canvas rendering
+ * path, so a malicious PDF can't do anything beyond feeding this function
+ * plain (if adversarial) strings.
+ */
+export async function extractPdfText(file: File): Promise<string> {
+  if (file.size > MAX_FILE_SIZE_BYTES) throw new Error('Fichier trop volumineux (max 20 Mo)')
+  const [pdfjsLib, { default: pdfWorkerUrl }] = await Promise.all([
+    import('pdfjs-dist'),
+    import('pdfjs-dist/build/pdf.worker.mjs?url'),
+  ])
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
+  const buffer = await file.arrayBuffer()
+  const doc = await pdfjsLib.getDocument({ data: buffer }).promise
+  const pages: string[] = []
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i)
+    const content = await page.getTextContent()
+    pages.push(content.items.map(item => ('str' in item ? item.str : '')).join(' '))
+  }
+  const text = pages.join('\n\n').trim()
+  if (!text) throw new Error('Aucun texte trouvé dans ce PDF (document scanné/image non pris en charge)')
+  return text
+}
+
+export async function extractDocxText(file: File): Promise<string> {
+  if (file.size > MAX_FILE_SIZE_BYTES) throw new Error('Fichier trop volumineux (max 20 Mo)')
+  const { default: mammoth } = await import('mammoth')
+  const buffer = await file.arrayBuffer()
+  const result = await mammoth.extractRawText({ arrayBuffer: buffer })
+  const text = result.value.trim()
+  if (!text) throw new Error('Aucun texte trouvé dans ce document')
+  return text
+}
+
+const CHUNK_TARGET_CHARS = 800
+
+/**
+ * Splits on paragraph breaks first, packing consecutive paragraphs into a
+ * chunk until it would exceed the target size — keeps each chunk a
+ * coherent, self-contained passage (never mid-sentence) for
+ * rankKnowledgeChunks to score and for the WhatsApp reply to quote as-is.
+ */
+export function chunkText(text: string): string[] {
+  const paragraphs = text.split(/\n\s*\n/).map(p => p.replace(/\s+/g, ' ').trim()).filter(Boolean)
+  const chunks: string[] = []
+  let current = ''
+
+  for (const paragraph of paragraphs) {
+    const candidate = current ? `${current}\n\n${paragraph}` : paragraph
+    if (candidate.length > CHUNK_TARGET_CHARS && current) {
+      chunks.push(current)
+      current = paragraph
+    } else {
+      current = candidate
+    }
+    while (current.length > CHUNK_TARGET_CHARS * 2) {
+      chunks.push(current.slice(0, CHUNK_TARGET_CHARS))
+      current = current.slice(CHUNK_TARGET_CHARS)
+    }
+  }
+  if (current) chunks.push(current)
+  return chunks
 }
 
 export function buildRecordsFromMapping(

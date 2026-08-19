@@ -474,7 +474,7 @@ export interface WhatsAppMessage {
   client_id?: string | null
 }
 
-export type KnowledgeSourceType = 'csv' | 'xlsx'
+export type KnowledgeSourceType = 'csv' | 'xlsx' | 'pdf' | 'docx'
 export type KnowledgeDocumentStatus = 'ready' | 'failed'
 
 export interface KnowledgeDocument {
@@ -511,6 +511,15 @@ export interface KnowledgeRecord {
   data: KnowledgeRecordData
   searchable_text: string
   is_active: boolean
+  created_at: string
+}
+
+export interface KnowledgeChunk {
+  id: string
+  client_id: string | null
+  document_id: string
+  chunk_index: number
+  content: string
   created_at: string
 }
 
