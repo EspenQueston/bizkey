@@ -501,6 +501,23 @@ export interface WhatsAppAutoReply {
   client_id?: string | null
 }
 
+export type HandoffTicketStatus = 'open' | 'resolved'
+export type HandoffTicketPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+export interface HandoffTicket {
+  id: string
+  /** null = BizKey's own conversation. */
+  client_id: string | null
+  conversation_id: string
+  status: HandoffTicketStatus
+  priority: HandoffTicketPriority
+  reason: string | null
+  assigned_to: string | null
+  created_at: string
+  resolved_at: string | null
+  resolved_by: string | null
+}
+
 export interface AssistantPlan {
   id: string
   name: string

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole } from './supabase'
+import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket } from './supabase'
 import { matchAutoReply } from './whatsappBot'
 import { getFunctionErrorMessage } from './api'
 
@@ -971,6 +971,37 @@ export async function updateWhatsAppConversation(id: string, updates: Partial<Om
   return data as WhatsAppConversation
 }
 
+// ─── Handoff tickets ───────────────────────────────────────────────────────
+// A ticket is created/resolved automatically by DB triggers whenever a
+// conversation's status flips to/from 'pending_human' — nothing here ever
+// inserts one directly, only reads and updates the mutable fields.
+
+/** Every currently-open ticket visible to the caller — cheap (small table), fetched once alongside the conversation list to badge pending_human items with priority without a per-conversation round trip. */
+export async function getOpenHandoffTickets(): Promise<HandoffTicket[]> {
+  const { data, error } = await supabase.from('handoff_tickets').select('*').eq('status', 'open')
+  if (error) throw error
+  return (data ?? []) as HandoffTicket[]
+}
+
+/** Owner/manager only (handoff_tickets_own_write) — priority/reason/assignee, never status directly (use resolveHandoffTicket for that, since it's the half that syncs the conversation back). */
+export async function updateHandoffTicket(id: string, updates: Partial<Pick<HandoffTicket, 'priority' | 'reason' | 'assigned_to'>>): Promise<HandoffTicket> {
+  const { data, error } = await supabase.from('handoff_tickets').update(updates).eq('id', id).select().single()
+  if (error) throw error
+  return data as HandoffTicket
+}
+
+/** Marks the ticket resolved and — via trg_sync_conversation_from_ticket — flips its conversation back out of pending_human, if it's still there. */
+export async function resolveHandoffTicket(id: string, resolvedBy: string): Promise<HandoffTicket> {
+  const { data, error } = await supabase
+    .from('handoff_tickets')
+    .update({ status: 'resolved', resolved_at: new Date().toISOString(), resolved_by: resolvedBy })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as HandoffTicket
+}
+
 export async function getWhatsAppMessages(conversationId: string): Promise<WhatsAppMessage[]> {
   const { data, error } = await supabase
     .from('whatsapp_messages')
@@ -1016,18 +1047,37 @@ export async function sendWhatsAppAgentReply(conversationId: string, body: strin
  * This is how BizKey Assistant is testable today without a live WhatsApp
  * Business API account.
  */
+/**
+ * clientId: which tenant's simulator this is — null for BizKey's own
+ * (admin) bucket, or the caller's own business id. Threaded through every
+ * insert here because whatsapp_conversations_own_insert / whatsapp_
+ * messages_own_insert (owner/manager write RLS) both require it — this
+ * previously had no client_id anywhere, which meant it silently only ever
+ * worked for admin (whose is_admin() policy bypasses the check) and threw
+ * a raw RLS error for any real business owner/manager, caught by testing
+ * against a real non-admin account rather than always as admin. Also scopes
+ * the auto-reply/KB match itself to this tenant — before, an admin's own
+ * simulator run could match a DIFFERENT tenant's rules, since
+ * getWhatsAppAutoReplies()/getWhatsAppKbArticles() return every tenant's
+ * rows to an admin caller with no filtering.
+ */
 export async function simulateIncomingWhatsAppMessage(params: {
   customerPhone: string
   customerName?: string
   numberId?: string | null
   body: string
+  clientId?: string | null
 }): Promise<{ conversation: WhatsAppConversation; messages: WhatsAppMessage[]; matched: boolean }> {
-  const { data: existing } = await supabase
+  const clientId = params.clientId ?? null
+
+  // .eq('client_id', null) never matches in PostgREST — null needs .is().
+  let existingQuery = supabase
     .from('whatsapp_conversations')
     .select('*')
     .eq('customer_phone', params.customerPhone)
     .neq('status', 'closed')
-    .maybeSingle()
+  existingQuery = clientId === null ? existingQuery.is('client_id', null) : existingQuery.eq('client_id', clientId)
+  const { data: existing } = await existingQuery.maybeSingle()
 
   let conversation = existing as WhatsAppConversation | null
   if (!conversation) {
@@ -1038,6 +1088,7 @@ export async function simulateIncomingWhatsAppMessage(params: {
         customer_phone: params.customerPhone,
         customer_name: params.customerName ?? null,
         status: 'open',
+        client_id: clientId,
       })
       .select()
       .single()
@@ -1047,10 +1098,12 @@ export async function simulateIncomingWhatsAppMessage(params: {
 
   const { error: inboundErr } = await supabase
     .from('whatsapp_messages')
-    .insert({ conversation_id: conversation.id, direction: 'inbound', sender_type: 'customer', body: params.body })
+    .insert({ conversation_id: conversation.id, direction: 'inbound', sender_type: 'customer', body: params.body, client_id: clientId })
   if (inboundErr) throw inboundErr
 
-  const [rules, kbArticles] = await Promise.all([getWhatsAppAutoReplies(), getWhatsAppKbArticles()])
+  const [allRules, allKbArticles] = await Promise.all([getWhatsAppAutoReplies(), getWhatsAppKbArticles()])
+  const rules = allRules.filter(r => (r.client_id ?? null) === clientId)
+  const kbArticles = allKbArticles.filter(a => (a.client_id ?? null) === clientId)
   const match = matchAutoReply(params.body, rules, kbArticles)
 
   let matched = false
@@ -1058,7 +1111,7 @@ export async function simulateIncomingWhatsAppMessage(params: {
     matched = true
     const { error: botErr } = await supabase
       .from('whatsapp_messages')
-      .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: match.responseText })
+      .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: match.responseText, client_id: clientId })
     if (botErr) throw botErr
   }
 

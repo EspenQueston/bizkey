@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
-import { MessageCircle, Send, X, UserRound, Bot, CheckCircle2, Play, Globe, Smartphone } from 'lucide-react'
+import { MessageCircle, Send, X, UserRound, Bot, CheckCircle2, Play, Globe, Smartphone, Ticket, UserCheck2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   getWhatsAppConversations, getWhatsAppMessages, sendWhatsAppAgentReply,
   updateWhatsAppConversation, simulateIncomingWhatsAppMessage, getWhatsAppNumbers,
+  getOpenHandoffTickets, updateHandoffTicket, resolveHandoffTicket, getAssistantClientMembers,
 } from '@/lib/db'
-import type { WhatsAppConversation, WhatsAppConversationStatus, WhatsAppMessage, WhatsAppNumber } from '@/lib/supabase'
+import type { WhatsAppConversation, WhatsAppConversationStatus, WhatsAppMessage, WhatsAppNumber, HandoffTicket, HandoffTicketPriority, AssistantClientMember } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 const STATUS_META: Record<WhatsAppConversationStatus, { label: string; color: string; icon: string }> = {
@@ -18,7 +20,22 @@ const STATUS_META: Record<WhatsAppConversationStatus, { label: string; color: st
   closed:        { label: 'Fermée',            color: 'bg-muted text-muted-foreground', icon: '✅' },
 }
 
+const PRIORITY_META: Record<HandoffTicketPriority, { label: string; color: string }> = {
+  low:    { label: 'Faible',  color: 'text-muted-foreground border-border' },
+  normal: { label: 'Normale', color: 'text-blue-600 border-blue-500/30' },
+  high:   { label: 'Élevée',  color: 'text-amber-600 border-amber-500/30' },
+  urgent: { label: 'Urgente', color: 'text-destructive border-destructive/30' },
+}
+
 export default function WhatsAppConversationsPage() {
+  const { user, profile, assistantClient, assistantRole } = useAuth()
+  // Admin always has full write access; a business's owner/manager do too —
+  // only a viewer (or a plain unauthenticated-for-this-business state) is
+  // read-only. Gates the reply box, status buttons, and ticket controls so
+  // a viewer sees a disabled UI instead of a write silently failing against
+  // handoff_tickets_own_write / whatsapp_conversations_own_update RLS.
+  const canWrite = profile?.is_admin || assistantRole === 'owner' || assistantRole === 'manager'
+
   const [conversations, setConversations] = useState<WhatsAppConversation[]>([])
   const [numbers, setNumbers] = useState<WhatsAppNumber[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -31,6 +48,16 @@ export default function WhatsAppConversationsPage() {
   const [simForm, setSimForm] = useState({ customer_phone: '', customer_name: '', body: '' })
   const [simulating, setSimulating] = useState(false)
 
+  const [tickets, setTickets] = useState<Record<string, HandoffTicket>>({})
+  const [members, setMembers] = useState<AssistantClientMember[]>([])
+  const [savingTicket, setSavingTicket] = useState(false)
+
+  function refreshTickets() {
+    getOpenHandoffTickets()
+      .then(list => setTickets(Object.fromEntries(list.map(t => [t.conversation_id, t]))))
+      .catch(console.error)
+  }
+
   useEffect(() => {
     Promise.allSettled([getWhatsAppConversations(), getWhatsAppNumbers()]).then(([c, n]) => {
       if (c.status === 'fulfilled') {
@@ -39,6 +66,7 @@ export default function WhatsAppConversationsPage() {
       }
       if (n.status === 'fulfilled') setNumbers(n.value)
     }).finally(() => setLoading(false))
+    refreshTickets()
   }, [])
 
   useEffect(() => {
@@ -48,6 +76,12 @@ export default function WhatsAppConversationsPage() {
   }, [selectedId])
 
   const selected = conversations.find(c => c.id === selectedId) ?? null
+  const ticket = selected ? tickets[selected.id] : undefined
+
+  useEffect(() => {
+    if (!selected?.client_id) { setMembers([]); return }
+    getAssistantClientMembers(selected.client_id).catch(console.error).then(list => setMembers(list ?? []))
+  }, [selected?.client_id])
 
   async function handleSendReply() {
     if (!selectedId || !reply.trim()) return
@@ -72,6 +106,42 @@ export default function WhatsAppConversationsPage() {
     if (!selectedId) return
     const updated = await updateWhatsAppConversation(selectedId, { status })
     setConversations(prev => prev.map(c => c.id === selectedId ? updated : c))
+    // A status change may open or resolve a ticket via trigger — cheap to
+    // just refetch the (small) open-tickets set rather than guess the effect.
+    refreshTickets()
+  }
+
+  async function handleTicketField(patch: Partial<Pick<HandoffTicket, 'priority' | 'reason' | 'assigned_to'>>) {
+    if (!ticket) return
+    setSavingTicket(true)
+    try {
+      const updated = await updateHandoffTicket(ticket.id, patch)
+      setTickets(prev => ({ ...prev, [updated.conversation_id]: updated }))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de la mise à jour du ticket')
+    } finally {
+      setSavingTicket(false)
+    }
+  }
+
+  async function handleResolveTicket() {
+    if (!ticket || !user) return
+    setSavingTicket(true)
+    try {
+      await resolveHandoffTicket(ticket.id, user.id)
+      setTickets(prev => {
+        const next = { ...prev }
+        delete next[ticket.conversation_id]
+        return next
+      })
+      // The resolve trigger flips the conversation back to 'open' server-side.
+      setConversations(prev => prev.map(c => c.id === ticket.conversation_id && c.status === 'pending_human' ? { ...c, status: 'open' } : c))
+      toast.success('Ticket résolu')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de la résolution du ticket')
+    } finally {
+      setSavingTicket(false)
+    }
   }
 
   async function handleSimulate() {
@@ -83,14 +153,17 @@ export default function WhatsAppConversationsPage() {
         customerName: simForm.customer_name.trim() || undefined,
         numberId: numbers.find(n => n.status === 'active')?.id ?? numbers[0]?.id ?? null,
         body: simForm.body.trim(),
+        clientId: assistantClient?.id ?? null,
       })
       const fresh = await getWhatsAppConversations()
       setConversations(fresh)
       setSelectedId(conversation.id)
+      refreshTickets()
       setShowSimModal(false)
       setSimForm({ customer_phone: '', customer_name: '', body: '' })
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Échec de la simulation')
     } finally {
       setSimulating(false)
     }
@@ -103,10 +176,12 @@ export default function WhatsAppConversationsPage() {
           <h1 className="font-serif text-2xl font-bold">💬 Conversations</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
         </div>
-        <Button onClick={() => setShowSimModal(true)} variant="outline" className="rounded-full gap-2">
-          <Play className="h-4 w-4" />
-          Simuler un message entrant
-        </Button>
+        {canWrite && (
+          <Button onClick={() => setShowSimModal(true)} variant="outline" className="rounded-full gap-2">
+            <Play className="h-4 w-4" />
+            Simuler un message entrant
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -119,7 +194,9 @@ export default function WhatsAppConversationsPage() {
             <MessageCircle className="h-10 w-10 text-muted-foreground/30" />
             <p className="text-sm font-medium">Aucune conversation pour l'instant</p>
             <p className="text-xs text-muted-foreground max-w-xs">Connectez un numéro WhatsApp Business réel, ou utilisez le simulateur pour tester l'assistant dès maintenant.</p>
-            <Button onClick={() => setShowSimModal(true)} size="sm" className="rounded-full gap-1.5"><Play className="h-3.5 w-3.5" />Simuler un message</Button>
+            {canWrite && (
+              <Button onClick={() => setShowSimModal(true)} size="sm" className="rounded-full gap-1.5"><Play className="h-3.5 w-3.5" />Simuler un message</Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -129,6 +206,7 @@ export default function WhatsAppConversationsPage() {
             <CardContent className="p-0 h-full overflow-y-auto divide-y divide-border">
               {conversations.map(c => {
                 const st = STATUS_META[c.status]
+                const t = tickets[c.id]
                 return (
                   <button
                     key={c.id}
@@ -142,7 +220,12 @@ export default function WhatsAppConversationsPage() {
                           : <Smartphone className="h-3 w-3 text-emerald-500 shrink-0" />}
                         <span className="truncate">{c.customer_name || c.customer_phone}</span>
                       </p>
-                      <Badge className={`text-[9px] shrink-0 ${st.color}`}>{st.icon}</Badge>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {t && (t.priority === 'high' || t.priority === 'urgent') && (
+                          <Badge variant="outline" className={`text-[9px] ${PRIORITY_META[t.priority].color}`}>{PRIORITY_META[t.priority].label}</Badge>
+                        )}
+                        <Badge className={`text-[9px] ${st.color}`}>{st.icon}</Badge>
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {c.channel === 'website' ? 'Chat site web' : c.customer_phone}
@@ -178,12 +261,71 @@ export default function WhatsAppConversationsPage() {
                         variant={selected.status === s ? 'default' : 'outline'}
                         className="h-7 rounded-full text-[10px] px-2.5"
                         onClick={() => handleStatusChange(s)}
+                        disabled={!canWrite}
                       >
                         {STATUS_META[s].icon} {STATUS_META[s].label}
                       </Button>
                     ))}
                   </div>
                 </div>
+
+                {selected.status === 'pending_human' && ticket && (
+                  <div className="p-4 border-b border-border shrink-0 bg-amber-500/5 space-y-2.5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                      <Ticket className="h-3.5 w-3.5" /> Ticket de transfert
+                    </p>
+                    <div className="grid sm:grid-cols-3 gap-2.5">
+                      <div className="space-y-1">
+                        <Label className="text-[10px]">Priorité</Label>
+                        <select
+                          value={ticket.priority}
+                          onChange={e => handleTicketField({ priority: e.target.value as HandoffTicketPriority })}
+                          disabled={!canWrite || savingTicket}
+                          className="w-full h-8 rounded-lg border border-input bg-background px-2 text-xs disabled:opacity-60"
+                        >
+                          {(Object.keys(PRIORITY_META) as HandoffTicketPriority[]).map(p => (
+                            <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label className="text-[10px] flex items-center gap-1"><UserCheck2 className="h-3 w-3" /> Assigné à</Label>
+                        {members.length > 0 ? (
+                          <select
+                            value={ticket.assigned_to ?? ''}
+                            onChange={e => handleTicketField({ assigned_to: e.target.value || null })}
+                            disabled={!canWrite || savingTicket}
+                            className="w-full h-8 rounded-lg border border-input bg-background px-2 text-xs disabled:opacity-60"
+                          >
+                            <option value="">Non assigné</option>
+                            {members.filter(m => m.role !== 'viewer').map(m => (
+                              <option key={m.id} value={m.profile_id}>{m.profile?.name ?? m.profile?.email}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-xs text-muted-foreground h-8 flex items-center">—</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px]">Motif du transfert</Label>
+                      <Input
+                        placeholder="Ex: demande de remboursement, réclamation..."
+                        defaultValue={ticket.reason ?? ''}
+                        onBlur={e => e.target.value !== (ticket.reason ?? '') && handleTicketField({ reason: e.target.value.trim() || null })}
+                        disabled={!canWrite || savingTicket}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    {canWrite && (
+                      <Button size="sm" className="h-7 rounded-full text-[11px] gap-1.5" onClick={handleResolveTicket} disabled={savingTicket}>
+                        {savingTicket ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <CheckCircle2 className="h-3 w-3" />}
+                        Marquer résolu
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {loadingThread ? (
                     <div className="text-center text-xs text-muted-foreground py-8">Chargement...</div>
@@ -215,13 +357,14 @@ export default function WhatsAppConversationsPage() {
                 </div>
                 <div className="p-3 border-t border-border shrink-0 flex gap-2">
                   <Input
-                    placeholder="Répondre en tant qu'agent..."
+                    placeholder={canWrite ? "Répondre en tant qu'agent..." : 'Lecture seule — vous ne pouvez pas répondre'}
                     value={reply}
                     onChange={e => setReply(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSendReply()}
+                    disabled={!canWrite}
                     className="h-10"
                   />
-                  <Button onClick={handleSendReply} disabled={sending || !reply.trim()} className="rounded-full gap-1.5 shrink-0">
+                  <Button onClick={handleSendReply} disabled={!canWrite || sending || !reply.trim()} className="rounded-full gap-1.5 shrink-0">
                     {sending ? <span className="h-3.5 w-3.5 border border-current border-t-transparent animate-spin rounded-full" /> : <Send className="h-3.5 w-3.5" />}
                   </Button>
                 </div>
