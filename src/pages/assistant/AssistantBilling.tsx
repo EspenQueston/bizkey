@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CreditCard, Crown, MessageSquare, Smartphone, ArrowUpRight, Receipt } from 'lucide-react'
+import { CreditCard, Crown, MessageSquare, Smartphone, ArrowUpRight, Receipt, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
-import { getAllAssistantPlans, getUserTransactions, getWhatsAppConversations } from '@/lib/db'
+import { getAllAssistantPlans, getUserTransactions, getUsageSummary, getConversationCountSince } from '@/lib/db'
 import type { AssistantClientStatus, AssistantPlan, PaymentTransaction } from '@/lib/supabase'
 
 const STATUS_META: Record<AssistantClientStatus, { label: string; color: string }> = {
@@ -28,23 +28,28 @@ export default function AssistantBillingPage() {
   const [plans, setPlans] = useState<AssistantPlan[]>([])
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
   const [conversationsThisMonth, setConversationsThisMonth] = useState(0)
+  const [messagesThisMonth, setMessagesThisMonth] = useState(0)
+  const [aiCostThisMonth, setAiCostThisMonth] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !assistantClient) return
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
     Promise.allSettled([
       getAllAssistantPlans(),
       getUserTransactions(user.id),
-      getWhatsAppConversations(),
-    ]).then(([p, tx, convos]) => {
+      getConversationCountSince(assistantClient.id, startOfMonth),
+      getUsageSummary(assistantClient.id, startOfMonth),
+    ]).then(([p, tx, convoCount, usage]) => {
       if (p.status === 'fulfilled') setPlans(p.value)
       if (tx.status === 'fulfilled') setTransactions(tx.value.filter(t => t.assistant_plan_id))
-      if (convos.status === 'fulfilled') {
-        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-        setConversationsThisMonth(convos.value.filter(c => c.created_at >= startOfMonth).length)
+      if (convoCount.status === 'fulfilled') setConversationsThisMonth(convoCount.value)
+      if (usage.status === 'fulfilled') {
+        setMessagesThisMonth(usage.value.reduce((sum, u) => sum + u.total_quantity, 0))
+        setAiCostThisMonth(usage.value.reduce((sum, u) => sum + u.total_cost, 0))
       }
     }).finally(() => setLoading(false))
-  }, [user])
+  }, [user, assistantClient])
 
   if (!assistantClient) {
     return (
@@ -137,6 +142,16 @@ export default function AssistantBillingPage() {
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
             <Smartphone className="h-3.5 w-3.5" />
             {currentPlan ? `${currentPlan.max_numbers} numéro${currentPlan.max_numbers > 1 ? 's' : ''} inclus` : ''}
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><MessageSquare className="h-3 w-3" /> Messages</p>
+              <p className="text-sm font-semibold">{messagesThisMonth.toLocaleString('fr-FR')}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3 w-3" /> Coût IA</p>
+              <p className="text-sm font-semibold">${aiCostThisMonth.toFixed(4)}</p>
+            </div>
           </div>
         </CardContent>
       </Card>

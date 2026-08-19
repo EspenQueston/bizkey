@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   MessageCircle, Smartphone, Bot, UserRound, BookOpen, Loader2, ChevronRight,
-  Globe, Clock, TrendingUp,
+  Globe, Clock, TrendingUp, Sparkles, Building2,
 } from 'lucide-react'
 import {
   AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { DASHBOARD_ACCENTS, type AccentName } from '@/lib/accentPalette'
 import {
   getWhatsAppNumbers, getWhatsAppConversations, getWhatsAppMessagesForAnalytics,
-  getWhatsAppKbArticles, getWhatsAppAutoReplies,
+  getWhatsAppKbArticles, getWhatsAppAutoReplies, getUsageSummaryAllTenants,
 } from '@/lib/db'
 import type { WhatsAppConversation, WhatsAppNumber, WhatsAppMessage } from '@/lib/supabase'
 
@@ -113,21 +113,29 @@ export default function WhatsAppOverviewPage() {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([])
   const [kbCount, setKbCount] = useState(0)
   const [ruleCount, setRuleCount] = useState(0)
+  const [aiCost30d, setAiCost30d] = useState(0)
+  const [tenantsWithUsage, setTenantsWithUsage] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     Promise.allSettled([
       getWhatsAppNumbers(),
       getWhatsAppConversations(),
       getWhatsAppMessagesForAnalytics(),
       getWhatsAppKbArticles(),
       getWhatsAppAutoReplies(),
-    ]).then(([n, c, m, kb, rules]) => {
+      getUsageSummaryAllTenants(since30d),
+    ]).then(([n, c, m, kb, rules, usage]) => {
       if (n.status === 'fulfilled') setNumbers(n.value)
       if (c.status === 'fulfilled') setConversations(c.value)
       if (m.status === 'fulfilled') setMessages(m.value)
       if (kb.status === 'fulfilled') setKbCount(kb.value.filter(a => a.is_active).length)
       if (rules.status === 'fulfilled') setRuleCount(rules.value.filter(r => r.is_active).length)
+      if (usage.status === 'fulfilled') {
+        setAiCost30d(usage.value.reduce((sum, u) => sum + u.total_cost, 0))
+        setTenantsWithUsage(new Set(usage.value.map(u => u.client_id).filter(id => id !== null)).size)
+      }
     }).finally(() => setLoading(false))
   }, [])
 
@@ -289,6 +297,11 @@ export default function WhatsAppOverviewPage() {
         <MetricCard title="Temps de réponse moyen" accent="sky" icon={Clock} value={avgResponseMinutes != null ? `${avgResponseMinutes} min` : '—'} sub="entre client et réponse" />
         <MetricCard title="Chats site web" accent="teal" icon={Globe} value={conversations.filter(c => c.channel === 'website').length} sub="sans compte requis" />
         <MetricCard title="Chats WhatsApp" accent="sapphire" icon={Smartphone} value={conversations.filter(c => c.channel !== 'website').length} sub="via n8n" />
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard title="Coût IA (30 jours)" accent="amber" icon={Sparkles} value={`$${aiCost30d.toFixed(4)}`} sub="tous clients confondus" />
+        <MetricCard title="Entreprises actives" accent="violet" icon={Building2} value={tenantsWithUsage} sub="avec au moins 1 message (30j)" />
       </div>
 
       <ChartCard title="Volume de messages" subtitle="14 derniers jours" icon={TrendingUp}>

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket } from './supabase'
+import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket, UsageEventType, UsageSummary, UsageSummaryByTenant } from './supabase'
 import { matchAutoReply } from './whatsappBot'
 import { getFunctionErrorMessage } from './api'
 
@@ -965,6 +965,15 @@ export async function getWhatsAppConversations(): Promise<WhatsAppConversation[]
   return (data ?? []) as WhatsAppConversation[]
 }
 
+/** Server-side count against a business's plan.max_conversations_per_month — a `head: true` count query, not a fetch-everything-then-filter-in-JS like AssistantBilling.tsx used to do. clientId null means BizKey's own bucket. */
+export async function getConversationCountSince(clientId: string | null, since: string): Promise<number> {
+  let query = supabase.from('whatsapp_conversations').select('id', { count: 'exact', head: true }).gte('created_at', since)
+  query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
+  const { count, error } = await query
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function updateWhatsAppConversation(id: string, updates: Partial<Omit<WhatsAppConversation, 'id' | 'created_at'>>): Promise<WhatsAppConversation> {
   const { data, error } = await supabase.from('whatsapp_conversations').update(updates).eq('id', id).select().single()
   if (error) throw error
@@ -1000,6 +1009,27 @@ export async function resolveHandoffTicket(id: string, resolvedBy: string): Prom
     .single()
   if (error) throw error
   return data as HandoffTicket
+}
+
+// ─── Usage summary ─────────────────────────────────────────────────────────
+// Both RPCs are SECURITY INVOKER — RLS on usage_events itself is what scopes
+// the result, not the function body. Numeric columns arrive as strings over
+// the wire (JSON has no arbitrary-precision decimal), converted here.
+
+/** One business's own usage since `since` — clientId null means BizKey's own bucket, matching every other client_id convention. */
+export async function getUsageSummary(clientId: string | null, since: string): Promise<UsageSummary[]> {
+  const { data, error } = await supabase.rpc('get_usage_summary', { p_client_id: clientId, p_since: since })
+  if (error) throw error
+  return ((data ?? []) as { event_type: UsageEventType; total_quantity: string; total_cost: string }[])
+    .map(r => ({ event_type: r.event_type, total_quantity: Number(r.total_quantity), total_cost: Number(r.total_cost) }))
+}
+
+/** Cross-tenant totals grouped by business — admin-only in practice (RLS silently narrows a non-admin caller to just their own client_id). */
+export async function getUsageSummaryAllTenants(since: string): Promise<UsageSummaryByTenant[]> {
+  const { data, error } = await supabase.rpc('get_usage_summary_all_tenants', { p_since: since })
+  if (error) throw error
+  return ((data ?? []) as { client_id: string | null; event_type: UsageEventType; total_quantity: string; total_cost: string }[])
+    .map(r => ({ client_id: r.client_id, event_type: r.event_type, total_quantity: Number(r.total_quantity), total_cost: Number(r.total_cost) }))
 }
 
 export async function getWhatsAppMessages(conversationId: string): Promise<WhatsAppMessage[]> {

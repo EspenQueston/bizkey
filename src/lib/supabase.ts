@@ -518,6 +518,20 @@ export interface HandoffTicket {
   resolved_by: string | null
 }
 
+export type UsageEventType = 'message_inbound' | 'message_outbound'
+
+/** One event_type's totals over a given window — returned by get_usage_summary / get_usage_summary_all_tenants. Postgres `numeric` comes back over the wire as a string (JSON has no arbitrary-precision decimal), already converted to number by the db.ts wrapper. */
+export interface UsageSummary {
+  event_type: UsageEventType
+  total_quantity: number
+  total_cost: number
+}
+
+export interface UsageSummaryByTenant extends UsageSummary {
+  /** null = BizKey's own. */
+  client_id: string | null
+}
+
 export interface AssistantPlan {
   id: string
   name: string
