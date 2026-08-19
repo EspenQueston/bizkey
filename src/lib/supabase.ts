@@ -571,6 +571,8 @@ export interface AssistantClient {
   contact_name: string | null
   contact_email: string | null
   contact_phone: string | null
+  sector: string | null
+  country: string | null
   status: AssistantClientStatus
   plan_id: string | null
   whatsapp_number_id: string | null
@@ -582,6 +584,8 @@ export interface AssistantClient {
   /** Set by activate_assistant_subscription / admin_assign_assistant_plan on each activation — null until the business has ever been on a paid plan. */
   current_period_start: string | null
   current_period_end: string | null
+  /** Stamped by complete_assistant_onboarding once the first-run wizard is finished — null gates the wizard at /app/assistant for the owner. */
+  onboarding_completed_at: string | null
   created_at: string
   updated_at: string
 }

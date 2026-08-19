@@ -1372,6 +1372,35 @@ export async function updateMyAssistantSettings(settings: {
 }
 
 /**
+ * Saves one slice of first-run onboarding and, on the final step, stamps
+ * onboarding_completed_at. Owner-only — see complete_assistant_onboarding.
+ * Every field is optional so each wizard step only sends what it collected.
+ */
+export async function completeAssistantOnboarding(step: {
+  companyName?: string
+  sector?: string
+  country?: string
+  contactPhone?: string
+  tone?: AssistantTone
+  businessHours?: Record<string, unknown>
+  requestedWhatsappNumber?: string
+  finish?: boolean
+}): Promise<AssistantClient> {
+  const { data, error } = await supabase.rpc('complete_assistant_onboarding', {
+    p_company_name: step.companyName ?? null,
+    p_sector: step.sector ?? null,
+    p_country: step.country ?? null,
+    p_contact_phone: step.contactPhone ?? null,
+    p_tone: step.tone ?? null,
+    p_business_hours: step.businessHours ?? null,
+    p_requested_whatsapp_number: step.requestedWhatsappNumber ?? null,
+    p_finish: step.finish ?? false,
+  }).single()
+  if (error) throw error
+  return data as AssistantClient
+}
+
+/**
  * Admin-only: grants a user a real BizKey Sourcing plan — a subscription
  * replaces the credit pool (expiring any prior active one), a PAYG plan
  * tops up on top of whatever they already have. Same mechanism a real

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
+import { ToneSelector } from '@/components/assistant/ToneSelector'
+import { BusinessHoursEditor, defaultHours, normalizeHours, type BusinessHours } from '@/components/assistant/BusinessHoursEditor'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   getWhatsAppNumbers, updateMyAssistantSettings,
@@ -18,44 +20,6 @@ const ROLE_META: Record<AssistantMemberRole, { label: string; icon: typeof Crown
   owner:   { label: 'Propriétaire', icon: Crown, color: 'text-primary border-primary/30' },
   manager: { label: 'Responsable',  icon: Pencil, color: 'text-blue-600 border-blue-500/30' },
   viewer:  { label: 'Lecture seule', icon: Eye, color: 'text-muted-foreground border-border' },
-}
-
-const TONE_META: Record<AssistantTone, { label: string; description: string; emoji: string }> = {
-  professional: { label: 'Professionnel', description: 'Formel, précis, orienté efficacité.', emoji: '💼' },
-  friendly:     { label: 'Chaleureux',     description: 'Convivial et proche du client.',       emoji: '😊' },
-  commercial:   { label: 'Commercial',     description: 'Met en avant offres et ventes.',        emoji: '🚀' },
-}
-
-type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
-interface DayHours { open: string; close: string; closed: boolean }
-type BusinessHours = Record<DayKey, DayHours>
-
-const DAY_LABELS: Record<DayKey, string> = {
-  mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche',
-}
-const DAY_ORDER: DayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-
-function defaultHours(): BusinessHours {
-  return DAY_ORDER.reduce((acc, day) => {
-    acc[day] = { open: '09:00', close: '18:00', closed: day === 'sun' }
-    return acc
-  }, {} as BusinessHours)
-}
-
-function normalizeHours(raw: Record<string, unknown> | null): BusinessHours {
-  const base = defaultHours()
-  if (!raw) return base
-  for (const day of DAY_ORDER) {
-    const entry = raw[day] as Partial<DayHours> | undefined
-    if (entry) {
-      base[day] = {
-        open: typeof entry.open === 'string' ? entry.open : base[day].open,
-        close: typeof entry.close === 'string' ? entry.close : base[day].close,
-        closed: typeof entry.closed === 'boolean' ? entry.closed : base[day].closed,
-      }
-    }
-  }
-  return base
 }
 
 export default function AssistantSettingsPage() {
@@ -133,10 +97,6 @@ export default function AssistantSettingsPage() {
   }
 
   const connectedNumber = numbers.find(n => n.id === assistantClient?.whatsapp_number_id)
-
-  function updateDay(day: DayKey, patch: Partial<DayHours>) {
-    setHours(prev => ({ ...prev, [day]: { ...prev[day], ...patch } }))
-  }
 
   async function handleSave() {
     setSaving(true)
@@ -224,26 +184,7 @@ export default function AssistantSettingsPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" /> Ton de l'assistant
           </p>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {(Object.keys(TONE_META) as AssistantTone[]).map(t => {
-              const meta = TONE_META[t]
-              const active = tone === t
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTone(t)}
-                  className={`text-left rounded-xl border-2 p-3 transition-all ${
-                    active ? 'border-primary bg-primary/5 shadow-sm shadow-primary/10' : 'border-border hover:border-primary/40'
-                  }`}
-                >
-                  <span className="text-lg">{meta.emoji}</span>
-                  <p className="text-sm font-semibold mt-1">{meta.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{meta.description}</p>
-                </button>
-              )
-            })}
-          </div>
+          <ToneSelector value={tone} onChange={setTone} />
         </CardContent>
       </Card>
 
@@ -253,37 +194,7 @@ export default function AssistantSettingsPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" /> Horaires d'ouverture
           </p>
-          <div className="space-y-1.5">
-            {DAY_ORDER.map(day => {
-              const d = hours[day]
-              return (
-                <div key={day} className="flex items-center gap-3 py-1">
-                  <span className="text-sm w-24 shrink-0">{DAY_LABELS[day]}</span>
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-                    <input type="checkbox" checked={d.closed} onChange={e => updateDay(day, { closed: e.target.checked })} />
-                    Fermé
-                  </label>
-                  {!d.closed && (
-                    <div className="flex items-center gap-2 flex-1">
-                      <input
-                        type="time"
-                        value={d.open}
-                        onChange={e => updateDay(day, { open: e.target.value })}
-                        className="h-9 rounded-lg border border-input bg-background px-2 text-xs flex-1 min-w-0"
-                      />
-                      <span className="text-muted-foreground text-xs">à</span>
-                      <input
-                        type="time"
-                        value={d.close}
-                        onChange={e => updateDay(day, { close: e.target.value })}
-                        className="h-9 rounded-lg border border-input bg-background px-2 text-xs flex-1 min-w-0"
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          <BusinessHoursEditor value={hours} onChange={setHours} />
         </CardContent>
       </Card>
 

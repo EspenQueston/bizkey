@@ -11,6 +11,8 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DASHBOARD_ACCENTS, type AccentName } from '@/lib/accentPalette'
+import { useAuth } from '@/contexts/AuthContext'
+import AssistantOnboardingWizard from '@/pages/assistant/AssistantOnboardingWizard'
 import {
   getWhatsAppNumbers, getWhatsAppConversations, getWhatsAppMessagesForAnalytics,
   getWhatsAppKbArticles, getWhatsAppAutoReplies, getUsageSummaryAllTenants,
@@ -108,6 +110,8 @@ function DonutMini({ data }: { data: { name: string; value: number }[] }) {
 }
 
 export default function WhatsAppOverviewPage() {
+  const { assistantClient, assistantRole, refreshProfile } = useAuth()
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false)
   const [numbers, setNumbers] = useState<WhatsAppNumber[]>([])
   const [conversations, setConversations] = useState<WhatsAppConversation[]>([])
   const [messages, setMessages] = useState<WhatsAppMessage[]>([])
@@ -245,6 +249,21 @@ export default function WhatsAppOverviewPage() {
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
+    )
+  }
+
+  // First-run gate: a brand-new owner never gets asked their real company
+  // name/sector/country at checkout (activate_assistant_subscription
+  // defaults company_name to their profile name), and tone/hours/WhatsApp
+  // number/team/FAQ are all real settings scattered across separate pages.
+  // Owner-only — a manager or viewer just sees the normal dashboard even
+  // if the owner hasn't finished setup, so their access is never blocked.
+  if (assistantClient && assistantRole === 'owner' && !assistantClient.onboarding_completed_at && !onboardingDismissed) {
+    return (
+      <AssistantOnboardingWizard
+        assistantClient={assistantClient}
+        onDone={() => { setOnboardingDismissed(true); refreshProfile() }}
+      />
     )
   }
 
