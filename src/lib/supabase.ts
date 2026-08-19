@@ -474,6 +474,46 @@ export interface WhatsAppMessage {
   client_id?: string | null
 }
 
+export type KnowledgeSourceType = 'csv' | 'xlsx'
+export type KnowledgeDocumentStatus = 'ready' | 'failed'
+
+export interface KnowledgeDocument {
+  id: string
+  client_id: string | null
+  source_type: KnowledgeSourceType
+  title: string
+  storage_path: string
+  file_name: string
+  mime_type: string | null
+  file_size_bytes: number | null
+  row_count: number
+  status: KnowledgeDocumentStatus
+  error: string | null
+  uploaded_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface KnowledgeRecordData {
+  name: string
+  price?: number | null
+  stock?: number | null
+  category?: string | null
+  description?: string | null
+  image_url?: string | null
+}
+
+export interface KnowledgeRecord {
+  id: string
+  client_id: string | null
+  document_id: string
+  record_type: string
+  data: KnowledgeRecordData
+  searchable_text: string
+  is_active: boolean
+  created_at: string
+}
+
 export interface WhatsAppKbArticle {
   id: string
   title: string

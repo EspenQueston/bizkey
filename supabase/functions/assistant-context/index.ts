@@ -14,6 +14,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 //     without spending an LLM call
 //   - the tenant's top-matching FAQ articles, for the agent to ground its
 //     own generated reply in instead of hallucinating
+//   - the tenant's top-matching imported catalog rows (from an Excel/CSV
+//     product import), same purpose as the FAQ articles above
 //   - the tenant's configured tone and business hours, to steer the
 //     agent's system prompt per-business instead of one static prompt
 //
@@ -48,6 +50,13 @@ interface KbArticle {
   title: string
   keywords: string[]
   answer: string
+  is_active: boolean
+}
+
+interface KnowledgeRecord {
+  id: string
+  data: { name: string; price?: number | null; stock?: number | null; category?: string | null; description?: string | null }
+  searchable_text: string
   is_active: boolean
 }
 
@@ -124,6 +133,33 @@ function rankKbArticles(query: string, articles: KbArticle[], limit: number): Kb
   return scored.slice(0, limit).map(s => s.article)
 }
 
+// Ported from src/lib/whatsappBot.ts's rankKnowledgeRecords — same
+// Deno/Vite module-graph limitation as matchAutoReply/rankKbArticles above.
+// Deliberately no embeddings: the agent gets a short ranked list of
+// candidate products to ground its own reply in, same shape as the FAQ
+// articles below, not an exact-match lookup it blindly parrots back.
+function rankKnowledgeRecords(query: string, records: KnowledgeRecord[], limit: number): KnowledgeRecord[] {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return []
+  const queryTokens = normalized.split(/\s+/).filter(t => t.length > 2)
+  if (queryTokens.length === 0) return []
+
+  const scored = records
+    .filter(r => r.is_active)
+    .map(record => {
+      let score = 0
+      if (record.searchable_text.includes(normalized)) score += 3
+      for (const t of queryTokens) {
+        if (record.searchable_text.includes(t)) score += 1
+      }
+      return { record, score }
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  return scored.slice(0, limit).map(s => s.record)
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
@@ -184,14 +220,16 @@ serve(async (req) => {
     return clientId ? q.eq('client_id', clientId) : q.is('client_id', null)
   }
 
-  const [{ data: rules }, { data: kb }] = await Promise.all([
+  const [{ data: rules }, { data: kb }, { data: records }] = await Promise.all([
     scopedQuery('whatsapp_auto_replies', '*'),
     scopedQuery('whatsapp_kb_articles', 'id, title, keywords, answer, is_active'),
+    scopedQuery('knowledge_records', 'id, data, searchable_text, is_active'),
   ])
 
   const kbArticles = (kb ?? []) as KbArticle[]
   const autoReplyMatch = matchAutoReply(query, (rules ?? []) as AutoReplyRule[], kbArticles)
   const knowledgeBase = rankKbArticles(query, kbArticles, limit)
+  const catalog = rankKnowledgeRecords(query, (records ?? []) as KnowledgeRecord[], limit)
 
   return json({
     clientId,
@@ -202,5 +240,6 @@ serve(async (req) => {
       ? { matched: true, responseText: autoReplyMatch.responseText, triggerType: autoReplyMatch.rule.trigger_type }
       : { matched: false },
     knowledgeBase: knowledgeBase.map(a => ({ title: a.title, answer: a.answer, keywords: a.keywords })),
+    catalog: catalog.map(r => r.data),
   })
 })

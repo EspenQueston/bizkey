@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
-import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket, UsageEventType, UsageSummary, UsageSummaryByTenant } from './supabase'
-import { matchAutoReply } from './whatsappBot'
+import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket, UsageEventType, UsageSummary, UsageSummaryByTenant, KnowledgeDocument, KnowledgeRecord, KnowledgeRecordData } from './supabase'
+import { matchAutoReply, rankKnowledgeRecords, formatKnowledgeRecordReply } from './whatsappBot'
 import { getFunctionErrorMessage } from './api'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -1131,10 +1131,16 @@ export async function simulateIncomingWhatsAppMessage(params: {
     .insert({ conversation_id: conversation.id, direction: 'inbound', sender_type: 'customer', body: params.body, client_id: clientId })
   if (inboundErr) throw inboundErr
 
-  const [allRules, allKbArticles] = await Promise.all([getWhatsAppAutoReplies(), getWhatsAppKbArticles()])
+  const [allRules, allKbArticles, allRecords] = await Promise.all([
+    getWhatsAppAutoReplies(), getWhatsAppKbArticles(), getKnowledgeRecords(clientId),
+  ])
   const rules = allRules.filter(r => (r.client_id ?? null) === clientId)
   const kbArticles = allKbArticles.filter(a => (a.client_id ?? null) === clientId)
   const match = matchAutoReply(params.body, rules, kbArticles)
+  // Falls back to the imported catalog only when no auto-reply/FAQ rule
+  // fired — a manually-written rule is always a more deliberate answer than
+  // a scored catalog lookup.
+  const catalogMatch = match ? null : rankKnowledgeRecords(params.body, allRecords, 1)[0]
 
   let matched = false
   if (match) {
@@ -1142,6 +1148,12 @@ export async function simulateIncomingWhatsAppMessage(params: {
     const { error: botErr } = await supabase
       .from('whatsapp_messages')
       .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: match.responseText, client_id: clientId })
+    if (botErr) throw botErr
+  } else if (catalogMatch) {
+    matched = true
+    const { error: botErr } = await supabase
+      .from('whatsapp_messages')
+      .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: formatKnowledgeRecordReply(catalogMatch), client_id: clientId })
     if (botErr) throw botErr
   }
 
@@ -1193,6 +1205,84 @@ export async function updateWhatsAppKbArticle(id: string, updates: Partial<Omit<
 
 export async function deleteWhatsAppKbArticle(id: string) {
   const { error } = await supabase.from('whatsapp_kb_articles').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function getKnowledgeDocuments(clientId: string | null): Promise<KnowledgeDocument[]> {
+  let query = supabase.from('knowledge_documents').select('*').order('created_at', { ascending: false })
+  query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []) as KnowledgeDocument[]
+}
+
+export async function getKnowledgeRecords(clientId: string | null): Promise<KnowledgeRecord[]> {
+  let query = supabase.from('knowledge_records').select('*').eq('is_active', true)
+  query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []) as KnowledgeRecord[]
+}
+
+/** Uploads the original file to the private knowledge-documents bucket, under {clientId}/{documentId}/{fileName} — that path shape is what the storage RLS policies scope access by. */
+export async function uploadKnowledgeDocumentFile(clientId: string, documentId: string, file: File): Promise<string> {
+  const path = `${clientId}/${documentId}/${file.name}`
+  const { error } = await supabase.storage.from('knowledge-documents').upload(path, file, { upsert: false })
+  if (error) throw error
+  return path
+}
+
+/** Row parsing/mapping happens client-side (see KnowledgeImports UI) — this just persists the already-mapped result. Row count is stamped from the actual insert count, not the caller's claim. */
+export async function createKnowledgeDocumentWithRecords(params: {
+  clientId: string
+  sourceType: 'csv' | 'xlsx'
+  title: string
+  file: File
+  records: KnowledgeRecordData[]
+}): Promise<KnowledgeDocument> {
+  const documentId = crypto.randomUUID()
+  const storagePath = await uploadKnowledgeDocumentFile(params.clientId, documentId, params.file)
+
+  const { data: doc, error: docErr } = await supabase
+    .from('knowledge_documents')
+    .insert({
+      id: documentId,
+      client_id: params.clientId,
+      source_type: params.sourceType,
+      title: params.title,
+      storage_path: storagePath,
+      file_name: params.file.name,
+      mime_type: params.file.type || null,
+      file_size_bytes: params.file.size,
+      row_count: params.records.length,
+      status: 'ready',
+    })
+    .select()
+    .single()
+  if (docErr) throw docErr
+
+  if (params.records.length > 0) {
+    const rows = params.records.map(r => ({
+      client_id: params.clientId,
+      document_id: documentId,
+      record_type: 'product',
+      data: r,
+      searchable_text: [r.name, r.category, r.description, r.price, r.stock].filter(v => v != null && v !== '').join(' ').toLowerCase(),
+    }))
+    const { error: recErr } = await supabase.from('knowledge_records').insert(rows)
+    if (recErr) throw recErr
+  }
+
+  return doc as KnowledgeDocument
+}
+
+export async function deleteKnowledgeDocument(doc: KnowledgeDocument) {
+  // Best-effort — an orphaned storage object with no surviving DB row is a
+  // harmless leak, but a delete blocked by a storage error the user can't
+  // otherwise resolve is a real dead end, so the DB row (and its cascaded
+  // records) always gets removed regardless of storage outcome.
+  await supabase.storage.from('knowledge-documents').remove([doc.storage_path]).catch(() => {})
+  const { error } = await supabase.from('knowledge_documents').delete().eq('id', doc.id)
   if (error) throw error
 }
 

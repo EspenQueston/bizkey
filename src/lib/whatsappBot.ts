@@ -1,4 +1,4 @@
-import type { WhatsAppAutoReply, WhatsAppKbArticle } from './supabase'
+import type { WhatsAppAutoReply, WhatsAppKbArticle, KnowledgeRecord } from './supabase'
 
 const GREETING_PATTERNS = ['bonjour', 'bonsoir', 'salut', 'bjr', 'hello', 'hi', 'coucou', 'cc']
 
@@ -62,4 +62,44 @@ export function matchAutoReply(
   }
 
   return null
+}
+
+/**
+ * Same deterministic substring/token-overlap scoring as assistant-context's
+ * rankKbArticles (ported there too — Deno can't import this module graph),
+ * applied to imported catalog rows instead of manual FAQ articles. A shared
+ * token in the record's searchable_text counts once; an exact substring
+ * match of the whole query counts more, since a customer naming the product
+ * verbatim ("le sac noir") is a stronger signal than incidental word overlap.
+ */
+export function rankKnowledgeRecords(query: string, records: KnowledgeRecord[], limit = 1): KnowledgeRecord[] {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return []
+  const queryTokens = normalized.split(/\s+/).filter(t => t.length > 2)
+  if (queryTokens.length === 0) return []
+
+  const scored = records
+    .filter(r => r.is_active)
+    .map(record => {
+      let score = 0
+      if (record.searchable_text.includes(normalized)) score += 3
+      for (const t of queryTokens) {
+        if (record.searchable_text.includes(t)) score += 1
+      }
+      return { record, score }
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  return scored.slice(0, limit).map(s => s.record)
+}
+
+/** Formats a matched catalog record into a WhatsApp-ready reply — one consistent shape, reused by the simulator and (ported) assistant-context. */
+export function formatKnowledgeRecordReply(record: KnowledgeRecord): string {
+  const { name, price, stock, description } = record.data
+  const lines = [`*${name}*`]
+  if (price != null) lines.push(`Prix : ${price.toLocaleString('fr-FR')} FCFA`)
+  if (stock != null) lines.push(stock > 0 ? `Stock : disponible (${stock})` : 'Stock : épuisé')
+  if (description) lines.push(description)
+  return lines.join('\n')
 }
