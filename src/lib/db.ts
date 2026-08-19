@@ -1223,7 +1223,15 @@ export async function getAssistantClientMembers(clientId: string): Promise<Assis
   return (data ?? []) as unknown as AssistantClientMember[]
 }
 
-/** Owner-only (enforced server-side by invite_assistant_client_member) — the invited person must already have a BizKey account since no email-invite infrastructure exists yet. */
+/**
+ * Owner-only (enforced server-side by invite_assistant_client_member) — the
+ * invited person must already have a BizKey account since there's no
+ * pending-invite-by-email flow (no way to onboard someone who doesn't have
+ * one yet). The notification email is best-effort: send-invite-email
+ * failing (bad SMTP creds, mailbox down) never rolls back or fails the
+ * invite itself — the membership row is real either way, the person just
+ * finds out by logging in instead of by email.
+ */
 export async function inviteAssistantClientMember(clientId: string, email: string, role: 'manager' | 'viewer'): Promise<AssistantClientMember> {
   const { data, error } = await supabase.rpc('invite_assistant_client_member', {
     p_client_id: clientId,
@@ -1231,7 +1239,14 @@ export async function inviteAssistantClientMember(clientId: string, email: strin
     p_role: role,
   })
   if (error) throw error
-  return data as AssistantClientMember
+  const member = data as AssistantClientMember
+
+  supabase.functions.invoke('send-invite-email', { body: { memberId: member.id } })
+    .then(({ error: emailError }) => {
+      if (emailError) console.warn('send-invite-email failed:', emailError)
+    })
+
+  return member
 }
 
 /** Owner-only — RLS (assistant_client_members_owner_manage) blocks anyone else, and a trigger blocks demoting the last owner. */
