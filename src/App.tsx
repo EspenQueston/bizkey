@@ -16,6 +16,7 @@ import ServicesPage from '@/pages/Services'
 import ContactPage from '@/pages/Contact'
 import HelpPage from '@/pages/Help'
 import LoginPage from '@/pages/Login'
+import AdminLoginPage from '@/pages/AdminLogin'
 import AnalyzePage from '@/pages/Analyze'
 import AnalysisResultPage from '@/pages/AnalysisResult'
 import PricingPage from '@/pages/Pricing'
@@ -93,6 +94,10 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     </div>
   )
 
+  // Unreachable in practice — the shared /app layout route already wraps
+  // everything in <ProtectedRoute>, which redirects an unauthenticated
+  // visitor to /login before this ever runs. Kept as a real guard rather
+  // than assumed, in case AdminRoute is ever used outside that layout.
   if (!user) return <Navigate to="/login" replace />
   // Straight to the panel root rather than the retired /dashboard path, which
   // would only bounce through an extra redirect to land in the same place.
@@ -230,6 +235,7 @@ function AppRoutes() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/aide" element={<HelpPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
       <Route path="/checkout-assistant" element={<ProtectedRoute><CheckoutAssistantPage /></ProtectedRoute>} />

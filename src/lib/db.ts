@@ -1284,6 +1284,20 @@ export async function getMyAssistantClient(userId: string): Promise<AssistantCli
  * assistantClient/assistantRole are populated for every team member, not
  * just the original owner.
  */
+/**
+ * Reads is_admin for the currently-authenticated session directly (no
+ * reliance on AuthContext's async profile load, which can lag a beat behind
+ * a just-completed signIn) — used right after login to enforce the
+ * admin-only vs customer-only login surfaces.
+ */
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) return false
+  const { data, error } = await supabase.from('profiles').select('is_admin').eq('id', userData.user.id).maybeSingle()
+  if (error || !data) return false
+  return !!data.is_admin
+}
+
 export async function getMyAssistantMembership(userId: string): Promise<{ role: AssistantMemberRole; client: AssistantClient } | null> {
   const { data, error } = await supabase
     .from('assistant_client_members')

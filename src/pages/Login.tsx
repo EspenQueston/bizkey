@@ -12,6 +12,7 @@ import { Logo } from '@/components/Logo'
 import { OtpCodeStep } from '@/components/auth/OtpCodeStep'
 import { useAuth } from '@/contexts/AuthContext'
 import { mapAuthError } from '@/lib/authErrors'
+import { isCurrentUserAdmin } from '@/lib/db'
 import { toast } from 'sonner'
 
 type View = 'login' | 'register' | 'mfa' | 'confirm-signup' | 'forgot-request' | 'forgot-reset'
@@ -33,7 +34,7 @@ export default function LoginPage() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
   const {
-    signIn, signUp, verifyMfaCode,
+    signIn, signUp, signOut, verifyMfaCode,
     verifySignupCode, resendSignupCode,
     requestPasswordReset, verifyPasswordResetCode, updatePassword,
   } = useAuth()
@@ -62,12 +63,29 @@ export default function LoginPage() {
 
   function resetMessages() { setError(''); setSuccess('') }
 
+  /**
+   * Admin accounts must sign in from the dedicated /admin/login — a
+   * customer-facing form is exactly the surface credential-stuffing and
+   * phishing target first, so an admin session established here gets
+   * signed back out immediately rather than allowed through. Returns true
+   * when it blocked the login (caller should stop, not navigate to /app).
+   */
+  async function blockIfAdmin(): Promise<boolean> {
+    if (!(await isCurrentUserAdmin())) return false
+    await signOut()
+    const message = "Les comptes administrateur doivent se connecter depuis l'espace dédié."
+    setError(message)
+    toast.error(message)
+    return true
+  }
+
   async function handleMfaSubmit(e: React.FormEvent) {
     e.preventDefault()
     resetMessages()
     setLoading(true)
     try {
       await verifyMfaCode(mfaCode)
+      if (await blockIfAdmin()) { setView('login'); return }
       toast.success('Connexion réussie — bienvenue sur BizKey !')
       navigate('/app')
     } catch (err) {
@@ -91,6 +109,7 @@ export default function LoginPage() {
           setView('mfa')
           return
         }
+        if (await blockIfAdmin()) return
         toast.success('Connexion réussie — bienvenue sur BizKey !')
         navigate('/app')
       } else {
