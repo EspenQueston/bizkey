@@ -132,12 +132,16 @@ function AssistantAccessRoute({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Guards Settings/Billing specifically: these are "manage my own business"
- * pages, meaningless for admin (who isn't a subscriber of their own
- * product) — unlike AssistantAccessRoute, admin does NOT bypass here.
+ * Guards Billing specifically: "manage my own business" for the owner only
+ * — meaningless for admin (who isn't a subscriber of their own product),
+ * and per the team-roles model a manager gets the assistant/FAQ/team
+ * surface but not billing. Now that assistantClient/assistantRole resolve
+ * through team membership (a manager's assistantClient is populated too,
+ * not just the owner's), the role check is what actually keeps a manager
+ * out — isAssistantSubscriptionLive alone would let them through.
  */
 function AssistantOwnerRoute({ children }: { children: React.ReactNode }) {
-  const { user, assistantClient, loading } = useAuth()
+  const { user, assistantClient, assistantRole, loading } = useAuth()
   const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
@@ -153,7 +157,34 @@ function AssistantOwnerRoute({ children }: { children: React.ReactNode }) {
   )
 
   if (!user) return <Navigate to="/login" replace />
-  if (!isAssistantSubscriptionLive(assistantClient)) return <Navigate to="/app" replace />
+  if (!isAssistantSubscriptionLive(assistantClient) || assistantRole !== 'owner') return <Navigate to="/app" replace />
+
+  return <>{children}</>
+}
+
+/**
+ * Guards Settings: owner or manager (not viewer, not admin) — per the
+ * team-roles model a manager gets "assistant, FAQ" edit access, matching
+ * what update_my_assistant_settings itself now permits server-side.
+ */
+function AssistantManagerRoute({ children }: { children: React.ReactNode }) {
+  const { user, assistantClient, assistantRole, loading } = useAuth()
+  const [timedOut, setTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (!loading) return
+    const timer = setTimeout(() => setTimedOut(true), 8000)
+    return () => clearTimeout(timer)
+  }, [loading])
+
+  if (loading && !timedOut) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  )
+
+  if (!user) return <Navigate to="/login" replace />
+  if (!isAssistantSubscriptionLive(assistantClient) || (assistantRole !== 'owner' && assistantRole !== 'manager')) return <Navigate to="/app" replace />
 
   return <>{children}</>
 }
@@ -252,7 +283,7 @@ function AppRoutes() {
         <Route path="assistant/conversations" element={<AssistantAccessRoute><WhatsAppConversations /></AssistantAccessRoute>} />
         <Route path="assistant/knowledge-base" element={<AssistantAccessRoute><WhatsAppKnowledgeBase /></AssistantAccessRoute>} />
         <Route path="assistant/auto-replies" element={<AssistantAccessRoute><WhatsAppAutoReplies /></AssistantAccessRoute>} />
-        <Route path="assistant/settings" element={<AssistantOwnerRoute><WhatsAppAssistantSettings /></AssistantOwnerRoute>} />
+        <Route path="assistant/settings" element={<AssistantManagerRoute><WhatsAppAssistantSettings /></AssistantManagerRoute>} />
         <Route path="assistant/billing" element={<AssistantOwnerRoute><WhatsAppAssistantBilling /></AssistantOwnerRoute>} />
         <Route path="assistant/clients" element={<AdminRoute><AssistantClients /></AdminRoute>} />
       </Route>

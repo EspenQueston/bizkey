@@ -521,6 +521,19 @@ export type AssistantClientStatus = 'trial' | 'active' | 'suspended' | 'cancelle
 
 export type AssistantTone = 'professional' | 'friendly' | 'commercial'
 
+export type AssistantMemberRole = 'owner' | 'manager' | 'viewer'
+
+export interface AssistantClientMember {
+  id: string
+  client_id: string
+  profile_id: string
+  role: AssistantMemberRole
+  invited_by: string | null
+  created_at: string
+  /** Populated by a join with profiles — undefined when the caller fetched without it. */
+  profile?: { name: string | null; email: string } | null
+}
+
 export interface AssistantClient {
   id: string
   company_name: string

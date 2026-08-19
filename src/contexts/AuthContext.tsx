@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { Database, AssistantClient } from '@/lib/supabase'
-import { syncSubscriptionStatus } from '@/lib/db'
+import type { Database, AssistantClient, AssistantMemberRole } from '@/lib/supabase'
+import { syncSubscriptionStatus, getMyAssistantMembership } from '@/lib/db'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -10,8 +10,10 @@ interface AuthContextValue {
   session: Session | null
   user: User | null
   profile: Profile | null
-  /** The caller's own BizKey WhatsApp Assistant subscription, if they have one — null for everyone else, including admins (admin access doesn't depend on this). Single fetch shared by route guards and nav visibility. */
+  /** The caller's own BizKey WhatsApp Assistant subscription, if they have one — null for everyone else, including admins (admin access doesn't depend on this). Resolved via team membership, so it's populated for an invited manager/viewer too, not just the original owner. Single fetch shared by route guards and nav visibility. */
   assistantClient: AssistantClient | null
+  /** The caller's role on assistantClient's business — null when assistantClient is null. */
+  assistantRole: AssistantMemberRole | null
   loading: boolean
   /** Resolves `true` when the account has 2FA and still needs a TOTP code. */
   signIn: (email: string, password: string) => Promise<boolean>
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [assistantClient, setAssistantClient] = useState<AssistantClient | null>(null)
+  const [assistantRole, setAssistantRole] = useState<AssistantMemberRole | null>(null)
   const [loading, setLoading] = useState(true)
   const mountedRef = useRef(true)
 
@@ -51,14 +54,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Not every account has an Assistant subscription — a plain select that
-  // finds nothing is the common case, not an error path.
+  // Not every account belongs to an Assistant business — a membership row
+  // that resolves to nothing is the common case, not an error path. Goes
+  // through membership (not a raw profile_id match on assistant_clients)
+  // so an invited manager/viewer resolves here too, not just the owner.
   const loadAssistantClient = useCallback(async (userId: string) => {
     try {
-      const { data } = await supabase.from('assistant_clients').select('*').eq('profile_id', userId).maybeSingle()
-      if (mountedRef.current) setAssistantClient(data as AssistantClient | null)
+      const membership = await getMyAssistantMembership(userId)
+      if (mountedRef.current) {
+        setAssistantClient(membership?.client ?? null)
+        setAssistantRole(membership?.role ?? null)
+      }
     } catch {
-      if (mountedRef.current) setAssistantClient(null)
+      if (mountedRef.current) {
+        setAssistantClient(null)
+        setAssistantRole(null)
+      }
     }
   }, [])
 
@@ -127,12 +138,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null)
           setAssistantClient(null)
+          setAssistantRole(null)
         }
 
         // On sign out, clear everything immediately
         if (event === 'SIGNED_OUT') {
           setProfile(null)
           setAssistantClient(null)
+          setAssistantRole(null)
           setSession(null)
           setUser(null)
         }
@@ -198,6 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Immediately clear state so UI unblocks
     setProfile(null)
     setAssistantClient(null)
+    setAssistantRole(null)
     setSession(null)
     setUser(null)
     try {
@@ -217,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, loadProfile, loadAssistantClient])
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, assistantClient, loading, signIn, signUp, signOut, refreshProfile, verifyMfaCode }}>
+    <AuthContext.Provider value={{ session, user, profile, assistantClient, assistantRole, loading, signIn, signUp, signOut, refreshProfile, verifyMfaCode }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone } from './supabase'
+import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole } from './supabase'
 import { matchAutoReply } from './whatsappBot'
 import { getFunctionErrorMessage } from './api'
 
@@ -1191,6 +1191,65 @@ export async function getMyAssistantClient(userId: string): Promise<AssistantCli
     .maybeSingle()
   if (error) throw error
   return data as AssistantClient | null
+}
+
+/**
+ * Resolves the caller's business regardless of role — the literal owner
+ * (profile_id match) and an invited manager/viewer both go through
+ * assistant_client_members now, since a manager/viewer was never findable
+ * via getMyAssistantClient's profile_id-only lookup. Used by AuthContext so
+ * assistantClient/assistantRole are populated for every team member, not
+ * just the original owner.
+ */
+export async function getMyAssistantMembership(userId: string): Promise<{ role: AssistantMemberRole; client: AssistantClient } | null> {
+  const { data, error } = await supabase
+    .from('assistant_client_members')
+    .select('role, assistant_clients(*)')
+    .eq('profile_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data || !data.assistant_clients) return null
+  return { role: data.role as AssistantMemberRole, client: data.assistant_clients as unknown as AssistantClient }
+}
+
+/** Team roster for a business — owner-visible in full, but any member can read it (assistant_client_members_own_read). The FK is named explicitly because the table has two FKs into profiles (profile_id, invited_by) and PostgREST can't otherwise pick which one "profile" means. */
+export async function getAssistantClientMembers(clientId: string): Promise<AssistantClientMember[]> {
+  const { data, error } = await supabase
+    .from('assistant_client_members')
+    .select('*, profile:profiles!assistant_client_members_profile_id_fkey(name, email)')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as unknown as AssistantClientMember[]
+}
+
+/** Owner-only (enforced server-side by invite_assistant_client_member) — the invited person must already have a BizKey account since no email-invite infrastructure exists yet. */
+export async function inviteAssistantClientMember(clientId: string, email: string, role: 'manager' | 'viewer'): Promise<AssistantClientMember> {
+  const { data, error } = await supabase.rpc('invite_assistant_client_member', {
+    p_client_id: clientId,
+    p_email: email,
+    p_role: role,
+  })
+  if (error) throw error
+  return data as AssistantClientMember
+}
+
+/** Owner-only — RLS (assistant_client_members_owner_manage) blocks anyone else, and a trigger blocks demoting the last owner. */
+export async function updateAssistantClientMemberRole(memberId: string, role: AssistantMemberRole): Promise<AssistantClientMember> {
+  const { data, error } = await supabase
+    .from('assistant_client_members')
+    .update({ role })
+    .eq('id', memberId)
+    .select()
+    .single()
+  if (error) throw error
+  return data as AssistantClientMember
+}
+
+/** Owner-only — RLS blocks anyone else, and a trigger blocks removing the last owner. */
+export async function removeAssistantClientMember(memberId: string) {
+  const { error } = await supabase.from('assistant_client_members').delete().eq('id', memberId)
+  if (error) throw error
 }
 
 /** Activates (or upgrades) the caller's own Assistant subscription — server-side re-verifies a successful payment exists for this transaction before writing anything. */
