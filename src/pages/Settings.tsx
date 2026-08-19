@@ -16,6 +16,7 @@ import { ModeToggle } from '@/components/mode-toggle'
 import { TwoFactorSettings } from '@/components/TwoFactorSettings'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserSubscription, getAllPlans, getAllAssistantPlans } from '@/lib/db'
+import { mapAuthError } from '@/lib/authErrors'
 import type { Plan, Subscription, AssistantPlan, AssistantClientStatus } from '@/lib/supabase'
 
 import { supabase } from '@/lib/supabase'
@@ -109,7 +110,7 @@ export default function SettingsPage() {
       setPwSuccess('Mot de passe mis à jour avec succès')
       setNewPassword(''); setConfirmPassword('')
     } catch (err) {
-      setPwError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour')
+      setPwError(mapAuthError(err))
     } finally {
       setSavingPw(false)
     }

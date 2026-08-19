@@ -17,11 +17,22 @@ interface AuthContextValue {
   loading: boolean
   /** Resolves `true` when the account has 2FA and still needs a TOTP code. */
   signIn: (email: string, password: string) => Promise<boolean>
-  signUp: (email: string, password: string, name: string, country?: string) => Promise<void>
+  /** Resolves `true` when the new account must confirm its email (a 6-digit code) before it can sign in — true whenever email confirmation is enabled, since signUp then returns no session. */
+  signUp: (email: string, password: string, name: string, country?: string) => Promise<boolean>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   /** Completes a pending 2FA challenge with the user's 6-digit code. */
   verifyMfaCode: (code: string) => Promise<void>
+  /** Confirms a fresh signup with the 6-digit code emailed to them — establishes a real session on success. */
+  verifySignupCode: (email: string, code: string) => Promise<void>
+  /** Resends the signup confirmation code — same underlying call as signUp with no password change, which is how Supabase Auth resends without creating a duplicate account. */
+  resendSignupCode: (email: string) => Promise<void>
+  /** Always resolves silently, whether or not the email belongs to an account — resetPasswordForEmail itself never reveals account existence, so neither should the UI built on top of it. */
+  requestPasswordReset: (email: string) => Promise<void>
+  /** Verifies the 6-digit recovery code and establishes a temporary session that updatePassword can then act on. */
+  verifyPasswordResetCode: (email: string, code: string) => Promise<void>
+  /** Only valid right after verifyPasswordResetCode (or while otherwise signed in, e.g. from Settings) — sets a new password on the current session. */
+  updatePassword: (newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -189,7 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (verifyError) throw verifyError
   }
 
-  async function signUp(email: string, password: string, name: string, country?: string) {
+  async function signUp(email: string, password: string, name: string, country?: string): Promise<boolean> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -205,6 +216,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         country,
       }, { onConflict: 'id' })
     }
+    // With email confirmations enabled, a brand-new signup gets a user but
+    // no session — the account can't sign in until verifySignupCode succeeds.
+    return !data.session
+  }
+
+  async function resendSignupCode(email: string) {
+    const { error } = await supabase.auth.resend({ type: 'signup', email })
+    if (error) throw error
+  }
+
+  async function verifySignupCode(email: string, code: string) {
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'signup' })
+    if (error) throw error
+  }
+
+  async function requestPasswordReset(email: string) {
+    // Supabase itself never reveals whether the email is registered — it
+    // returns success either way, by design, so this can't leak that either.
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    if (error) throw error
+  }
+
+  async function verifyPasswordResetCode(email: string, code: string) {
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'recovery' })
+    if (error) throw error
+  }
+
+  async function updatePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
   }
 
   async function signOut() {
@@ -231,7 +272,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, loadProfile, loadAssistantClient])
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, assistantClient, assistantRole, loading, signIn, signUp, signOut, refreshProfile, verifyMfaCode }}>
+    <AuthContext.Provider value={{
+      session, user, profile, assistantClient, assistantRole, loading,
+      signIn, signUp, signOut, refreshProfile, verifyMfaCode,
+      verifySignupCode, resendSignupCode, requestPasswordReset, verifyPasswordResetCode, updatePassword,
+    }}>
       {children}
     </AuthContext.Provider>
   )

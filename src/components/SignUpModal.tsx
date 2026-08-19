@@ -1,13 +1,17 @@
-import { useState } from 'react'
-import { Loader2, Sparkles, LogIn, Check } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Loader2, Sparkles, LogIn, Check, Mail } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FormProgress } from '@/components/ui/form-progress'
+import { OtpCodeStep } from '@/components/auth/OtpCodeStep'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { mapAuthError } from '@/lib/authErrors'
 import { toast } from 'sonner'
+
+const RESEND_COOLDOWN_SECONDS = 30
 
 const COUNTRIES = [
   'Bénin', 'Togo', 'Sénégal', 'Côte d\'Ivoire', 'Cameroun', 'Mali', 'Guinée',
@@ -21,9 +25,13 @@ interface Props {
 }
 
 export function SignUpModal({ open, onSuccess, onClose }: Props) {
-  const { signUp, signIn } = useAuth()
-  const [mode, setMode] = useState<'signup' | 'login'>('signup')
+  const { signUp, signIn, verifySignupCode, resendSignupCode } = useAuth()
+  const [mode, setMode] = useState<'signup' | 'login' | 'confirm'>('signup')
   const [loading, setLoading] = useState(false)
+  const [confirmError, setConfirmError] = useState('')
+  const [confirmSuccess, setConfirmSuccess] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -31,13 +39,54 @@ export function SignUpModal({ open, onSuccess, onClose }: Props) {
     country: '',
   })
 
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current) }, [])
+
+  function startResendCooldown() {
+    setResendCooldown(RESEND_COOLDOWN_SECONDS)
+    if (cooldownRef.current) clearInterval(cooldownRef.current)
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) { if (cooldownRef.current) clearInterval(cooldownRef.current); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  async function handleVerifyCode(code: string) {
+    setConfirmError('')
+    setLoading(true)
+    try {
+      await verifySignupCode(form.email, code)
+      toast.success('Compte confirmé !')
+      onSuccess()
+    } catch (err) {
+      setConfirmError(mapAuthError(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleResendCode() {
+    setConfirmError('')
+    setLoading(true)
+    try {
+      await resendSignupCode(form.email)
+      startResendCooldown()
+      setConfirmSuccess('Un nouveau code a été envoyé.')
+    } catch (err) {
+      setConfirmError(mapAuthError(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function update(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [field]: e.target.value }))
   }
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
-  const passwordValid = form.password.length >= 6
+  const passwordValid = form.password.length >= 8
   const signupChecks = [form.name.trim().length > 0, emailValid, passwordValid, form.country.length > 0]
   const signupProgress = (signupChecks.filter(Boolean).length / signupChecks.length) * 100
 
@@ -60,15 +109,21 @@ export function SignUpModal({ open, onSuccess, onClose }: Props) {
     setLoading(true)
     try {
       if (mode === 'signup') {
-        await signUp(form.email, form.password, form.name, form.country)
-        toast.success('Compte créé ! Vérifiez votre email puis revenez.')
-        onSuccess()
+        const needsConfirmation = await signUp(form.email, form.password, form.name, form.country)
+        if (needsConfirmation) {
+          setMode('confirm')
+          startResendCooldown()
+        } else {
+          toast.success('Compte créé !')
+          onSuccess()
+        }
       } else {
         await signIn(form.email, form.password)
+        toast.success('Connexion réussie')
         onSuccess()
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur')
+      toast.error(mapAuthError(err))
     } finally {
       setLoading(false)
     }
@@ -81,6 +136,25 @@ export function SignUpModal({ open, onSuccess, onClose }: Props) {
         <div className="aurora-bg opacity-40 dark:opacity-60 -z-10"><div className="aurora-blob-3" /></div>
         <div className="noise-overlay -z-10" />
 
+        {mode === 'confirm' ? (
+          <OtpCodeStep
+            key="confirm"
+            email={form.email}
+            icon={Mail}
+            title="Confirmez votre compte"
+            description="Entrez le code à 6 chiffres envoyé à"
+            verifyLabel="Confirmer et continuer l'analyse"
+            error={confirmError}
+            success={confirmSuccess}
+            loading={loading}
+            resendCooldown={resendCooldown}
+            onVerify={handleVerifyCode}
+            onResend={handleResendCode}
+            onBack={() => setMode('signup')}
+            backLabel="Modifier l'email"
+          />
+        ) : (
+        <>
         <DialogHeader>
           <DialogTitle className="font-serif text-lg flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary shrink-0" />
@@ -131,11 +205,11 @@ export function SignUpModal({ open, onSuccess, onClose }: Props) {
           </div>
           <div className="space-y-1">
             <Label>Mot de passe</Label>
-            <Input type="password" value={form.password} onChange={update('password')} placeholder="••••••••" required minLength={6} />
+            <Input type="password" value={form.password} onChange={update('password')} placeholder="••••••••" required minLength={8} />
             {mode === 'signup' && form.password.length > 0 && (
               <p className={`text-xs flex items-center gap-1.5 ${passwordValid ? 'text-primary' : 'text-muted-foreground'}`}>
                 {passwordValid ? <Check className="h-3 w-3" /> : <span className="h-1 w-1 rounded-full bg-current" />}
-                Au moins 6 caractères
+                Au moins 8 caractères
               </p>
             )}
           </div>
@@ -178,6 +252,8 @@ export function SignUpModal({ open, onSuccess, onClose }: Props) {
             </>
           )}
         </p>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   )
