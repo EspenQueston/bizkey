@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch } from 'lucide-react'
+import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
-import { getWhatsAppKbArticles, createWhatsAppKbArticle, updateWhatsAppKbArticle, deleteWhatsAppKbArticle, getKnowledgeDocuments, createKnowledgeDocumentWithRecords, createKnowledgeDocumentWithChunks, deleteKnowledgeDocument } from '@/lib/db'
+import {
+  getWhatsAppKbArticles, createWhatsAppKbArticle, updateWhatsAppKbArticle, deleteWhatsAppKbArticle,
+  getKnowledgeDocuments, createKnowledgeDocumentWithRecords, createKnowledgeDocumentWithChunks, deleteKnowledgeDocument,
+  getKnowledgeRecordsByDocument, getKnowledgeChunksByDocument, deleteKnowledgeRecord, deleteKnowledgeChunk,
+} from '@/lib/db'
 import { parseSpreadsheetFile, guessColumnMapping, buildRecordsFromMapping, extractPdfText, extractDocxText, chunkText, MAPPABLE_FIELDS, type MappableField } from '@/lib/knowledgeImport'
 import { useAuth } from '@/contexts/AuthContext'
-import type { WhatsAppKbArticle, KnowledgeDocument } from '@/lib/supabase'
+import type { WhatsAppKbArticle, KnowledgeDocument, KnowledgeRecord, KnowledgeChunk } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 const EMPTY = { title: '', keywords: '', answer: '', is_active: true }
@@ -42,6 +46,62 @@ export default function WhatsAppKnowledgeBasePage() {
   const [importing, setImporting] = useState(false)
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<KnowledgeDocument | null>(null)
+
+  // Document detail view (browse/remove individual imported rows/passages)
+  const [viewingDoc, setViewingDoc] = useState<KnowledgeDocument | null>(null)
+  const [viewRecords, setViewRecords] = useState<KnowledgeRecord[]>([])
+  const [viewChunks, setViewChunks] = useState<KnowledgeChunk[]>([])
+  const [loadingView, setLoadingView] = useState(false)
+  const [deletingRowId, setDeletingRowId] = useState<string | null>(null)
+
+  const isSpreadsheetDoc = (doc: KnowledgeDocument) => doc.source_type === 'csv' || doc.source_type === 'xlsx'
+
+  function openDocView(doc: KnowledgeDocument) {
+    setViewingDoc(doc)
+    setLoadingView(true)
+    const load = isSpreadsheetDoc(doc)
+      ? getKnowledgeRecordsByDocument(doc.id).then(setViewRecords)
+      : getKnowledgeChunksByDocument(doc.id).then(setViewChunks)
+    load.catch(err => toast.error(err instanceof Error ? err.message : 'Échec du chargement')).finally(() => setLoadingView(false))
+  }
+
+  function closeDocView() {
+    setViewingDoc(null)
+    setViewRecords([])
+    setViewChunks([])
+  }
+
+  async function handleDeleteRecord(record: KnowledgeRecord) {
+    if (!viewingDoc) return
+    setDeletingRowId(record.id)
+    try {
+      await deleteKnowledgeRecord(record, viewingDoc.row_count)
+      setViewRecords(prev => prev.filter(r => r.id !== record.id))
+      setDocuments(prev => prev.map(d => d.id === viewingDoc.id ? { ...d, row_count: Math.max(0, d.row_count - 1) } : d))
+      setViewingDoc(prev => prev ? { ...prev, row_count: Math.max(0, prev.row_count - 1) } : prev)
+      toast.success('Ligne supprimée')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression')
+    } finally {
+      setDeletingRowId(null)
+    }
+  }
+
+  async function handleDeleteChunk(chunk: KnowledgeChunk) {
+    if (!viewingDoc) return
+    setDeletingRowId(chunk.id)
+    try {
+      await deleteKnowledgeChunk(chunk, viewingDoc.row_count)
+      setViewChunks(prev => prev.filter(c => c.id !== chunk.id))
+      setDocuments(prev => prev.map(d => d.id === viewingDoc.id ? { ...d, row_count: Math.max(0, d.row_count - 1) } : d))
+      setViewingDoc(prev => prev ? { ...prev, row_count: Math.max(0, prev.row_count - 1) } : prev)
+      toast.success('Passage supprimé')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression')
+    } finally {
+      setDeletingRowId(null)
+    }
+  }
 
   function loadDocuments() {
     if (!assistantClient) { setLoadingDocs(false); return }
@@ -357,6 +417,14 @@ export default function WhatsAppKnowledgeBasePage() {
                         {doc.row_count} {doc.source_type === 'csv' || doc.source_type === 'xlsx' ? 'article' : 'passage'}{doc.row_count > 1 ? 's' : ''} · {new Date(doc.created_at).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
+                    <Button
+                      size="sm" variant="ghost"
+                      className="h-7 w-7 p-0 rounded-lg shrink-0"
+                      onClick={() => openDocView(doc)}
+                      title="Voir le détail"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
                     {canWriteCatalog && (
                       <Button
                         size="sm" variant="ghost"
@@ -487,6 +555,90 @@ export default function WhatsAppKnowledgeBasePage() {
         loading={!!confirmDeleteDoc && deletingDocId === confirmDeleteDoc.id}
         onConfirm={() => confirmDeleteDoc && handleDeleteDocument(confirmDeleteDoc)}
       />
+
+      {viewingDoc && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                {isSpreadsheetDoc(viewingDoc) ? <FileSpreadsheet className="h-4 w-4 text-primary shrink-0" /> : <FileText className="h-4 w-4 text-primary shrink-0" />}
+                <h2 className="font-serif font-bold truncate">{viewingDoc.title}</h2>
+                <Badge variant="outline" className="text-[10px] shrink-0">{viewingDoc.row_count} {isSpreadsheetDoc(viewingDoc) ? 'article' : 'passage'}{viewingDoc.row_count > 1 ? 's' : ''}</Badge>
+              </div>
+              <button onClick={closeDocView}><X className="h-5 w-5 text-muted-foreground shrink-0" /></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {loadingView ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  <div className="h-5 w-5 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto mb-2" />Chargement...
+                </div>
+              ) : isSpreadsheetDoc(viewingDoc) ? (
+                viewRecords.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Aucune ligne restante dans ce catalogue.</p>
+                ) : (
+                  <div className="rounded-lg border border-border overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-secondary/50 sticky top-0">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium">Nom</th>
+                          <th className="text-left px-3 py-2 font-medium">Prix</th>
+                          <th className="text-left px-3 py-2 font-medium">Stock</th>
+                          <th className="text-left px-3 py-2 font-medium">Catégorie</th>
+                          {canWriteCatalog && <th className="w-8" />}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {viewRecords.map(r => (
+                          <tr key={r.id}>
+                            <td className="px-3 py-2">{r.data.name}</td>
+                            <td className="px-3 py-2">{r.data.price ?? '—'}</td>
+                            <td className="px-3 py-2">{r.data.stock ?? '—'}</td>
+                            <td className="px-3 py-2">{r.data.category ?? '—'}</td>
+                            {canWriteCatalog && (
+                              <td className="px-1">
+                                <button
+                                  onClick={() => handleDeleteRecord(r)}
+                                  disabled={deletingRowId === r.id}
+                                  className="text-muted-foreground hover:text-destructive p-1"
+                                  title="Supprimer cette ligne"
+                                >
+                                  {deletingRowId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : viewChunks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Aucun passage restant dans ce document.</p>
+              ) : (
+                <div className="space-y-2">
+                  {viewChunks.map((c, i) => (
+                    <div key={c.id} className="rounded-lg border border-border p-3 flex items-start gap-2">
+                      <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">#{i + 1}</Badge>
+                      <p className="text-xs text-muted-foreground flex-1 whitespace-pre-wrap">{c.content}</p>
+                      {canWriteCatalog && (
+                        <button
+                          onClick={() => handleDeleteChunk(c)}
+                          disabled={deletingRowId === c.id}
+                          className="text-muted-foreground hover:text-destructive p-1 shrink-0"
+                          title="Supprimer ce passage"
+                        >
+                          {deletingRowId === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

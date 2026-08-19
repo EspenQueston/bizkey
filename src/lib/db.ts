@@ -1334,6 +1334,31 @@ export async function createKnowledgeDocumentWithChunks(params: {
   return doc as KnowledgeDocument
 }
 
+export async function getKnowledgeRecordsByDocument(documentId: string): Promise<KnowledgeRecord[]> {
+  const { data, error } = await supabase.from('knowledge_records').select('*').eq('document_id', documentId).order('created_at')
+  if (error) throw error
+  return (data ?? []) as KnowledgeRecord[]
+}
+
+export async function getKnowledgeChunksByDocument(documentId: string): Promise<KnowledgeChunk[]> {
+  const { data, error } = await supabase.from('knowledge_chunks').select('*').eq('document_id', documentId).order('chunk_index')
+  if (error) throw error
+  return (data ?? []) as KnowledgeChunk[]
+}
+
+/** Lets an owner/manager drop a single bad row after reviewing an import, without deleting and re-uploading the whole document. Keeps the parent's cached row_count in sync so the document list doesn't drift from what's actually there. */
+export async function deleteKnowledgeRecord(record: KnowledgeRecord, currentRowCount: number): Promise<void> {
+  const { error } = await supabase.from('knowledge_records').delete().eq('id', record.id)
+  if (error) throw error
+  await supabase.from('knowledge_documents').update({ row_count: Math.max(0, currentRowCount - 1) }).eq('id', record.document_id)
+}
+
+export async function deleteKnowledgeChunk(chunk: KnowledgeChunk, currentRowCount: number): Promise<void> {
+  const { error } = await supabase.from('knowledge_chunks').delete().eq('id', chunk.id)
+  if (error) throw error
+  await supabase.from('knowledge_documents').update({ row_count: Math.max(0, currentRowCount - 1) }).eq('id', chunk.document_id)
+}
+
 export async function deleteKnowledgeDocument(doc: KnowledgeDocument) {
   // Best-effort — an orphaned storage object with no surviving DB row is a
   // harmless leak, but a delete blocked by a storage error the user can't

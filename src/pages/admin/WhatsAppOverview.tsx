@@ -110,7 +110,8 @@ function DonutMini({ data }: { data: { name: string; value: number }[] }) {
 }
 
 export default function WhatsAppOverviewPage() {
-  const { assistantClient, assistantRole, refreshProfile } = useAuth()
+  const { profile, assistantClient, assistantRole, refreshProfile } = useAuth()
+  const isAdmin = profile?.is_admin === true
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
   const [numbers, setNumbers] = useState<WhatsAppNumber[]>([])
   const [conversations, setConversations] = useState<WhatsAppConversation[]>([])
@@ -318,10 +319,16 @@ export default function WhatsAppOverviewPage() {
         <MetricCard title="Chats WhatsApp" accent="sapphire" icon={Smartphone} value={conversations.filter(c => c.channel !== 'website').length} sub="via n8n" />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Coût IA (30 jours)" accent="amber" icon={Sparkles} value={`$${aiCost30d.toFixed(4)}`} sub="tous clients confondus" />
-        <MetricCard title="Entreprises actives" accent="violet" icon={Building2} value={tenantsWithUsage} sub="avec au moins 1 message (30j)" />
-      </div>
+      {/* Cross-tenant totals — admin-only. A single business's own AI cost
+          already lives on their Billing page; "tous clients confondus" and
+          a count of other businesses would be meaningless (or confusing)
+          framing shown to a single tenant owner. */}
+      {isAdmin && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard title="Coût IA (30 jours)" accent="amber" icon={Sparkles} value={`$${aiCost30d.toFixed(4)}`} sub="tous clients confondus" />
+          <MetricCard title="Entreprises actives" accent="violet" icon={Building2} value={tenantsWithUsage} sub="avec au moins 1 message (30j)" />
+        </div>
+      )}
 
       <ChartCard title="Volume de messages" subtitle="14 derniers jours" icon={TrendingUp}>
         <ResponsiveContainer width="100%" height={220}>

@@ -27,6 +27,16 @@ const PRIORITY_META: Record<HandoffTicketPriority, { label: string; color: strin
   urgent: { label: 'Urgente', color: 'text-destructive border-destructive/30' },
 }
 
+const PRIORITY_ORDER: Record<HandoffTicketPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
+
+type StatusFilter = 'all' | WhatsAppConversationStatus
+const STATUS_FILTERS: { key: StatusFilter; label: string; icon?: string }[] = [
+  { key: 'all', label: 'Toutes' },
+  { key: 'pending_human', label: 'Transfert humain', icon: '🙋' },
+  { key: 'open', label: 'Ouvertes', icon: '💬' },
+  { key: 'closed', label: 'Fermées', icon: '✅' },
+]
+
 export default function WhatsAppConversationsPage() {
   const { user, profile, assistantClient, assistantRole } = useAuth()
   // Admin always has full write access; a business's owner/manager do too —
@@ -51,6 +61,7 @@ export default function WhatsAppConversationsPage() {
   const [tickets, setTickets] = useState<Record<string, HandoffTicket>>({})
   const [members, setMembers] = useState<AssistantClientMember[]>([])
   const [savingTicket, setSavingTicket] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   function refreshTickets() {
     getOpenHandoffTickets()
@@ -77,6 +88,23 @@ export default function WhatsAppConversationsPage() {
 
   const selected = conversations.find(c => c.id === selectedId) ?? null
   const ticket = selected ? tickets[selected.id] : undefined
+  const openTicketCount = Object.keys(tickets).length
+
+  // Any conversation with an open ticket bubbles to the top, most urgent
+  // first — an agent triaging a busy inbox shouldn't have to open every
+  // conversation to find out which ones actually need a human, regardless
+  // of which status filter is active.
+  const visibleConversations = conversations
+    .filter(c => statusFilter === 'all' || c.status === statusFilter)
+    .slice()
+    .sort((a, b) => {
+      const ta = tickets[a.id]
+      const tb = tickets[b.id]
+      if (ta && tb) return PRIORITY_ORDER[ta.priority] - PRIORITY_ORDER[tb.priority] || (new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+      if (ta) return -1
+      if (tb) return 1
+      return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+    })
 
   useEffect(() => {
     if (!selected?.client_id) { setMembers([]); return }
@@ -174,7 +202,10 @@ export default function WhatsAppConversationsPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-serif text-2xl font-bold">💬 Conversations</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+            {openTicketCount > 0 && <span className="text-amber-600 dark:text-amber-400 font-medium"> · {openTicketCount} en attente de transfert</span>}
+          </p>
         </div>
         {canWrite && (
           <Button onClick={() => setShowSimModal(true)} variant="outline" className="rounded-full gap-2">
@@ -183,6 +214,27 @@ export default function WhatsAppConversationsPage() {
           </Button>
         )}
       </div>
+
+      {conversations.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-4">
+          {STATUS_FILTERS.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className={`h-7 rounded-full text-[11px] px-3 font-medium transition flex items-center gap-1 ${
+                statusFilter === f.key ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/70'
+              }`}
+            >
+              {f.icon} {f.label}
+              {f.key === 'pending_human' && openTicketCount > 0 && (
+                <span className={`ml-0.5 rounded-full px-1.5 text-[10px] ${statusFilter === f.key ? 'bg-primary-foreground/20' : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'}`}>
+                  {openTicketCount}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
@@ -204,7 +256,15 @@ export default function WhatsAppConversationsPage() {
           {/* Conversation list */}
           <Card className="w-72 shrink-0 overflow-hidden">
             <CardContent className="p-0 h-full overflow-y-auto divide-y divide-border">
-              {conversations.map(c => {
+              {visibleConversations.length === 0 && (
+                <div className="p-6 text-center">
+                  <p className="text-xs text-muted-foreground">Aucune conversation avec ce statut</p>
+                  <button onClick={() => setStatusFilter('all')} className="text-xs text-primary hover:underline mt-1.5 font-medium">
+                    Voir toutes les conversations
+                  </button>
+                </div>
+              )}
+              {visibleConversations.map(c => {
                 const st = STATUS_META[c.status]
                 const t = tickets[c.id]
                 return (
