@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch, Eye } from 'lucide-react'
+import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch, Eye, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,9 +11,10 @@ import {
   getKnowledgeDocuments, createKnowledgeDocumentWithRecords, createKnowledgeDocumentWithChunks, deleteKnowledgeDocument,
   getKnowledgeRecordsByDocument, getKnowledgeChunksByDocument, deleteKnowledgeRecord, deleteKnowledgeChunk,
 } from '@/lib/db'
-import { parseSpreadsheetFile, guessColumnMapping, buildRecordsFromMapping, extractPdfText, extractDocxText, chunkText, MAPPABLE_FIELDS, type MappableField } from '@/lib/knowledgeImport'
+import { loadSpreadsheetWorkbook, parseWorkbookSheet, guessColumnMapping, buildRecordsFromMapping, extractPdfText, extractDocxText, chunkText, MAPPABLE_FIELDS, type MappableField } from '@/lib/knowledgeImport'
 import { useAuth } from '@/contexts/AuthContext'
 import type { WhatsAppKbArticle, KnowledgeDocument, KnowledgeRecord, KnowledgeChunk } from '@/lib/supabase'
+import type { WorkBook } from 'xlsx'
 import { toast } from 'sonner'
 
 const EMPTY = { title: '', keywords: '', answer: '', is_active: true }
@@ -37,6 +38,10 @@ export default function WhatsAppKnowledgeBasePage() {
   const [loadingDocs, setLoadingDocs] = useState(true)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [pendingKind, setPendingKind] = useState<'spreadsheet' | 'document' | null>(null)
+  const [pendingWorkbook, setPendingWorkbook] = useState<WorkBook | null>(null)
+  const [sheetNames, setSheetNames] = useState<string[]>([])
+  const [selectedSheet, setSelectedSheet] = useState('')
+  const [switchingSheet, setSwitchingSheet] = useState(false)
   const [parsedHeaders, setParsedHeaders] = useState<string[]>([])
   const [parsedRows, setParsedRows] = useState<Record<string, unknown>[]>([])
   const [mapping, setMapping] = useState<Partial<Record<MappableField, string>>>({})
@@ -119,12 +124,28 @@ export default function WhatsAppKnowledgeBasePage() {
     setParsing(true)
     try {
       if (/\.(csv|xlsx?|xls)$/i.test(file.name)) {
-        const { headers, rows } = await parseSpreadsheetFile(file)
+        const { workbook, sheetNames: names } = await loadSpreadsheetWorkbook(file)
+        // Default to the first sheet that actually has data — a "Résumé"/
+        // summary tab with no table shouldn't block the import or hide the
+        // sheet picker; it just isn't a sensible initial pick.
+        let chosen = names[0]
+        let parsed = await parseWorkbookSheet(workbook, chosen)
+        for (const name of names) {
+          if (parsed.rows.length > 0) break
+          parsed = await parseWorkbookSheet(workbook, name)
+          chosen = name
+        }
         setPendingFile(file)
         setPendingKind('spreadsheet')
-        setParsedHeaders(headers)
-        setParsedRows(rows)
-        setMapping(guessColumnMapping(headers))
+        setPendingWorkbook(workbook)
+        setSheetNames(names)
+        setSelectedSheet(chosen)
+        setParsedHeaders(parsed.headers)
+        setParsedRows(parsed.rows)
+        setMapping(guessColumnMapping(parsed.headers))
+        if (parsed.rows.length === 0) {
+          setParseError(names.length > 1 ? "Aucune des feuilles de ce fichier ne contient de données — vérifiez qu'elles ont bien une ligne d'en-têtes." : 'Ce fichier ne contient aucune ligne de données.')
+        }
       } else if (/\.pdf$/i.test(file.name)) {
         const text = await extractPdfText(file)
         setPendingFile(file)
@@ -150,11 +171,33 @@ export default function WhatsAppKnowledgeBasePage() {
   function cancelImport() {
     setPendingFile(null)
     setPendingKind(null)
+    setPendingWorkbook(null)
+    setSheetNames([])
+    setSelectedSheet('')
     setParsedHeaders([])
     setParsedRows([])
     setMapping({})
     setPendingChunks([])
     setParseError('')
+  }
+
+  /** Re-parses the same workbook against a different sheet the user picks — a real business export often has more than one ("Produits", "Tarifs", "Archive"), and the first sheet isn't always the one they meant to import. */
+  async function handleSheetChange(sheetName: string) {
+    if (!pendingWorkbook || sheetName === selectedSheet) return
+    setSwitchingSheet(true)
+    setParseError('')
+    try {
+      const { headers, rows } = await parseWorkbookSheet(pendingWorkbook, sheetName)
+      setSelectedSheet(sheetName)
+      setParsedHeaders(headers)
+      setParsedRows(rows)
+      setMapping(guessColumnMapping(headers))
+      setParseError(rows.length === 0 ? 'Cette feuille ne contient aucune ligne de données — essayez-en une autre.' : '')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Impossible de lire cette feuille')
+    } finally {
+      setSwitchingSheet(false)
+    }
   }
 
   const mappedRecords = pendingKind === 'spreadsheet' ? buildRecordsFromMapping(parsedRows, mapping) : []
@@ -163,7 +206,8 @@ export default function WhatsAppKnowledgeBasePage() {
     if (!assistantClient || !pendingFile) return
     setImporting(true)
     try {
-      const title = pendingFile.name.replace(/\.(csv|xlsx?|xls|pdf|docx)$/i, '')
+      const baseTitle = pendingFile.name.replace(/\.(csv|xlsx?|xls|pdf|docx)$/i, '')
+      const title = pendingKind === 'spreadsheet' && sheetNames.length > 1 ? `${baseTitle} — ${selectedSheet}` : baseTitle
       let doc: KnowledgeDocument
       if (pendingKind === 'spreadsheet') {
         if (mappedRecords.length === 0) return
@@ -303,12 +347,27 @@ export default function WhatsAppKnowledgeBasePage() {
             {pendingFile && pendingKind === 'spreadsheet' && (
               <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <FileSpreadsheet className="h-4 w-4 text-primary" /> {pendingFile.name}
-                    <Badge variant="outline" className="text-[10px]">{parsedRows.length} ligne{parsedRows.length > 1 ? 's' : ''} détectée{parsedRows.length > 1 ? 's' : ''}</Badge>
+                  <div className="flex items-center gap-2 text-sm font-medium min-w-0">
+                    <FileSpreadsheet className="h-4 w-4 text-primary shrink-0" /> <span className="truncate">{pendingFile.name}</span>
+                    <Badge variant="outline" className="text-[10px] shrink-0">{parsedRows.length} ligne{parsedRows.length > 1 ? 's' : ''} détectée{parsedRows.length > 1 ? 's' : ''}</Badge>
                   </div>
-                  <button onClick={cancelImport} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+                  <button onClick={cancelImport} className="text-muted-foreground hover:text-foreground shrink-0"><X className="h-4 w-4" /></button>
                 </div>
+
+                {sheetNames.length > 1 && (
+                  <div className="space-y-1">
+                    <Label className="text-xs flex items-center gap-1.5"><Layers className="h-3 w-3" /> Feuille à importer</Label>
+                    <select
+                      value={selectedSheet}
+                      onChange={e => handleSheetChange(e.target.value)}
+                      disabled={switchingSheet}
+                      className="h-9 w-full rounded-lg border border-input bg-background px-2 text-xs disabled:opacity-60"
+                    >
+                      {sheetNames.map(name => <option key={name} value={name}>{name}</option>)}
+                    </select>
+                    <p className="text-[11px] text-muted-foreground">Ce fichier contient {sheetNames.length} feuilles — choisissez celle à importer.</p>
+                  </div>
+                )}
 
                 <div className="grid sm:grid-cols-2 gap-2.5">
                   {MAPPABLE_FIELDS.map(field => (

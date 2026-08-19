@@ -1,8 +1,14 @@
+import type { WorkBook } from 'xlsx'
 import type { KnowledgeRecordData } from './supabase'
 
 export interface ParsedSpreadsheet {
   headers: string[]
   rows: Record<string, unknown>[]
+}
+
+export interface LoadedWorkbook {
+  workbook: WorkBook
+  sheetNames: string[]
 }
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
@@ -11,18 +17,36 @@ const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
 // page, and pdfjs-dist's worker alone is 2+ MB — dynamic import() keeps
 // all three out of the main app bundle every visitor downloads, loading
 // them only when a file is actually selected here.
-export async function parseSpreadsheetFile(file: File): Promise<ParsedSpreadsheet> {
+
+/**
+ * Loading and sheet-parsing are split so the caller can list every sheet
+ * (a workbook exported from a real business's spreadsheet often has more
+ * than one — "Produits", "Tarifs", "Archive"...) and let the user pick
+ * which one to import, instead of silently always taking the first.
+ */
+export async function loadSpreadsheetWorkbook(file: File): Promise<LoadedWorkbook> {
   if (file.size > MAX_FILE_SIZE_BYTES) throw new Error('Fichier trop volumineux (max 20 Mo)')
 
   const XLSX = await import('xlsx')
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array' })
-  const firstSheetName = workbook.SheetNames[0]
-  if (!firstSheetName) throw new Error('Aucune feuille trouvée dans ce fichier')
-  const sheet = workbook.Sheets[firstSheetName]
+  if (workbook.SheetNames.length === 0) throw new Error('Aucune feuille trouvée dans ce fichier')
+  return { workbook, sheetNames: workbook.SheetNames }
+}
+
+// Deliberately doesn't throw on an empty sheet — a real workbook often has
+// a "Résumé"/summary tab with no tabular data at all, and that shouldn't
+// dead-end the whole import before the user even sees the sheet picker.
+// The caller (handleFileSelect/handleSheetChange) decides what an empty
+// result means: skip to the next sheet on initial load, or show an inline
+// "this sheet is empty" message if the user picked it manually.
+export async function parseWorkbookSheet(workbook: WorkBook, sheetName: string): Promise<ParsedSpreadsheet> {
+  const XLSX = await import('xlsx')
+  const sheet = workbook.Sheets[sheetName]
+  if (!sheet) throw new Error('Feuille introuvable dans ce fichier')
 
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null })
-  if (rows.length === 0) throw new Error('Ce fichier ne contient aucune ligne de données')
+  if (rows.length === 0) return { headers: [], rows: [] }
 
   const headers = Object.keys(rows[0])
   return { headers, rows }
