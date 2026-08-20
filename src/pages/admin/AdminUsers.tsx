@@ -85,7 +85,7 @@ export default function AdminUsers() {
         .from('profiles')
         .update({ is_admin: makeAdmin })
         .eq('id', userId)
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: makeAdmin } : u))
       toast.success(makeAdmin ? 'Admin accordé' : 'Admin retiré')
     } catch {
@@ -126,7 +126,7 @@ export default function AdminUsers() {
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingUser.id)
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setUsers(prev => prev.map(u => u.id === editingUser.id ? {
         ...u,
         name: editForm.name || null,

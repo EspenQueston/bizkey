@@ -174,7 +174,7 @@ export default function ContactPage() {
         subject: form.subject,
         message: form.message,
       })
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setSent(true)
       setForm(EMPTY_FORM)
     } catch {

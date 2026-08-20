@@ -32,7 +32,7 @@ export async function updateProfile(userId: string, updates: Database['public'][
     .select()
     .single()
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data
 }
 
@@ -45,7 +45,7 @@ export async function searchProfiles(query: string): Promise<Profile[]> {
     .or(`email.ilike.%${query}%,name.ilike.%${query}%`)
     .order('created_at', { ascending: false })
     .limit(10)
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data ?? []
 }
 
@@ -101,7 +101,7 @@ export async function saveAnalysis(params: {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data
 }
 
@@ -111,7 +111,7 @@ export async function deleteAnalysis(id: string) {
     .delete()
     .eq('id', id)
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export interface AdminAnalysisRow {
@@ -180,14 +180,14 @@ export async function deleteAnalyses(ids: string[]) {
     .delete()
     .in('id', ids)
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── Credits ──────────────────────────────────────────────────────────────────
 
 export async function decrementCredits(userId: string) {
   const { error } = await supabase.rpc('decrement_credits', { user_id: userId })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── Comparisons ──────────────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export async function saveComparison(params: {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data
 }
 
@@ -220,7 +220,7 @@ export async function getUserComparisons(userId: string): Promise<Comparison[]> 
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data ?? []
 }
 
@@ -230,7 +230,7 @@ export async function deleteComparison(id: string) {
     .delete()
     .eq('id', id)
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export async function deleteComparisons(ids: string[]) {
@@ -239,7 +239,7 @@ export async function deleteComparisons(ids: string[]) {
     .delete()
     .in('id', ids)
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── Negotiations ─────────────────────────────────────────────────────────────
@@ -263,7 +263,7 @@ export async function saveNegotiation(params: {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data
 }
 
@@ -274,7 +274,7 @@ export async function getUserNegotiations(userId: string): Promise<Negotiation[]
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data ?? []
 }
 
@@ -286,7 +286,7 @@ export async function getERPClients(): Promise<ERPClient[]> {
     .from('erp_clients')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as ERPClient[]
 }
 
@@ -296,7 +296,7 @@ export async function createERPClient(userId: string, client: Omit<ERPClient, 'i
     .insert({ ...client, user_id: userId })
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as ERPClient
 }
 
@@ -307,13 +307,13 @@ export async function updateERPClient(id: string, updates: Partial<Omit<ERPClien
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as ERPClient
 }
 
 export async function deleteERPClient(id: string) {
   const { error } = await supabase.from('erp_clients').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── ERP: Orders ──────────────────────────────────────────────────────────────
@@ -324,7 +324,7 @@ export async function getERPOrders(): Promise<ERPOrder[]> {
     .from('erp_orders')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as ERPOrder[]
 }
 
@@ -334,7 +334,7 @@ export async function createERPOrder(userId: string, order: Omit<ERPOrder, 'id' 
     .insert({ ...order, user_id: userId, updated_at: new Date().toISOString() })
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as ERPOrder
 }
 
@@ -345,13 +345,13 @@ export async function updateERPOrder(id: string, updates: Partial<Omit<ERPOrder,
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as ERPOrder
 }
 
 export async function deleteERPOrder(id: string) {
   const { error } = await supabase.from('erp_orders').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 /** Client-facing: orders placed under this customer's own account, via the erp_orders_customer_read RLS policy. */
@@ -361,7 +361,7 @@ export async function getMyERPOrders(customerId: string): Promise<ERPOrder[]> {
     .select('*')
     .eq('customer_id', customerId)
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as ERPOrder[]
 }
 
@@ -373,7 +373,7 @@ export async function getERPDeliveries(): Promise<ERPDelivery[]> {
     .from('erp_deliveries')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as ERPDelivery[]
 }
 
@@ -383,7 +383,7 @@ export async function createERPDelivery(userId: string, delivery: Omit<ERPDelive
     .insert({ ...delivery, user_id: userId, updated_at: new Date().toISOString() })
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as ERPDelivery
 }
 
@@ -394,13 +394,13 @@ export async function updateERPDelivery(id: string, updates: Partial<Omit<ERPDel
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as ERPDelivery
 }
 
 export async function deleteERPDelivery(id: string) {
   const { error } = await supabase.from('erp_deliveries').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 /**
@@ -415,7 +415,7 @@ export async function getMyERPDeliveries(): Promise<ERPDelivery[]> {
     .from('erp_deliveries')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as ERPDelivery[]
 }
 
@@ -430,7 +430,7 @@ export async function getQuoteRequest(id: string): Promise<QuoteRequest | null> 
     .select('*')
     .eq('id', id)
     .maybeSingle()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as QuoteRequest | null
 }
 
@@ -440,7 +440,7 @@ export async function getMyQuoteRequests(customerId: string): Promise<QuoteReque
     .select('*')
     .eq('customer_id', customerId)
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as QuoteRequest[]
 }
 
@@ -453,20 +453,20 @@ export async function createQuoteRequest(
     .insert({ ...quote, customer_id: customerId, status: 'pending' })
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as QuoteRequest
 }
 
 /** Client accepts or rejects a quote that's awaiting their response — enforced server-side via RPC since RLS can't scope which columns a client may touch. */
 export async function respondToQuoteRequest(quoteId: string, accept: boolean): Promise<void> {
   const { error } = await supabase.rpc('respond_to_quote_request', { p_quote_id: quoteId, p_accept: accept })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 /** Re-derives payment truth server-side from a successful payment_transactions row rather than trusting the client. */
 export async function markQuoteOrderPaid(quoteId: string): Promise<void> {
   const { error } = await supabase.rpc('mark_quote_order_paid', { p_quote_id: quoteId })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export async function getAllQuoteRequests(): Promise<QuoteRequest[]> {
@@ -474,7 +474,7 @@ export async function getAllQuoteRequests(): Promise<QuoteRequest[]> {
     .from('quote_requests')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as QuoteRequest[]
 }
 
@@ -485,7 +485,7 @@ export async function updateQuoteRequest(id: string, updates: Partial<Omit<Quote
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as QuoteRequest
 }
 
@@ -511,7 +511,7 @@ export async function convertQuoteToOrder(quoteId: string, adminUserId: string):
     .select('*')
     .eq('id', quoteId)
     .single()
-  if (quoteErr) throw quoteErr
+  if (quoteErr) throw new Error(quoteErr.message)
   const q = quote as QuoteRequest
   if (q.status !== 'accepted') throw new Error('Only an accepted quote can be converted to an order')
 
@@ -541,13 +541,13 @@ export async function convertQuoteToOrder(quoteId: string, adminUserId: string):
     })
     .select()
     .single()
-  if (orderErr) throw orderErr
+  if (orderErr) throw new Error(orderErr.message)
 
   const { error: updateErr } = await supabase
     .from('quote_requests')
     .update({ erp_order_id: order.id, updated_at: new Date().toISOString() })
     .eq('id', quoteId)
-  if (updateErr) throw updateErr
+  if (updateErr) throw new Error(updateErr.message)
 
   return order as ERPOrder
 }
@@ -560,7 +560,7 @@ export async function getPlans(): Promise<Plan[]> {
     .select('*')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as Plan[]
 }
 
@@ -569,7 +569,7 @@ export async function getAllPlans(): Promise<Plan[]> {
     .from('plans')
     .select('*')
     .order('sort_order', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as Plan[]
 }
 
@@ -579,7 +579,7 @@ export async function createPlan(plan: Omit<Plan, 'id' | 'created_at' | 'updated
     .insert({ ...plan, updated_at: new Date().toISOString() })
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as Plan
 }
 
@@ -590,13 +590,13 @@ export async function updatePlan(id: string, updates: Partial<Omit<Plan, 'id' | 
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as Plan
 }
 
 export async function deletePlan(id: string) {
   const { error } = await supabase.from('plans').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
@@ -610,7 +610,7 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as Subscription | null
 }
 
@@ -627,7 +627,7 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
  */
 export async function syncSubscriptionStatus(userId?: string): Promise<void> {
   const { error } = await supabase.rpc('sync_subscription_status', { p_user_id: userId ?? null })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export async function createSubscription(sub: Omit<Subscription, 'id' | 'created_at'>): Promise<Subscription> {
@@ -636,7 +636,7 @@ export async function createSubscription(sub: Omit<Subscription, 'id' | 'created
     .insert(sub)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as Subscription
 }
 
@@ -647,7 +647,7 @@ export async function updateSubscription(id: string, updates: Partial<Omit<Subsc
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as Subscription
 }
 
@@ -656,7 +656,7 @@ export async function getAllSubscriptions(): Promise<Subscription[]> {
     .from('subscriptions')
     .select('*, profiles(email, name), plans(display_name, type)')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as unknown as Subscription[]
 }
 
@@ -668,7 +668,7 @@ export async function createTransaction(tx: Omit<PaymentTransaction, 'id' | 'cre
     .insert(tx)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as PaymentTransaction
 }
 
@@ -678,7 +678,7 @@ export async function getUserTransactions(userId: string): Promise<PaymentTransa
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as PaymentTransaction[]
 }
 
@@ -701,7 +701,7 @@ export async function getAllTransactions(filters?: {
   if (filters?.to) query = query.lte('created_at', filters.to)
 
   const { data, error } = await query
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as unknown as PaymentTransaction[]
 }
 
@@ -712,7 +712,7 @@ export async function updateTransaction(id: string, updates: Partial<Omit<Paymen
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as PaymentTransaction
 }
 
@@ -720,7 +720,7 @@ export async function updateTransaction(id: string, updates: Partial<Omit<Paymen
 
 export async function getCreditBalance(userId: string): Promise<CreditBalance> {
   const { data, error } = await supabase.rpc('get_credit_balance', { p_user_id: userId })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as CreditBalance
 }
 
@@ -729,7 +729,7 @@ export async function consumeBasicCredit(userId: string, feature?: string): Prom
     p_user_id: userId,
     p_feature: feature ?? null,
   })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as { success: boolean; reason?: string; source?: string }
 }
 
@@ -738,7 +738,7 @@ export async function consumeAdvancedCredit(userId: string, feature?: string): P
     p_user_id: userId,
     p_feature: feature ?? null,
   })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as { success: boolean; reason?: string; source?: string }
 }
 
@@ -751,7 +751,7 @@ export async function getPromoCode(code: string): Promise<PromoCode | null> {
     .eq('code', code.toUpperCase())
     .eq('is_active', true)
     .maybeSingle()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as PromoCode | null
 }
 
@@ -760,7 +760,7 @@ export async function getAllPromoCodes(): Promise<PromoCode[]> {
     .from('promo_codes')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as PromoCode[]
 }
 
@@ -770,7 +770,7 @@ export async function createPromoCode(promo: Omit<PromoCode, 'id' | 'created_at'
     .insert({ ...promo, used_count: 0 })
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as PromoCode
 }
 
@@ -781,7 +781,7 @@ export async function updatePromoCode(id: string, updates: Partial<Omit<PromoCod
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as PromoCode
 }
 
@@ -791,7 +791,7 @@ export async function getExchangeRates(): Promise<Record<string, number>> {
   const { data, error } = await supabase
     .from('exchange_rates')
     .select('base_currency, target_currency, rate')
-  if (error) throw error
+  if (error) throw new Error(error.message)
   const map: Record<string, number> = {}
   for (const row of data ?? []) {
     map[`${row.base_currency}_${row.target_currency}`] = row.rate
@@ -803,7 +803,7 @@ export async function updateExchangeRate(base: string, target: string, rate: num
   const { error } = await supabase
     .from('exchange_rates')
     .upsert({ base_currency: base, target_currency: target, rate, fetched_at: new Date().toISOString() }, { onConflict: 'base_currency,target_currency' })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── Admin: All Users ─────────────────────────────────────────────────────────
@@ -813,7 +813,7 @@ export async function getAllUsers() {
     .from('profiles')
     .select('*')
     .order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data ?? []
 }
 
@@ -822,7 +822,7 @@ export async function setUserAdmin(userId: string, isAdmin: boolean) {
     .from('profiles')
     .update({ is_admin: isAdmin })
     .eq('id', userId)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── Admin: Analytics / MRR ──────────────────────────────────────────────────
@@ -938,30 +938,30 @@ export async function getAdminStats() {
 
 export async function getWhatsAppNumbers(): Promise<WhatsAppNumber[]> {
   const { data, error } = await supabase.from('whatsapp_numbers').select('*').order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as WhatsAppNumber[]
 }
 
 export async function createWhatsAppNumber(number: Omit<WhatsAppNumber, 'id' | 'created_at'>): Promise<WhatsAppNumber> {
   const { data, error } = await supabase.from('whatsapp_numbers').insert(number).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as WhatsAppNumber
 }
 
 export async function updateWhatsAppNumber(id: string, updates: Partial<Omit<WhatsAppNumber, 'id' | 'created_at'>>): Promise<WhatsAppNumber> {
   const { data, error } = await supabase.from('whatsapp_numbers').update(updates).eq('id', id).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as WhatsAppNumber
 }
 
 export async function deleteWhatsAppNumber(id: string) {
   const { error } = await supabase.from('whatsapp_numbers').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export async function getWhatsAppConversations(): Promise<WhatsAppConversation[]> {
   const { data, error } = await supabase.from('whatsapp_conversations').select('*').order('last_message_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as WhatsAppConversation[]
 }
 
@@ -970,13 +970,13 @@ export async function getConversationCountSince(clientId: string | null, since: 
   let query = supabase.from('whatsapp_conversations').select('id', { count: 'exact', head: true }).gte('created_at', since)
   query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
   const { count, error } = await query
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return count ?? 0
 }
 
 export async function updateWhatsAppConversation(id: string, updates: Partial<Omit<WhatsAppConversation, 'id' | 'created_at'>>): Promise<WhatsAppConversation> {
   const { data, error } = await supabase.from('whatsapp_conversations').update(updates).eq('id', id).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as WhatsAppConversation
 }
 
@@ -988,14 +988,14 @@ export async function updateWhatsAppConversation(id: string, updates: Partial<Om
 /** Every currently-open ticket visible to the caller — cheap (small table), fetched once alongside the conversation list to badge pending_human items with priority without a per-conversation round trip. */
 export async function getOpenHandoffTickets(): Promise<HandoffTicket[]> {
   const { data, error } = await supabase.from('handoff_tickets').select('*').eq('status', 'open')
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as HandoffTicket[]
 }
 
 /** Owner/manager only (handoff_tickets_own_write) — priority/reason/assignee, never status directly (use resolveHandoffTicket for that, since it's the half that syncs the conversation back). */
 export async function updateHandoffTicket(id: string, updates: Partial<Pick<HandoffTicket, 'priority' | 'reason' | 'assigned_to'>>): Promise<HandoffTicket> {
   const { data, error } = await supabase.from('handoff_tickets').update(updates).eq('id', id).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as HandoffTicket
 }
 
@@ -1007,7 +1007,7 @@ export async function resolveHandoffTicket(id: string, resolvedBy: string): Prom
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as HandoffTicket
 }
 
@@ -1019,7 +1019,7 @@ export async function resolveHandoffTicket(id: string, resolvedBy: string): Prom
 /** One business's own usage since `since` — clientId null means BizKey's own bucket, matching every other client_id convention. */
 export async function getUsageSummary(clientId: string | null, since: string): Promise<UsageSummary[]> {
   const { data, error } = await supabase.rpc('get_usage_summary', { p_client_id: clientId, p_since: since })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return ((data ?? []) as { event_type: UsageEventType; total_quantity: string; total_cost: string }[])
     .map(r => ({ event_type: r.event_type, total_quantity: Number(r.total_quantity), total_cost: Number(r.total_cost) }))
 }
@@ -1027,7 +1027,7 @@ export async function getUsageSummary(clientId: string | null, since: string): P
 /** Cross-tenant totals grouped by business — admin-only in practice (RLS silently narrows a non-admin caller to just their own client_id). */
 export async function getUsageSummaryAllTenants(since: string): Promise<UsageSummaryByTenant[]> {
   const { data, error } = await supabase.rpc('get_usage_summary_all_tenants', { p_since: since })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return ((data ?? []) as { client_id: string | null; event_type: UsageEventType; total_quantity: string; total_cost: string }[])
     .map(r => ({ client_id: r.client_id, event_type: r.event_type, total_quantity: Number(r.total_quantity), total_cost: Number(r.total_cost) }))
 }
@@ -1038,7 +1038,7 @@ export async function getWhatsAppMessages(conversationId: string): Promise<Whats
     .select('*')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as WhatsAppMessage[]
 }
 
@@ -1049,7 +1049,7 @@ export async function getWhatsAppMessagesForAnalytics(limit = 1000): Promise<Wha
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit)
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as WhatsAppMessage[]
 }
 
@@ -1122,14 +1122,14 @@ export async function simulateIncomingWhatsAppMessage(params: {
       })
       .select()
       .single()
-    if (createErr) throw createErr
+    if (createErr) throw new Error(createErr.message)
     conversation = created as WhatsAppConversation
   }
 
   const { error: inboundErr } = await supabase
     .from('whatsapp_messages')
     .insert({ conversation_id: conversation.id, direction: 'inbound', sender_type: 'customer', body: params.body, client_id: clientId })
-  if (inboundErr) throw inboundErr
+  if (inboundErr) throw new Error(inboundErr.message)
 
   const [allRules, allKbArticles, allRecords, allChunks] = await Promise.all([
     getWhatsAppAutoReplies(), getWhatsAppKbArticles(), getKnowledgeRecords(clientId), getKnowledgeChunks(clientId),
@@ -1149,19 +1149,19 @@ export async function simulateIncomingWhatsAppMessage(params: {
     const { error: botErr } = await supabase
       .from('whatsapp_messages')
       .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: match.responseText, client_id: clientId })
-    if (botErr) throw botErr
+    if (botErr) throw new Error(botErr.message)
   } else if (catalogMatch) {
     matched = true
     const { error: botErr } = await supabase
       .from('whatsapp_messages')
       .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: formatKnowledgeRecordReply(catalogMatch), client_id: clientId })
-    if (botErr) throw botErr
+    if (botErr) throw new Error(botErr.message)
   } else if (chunkMatch) {
     matched = true
     const { error: botErr } = await supabase
       .from('whatsapp_messages')
       .insert({ conversation_id: conversation.id, direction: 'outbound', sender_type: 'bot', body: chunkMatch.content, client_id: clientId })
-    if (botErr) throw botErr
+    if (botErr) throw new Error(botErr.message)
   }
 
   const { data: updatedConv, error: updateErr } = await supabase
@@ -1170,7 +1170,7 @@ export async function simulateIncomingWhatsAppMessage(params: {
     .eq('id', conversation.id)
     .select()
     .single()
-  if (updateErr) throw updateErr
+  if (updateErr) throw new Error(updateErr.message)
 
   const messages = await getWhatsAppMessages(conversation.id)
   return { conversation: updatedConv as WhatsAppConversation, messages, matched }
@@ -1178,7 +1178,7 @@ export async function simulateIncomingWhatsAppMessage(params: {
 
 export async function getWhatsAppKbArticles(): Promise<WhatsAppKbArticle[]> {
   const { data, error } = await supabase.from('whatsapp_kb_articles').select('*').order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as WhatsAppKbArticle[]
 }
 
@@ -1189,13 +1189,13 @@ export async function getPublicKbArticles(): Promise<WhatsAppKbArticle[]> {
     .select('*')
     .eq('is_active', true)
     .order('title', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as WhatsAppKbArticle[]
 }
 
 export async function createWhatsAppKbArticle(article: Omit<WhatsAppKbArticle, 'id' | 'created_at' | 'updated_at'>): Promise<WhatsAppKbArticle> {
   const { data, error } = await supabase.from('whatsapp_kb_articles').insert(article).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as WhatsAppKbArticle
 }
 
@@ -1206,20 +1206,20 @@ export async function updateWhatsAppKbArticle(id: string, updates: Partial<Omit<
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as WhatsAppKbArticle
 }
 
 export async function deleteWhatsAppKbArticle(id: string) {
   const { error } = await supabase.from('whatsapp_kb_articles').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export async function getKnowledgeDocuments(clientId: string | null): Promise<KnowledgeDocument[]> {
   let query = supabase.from('knowledge_documents').select('*').order('created_at', { ascending: false })
   query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
   const { data, error } = await query
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as KnowledgeDocument[]
 }
 
@@ -1227,7 +1227,7 @@ export async function getKnowledgeRecords(clientId: string | null): Promise<Know
   let query = supabase.from('knowledge_records').select('*').eq('is_active', true)
   query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
   const { data, error } = await query
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as KnowledgeRecord[]
 }
 
@@ -1235,7 +1235,7 @@ export async function getKnowledgeRecords(clientId: string | null): Promise<Know
 export async function uploadKnowledgeDocumentFile(clientId: string, documentId: string, file: File): Promise<string> {
   const path = `${clientId}/${documentId}/${file.name}`
   const { error } = await supabase.storage.from('knowledge-documents').upload(path, file, { upsert: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return path
 }
 
@@ -1266,7 +1266,7 @@ export async function createKnowledgeDocumentWithRecords(params: {
     })
     .select()
     .single()
-  if (docErr) throw docErr
+  if (docErr) throw new Error(docErr.message)
 
   if (params.records.length > 0) {
     const rows = params.records.map(r => ({
@@ -1277,7 +1277,7 @@ export async function createKnowledgeDocumentWithRecords(params: {
       searchable_text: [r.name, r.category, r.description, r.price, r.stock].filter(v => v != null && v !== '').join(' ').toLowerCase(),
     }))
     const { error: recErr } = await supabase.from('knowledge_records').insert(rows)
-    if (recErr) throw recErr
+    if (recErr) throw new Error(recErr.message)
   }
 
   return doc as KnowledgeDocument
@@ -1287,7 +1287,7 @@ export async function getKnowledgeChunks(clientId: string | null): Promise<Knowl
   let query = supabase.from('knowledge_chunks').select('*')
   query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
   const { data, error } = await query
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as KnowledgeChunk[]
 }
 
@@ -1318,7 +1318,7 @@ export async function createKnowledgeDocumentWithChunks(params: {
     })
     .select()
     .single()
-  if (docErr) throw docErr
+  if (docErr) throw new Error(docErr.message)
 
   if (params.chunks.length > 0) {
     const rows = params.chunks.map((content, index) => ({
@@ -1328,7 +1328,7 @@ export async function createKnowledgeDocumentWithChunks(params: {
       content,
     }))
     const { error: chunkErr } = await supabase.from('knowledge_chunks').insert(rows)
-    if (chunkErr) throw chunkErr
+    if (chunkErr) throw new Error(chunkErr.message)
   }
 
   return doc as KnowledgeDocument
@@ -1336,26 +1336,26 @@ export async function createKnowledgeDocumentWithChunks(params: {
 
 export async function getKnowledgeRecordsByDocument(documentId: string): Promise<KnowledgeRecord[]> {
   const { data, error } = await supabase.from('knowledge_records').select('*').eq('document_id', documentId).order('created_at')
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as KnowledgeRecord[]
 }
 
 export async function getKnowledgeChunksByDocument(documentId: string): Promise<KnowledgeChunk[]> {
   const { data, error } = await supabase.from('knowledge_chunks').select('*').eq('document_id', documentId).order('chunk_index')
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as KnowledgeChunk[]
 }
 
 /** Lets an owner/manager drop a single bad row after reviewing an import, without deleting and re-uploading the whole document. Keeps the parent's cached row_count in sync so the document list doesn't drift from what's actually there. */
 export async function deleteKnowledgeRecord(record: KnowledgeRecord, currentRowCount: number): Promise<void> {
   const { error } = await supabase.from('knowledge_records').delete().eq('id', record.id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
   await supabase.from('knowledge_documents').update({ row_count: Math.max(0, currentRowCount - 1) }).eq('id', record.document_id)
 }
 
 export async function deleteKnowledgeChunk(chunk: KnowledgeChunk, currentRowCount: number): Promise<void> {
   const { error } = await supabase.from('knowledge_chunks').delete().eq('id', chunk.id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
   await supabase.from('knowledge_documents').update({ row_count: Math.max(0, currentRowCount - 1) }).eq('id', chunk.document_id)
 }
 
@@ -1366,30 +1366,30 @@ export async function deleteKnowledgeDocument(doc: KnowledgeDocument) {
   // records) always gets removed regardless of storage outcome.
   await supabase.storage.from('knowledge-documents').remove([doc.storage_path]).catch(() => {})
   const { error } = await supabase.from('knowledge_documents').delete().eq('id', doc.id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export async function getWhatsAppAutoReplies(): Promise<WhatsAppAutoReply[]> {
   const { data, error } = await supabase.from('whatsapp_auto_replies').select('*').order('sort_order', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as WhatsAppAutoReply[]
 }
 
 export async function createWhatsAppAutoReply(rule: Omit<WhatsAppAutoReply, 'id' | 'created_at'>): Promise<WhatsAppAutoReply> {
   const { data, error } = await supabase.from('whatsapp_auto_replies').insert(rule).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as WhatsAppAutoReply
 }
 
 export async function updateWhatsAppAutoReply(id: string, updates: Partial<Omit<WhatsAppAutoReply, 'id' | 'created_at'>>): Promise<WhatsAppAutoReply> {
   const { data, error } = await supabase.from('whatsapp_auto_replies').update(updates).eq('id', id).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as WhatsAppAutoReply
 }
 
 export async function deleteWhatsAppAutoReply(id: string) {
   const { error } = await supabase.from('whatsapp_auto_replies').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 // ─── BizKey Assistant: Plans & Clients ─────────────────────────────────────
@@ -1400,25 +1400,25 @@ export async function getAssistantPlans(): Promise<AssistantPlan[]> {
     .select('*')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as AssistantPlan[]
 }
 
 export async function getAllAssistantPlans(): Promise<AssistantPlan[]> {
   const { data, error } = await supabase.from('assistant_plans').select('*').order('sort_order', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as AssistantPlan[]
 }
 
 export async function getAssistantClients(): Promise<AssistantClient[]> {
   const { data, error } = await supabase.from('assistant_clients').select('*').order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as AssistantClient[]
 }
 
 export async function createAssistantClient(client: Omit<AssistantClient, 'id' | 'created_at' | 'updated_at'>): Promise<AssistantClient> {
   const { data, error } = await supabase.from('assistant_clients').insert(client).select().single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as AssistantClient
 }
 
@@ -1429,13 +1429,13 @@ export async function updateAssistantClient(id: string, updates: Partial<Omit<As
     .eq('id', id)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as AssistantClient
 }
 
 export async function deleteAssistantClient(id: string) {
   const { error } = await supabase.from('assistant_clients').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 /** The logged-in customer's own Assistant subscription — null if they've never paid for one. Relies on the additive `assistant_clients_own_read` RLS policy. */
@@ -1445,7 +1445,7 @@ export async function getMyAssistantClient(userId: string): Promise<AssistantCli
     .select('*')
     .eq('profile_id', userId)
     .maybeSingle()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as AssistantClient | null
 }
 
@@ -1477,7 +1477,7 @@ export async function getMyAssistantMembership(userId: string): Promise<{ role: 
     .select('role, assistant_clients(*)')
     .eq('profile_id', userId)
     .maybeSingle()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   if (!data || !data.assistant_clients) return null
   return { role: data.role as AssistantMemberRole, client: data.assistant_clients as unknown as AssistantClient }
 }
@@ -1489,7 +1489,7 @@ export async function getAssistantClientMembers(clientId: string): Promise<Assis
     .select('*, profile:profiles!assistant_client_members_profile_id_fkey(name, email)')
     .eq('client_id', clientId)
     .order('created_at', { ascending: true })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return (data ?? []) as unknown as AssistantClientMember[]
 }
 
@@ -1508,7 +1508,7 @@ export async function inviteAssistantClientMember(clientId: string, email: strin
     p_email: email,
     p_role: role,
   })
-  if (error) throw error
+  if (error) throw new Error(error.message)
   const member = data as AssistantClientMember
 
   supabase.functions.invoke('send-invite-email', { body: { memberId: member.id } })
@@ -1527,20 +1527,20 @@ export async function updateAssistantClientMemberRole(memberId: string, role: As
     .eq('id', memberId)
     .select()
     .single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as AssistantClientMember
 }
 
 /** Owner-only — RLS blocks anyone else, and a trigger blocks removing the last owner. */
 export async function removeAssistantClientMember(memberId: string) {
   const { error } = await supabase.from('assistant_client_members').delete().eq('id', memberId)
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 /** Activates (or upgrades) the caller's own Assistant subscription — server-side re-verifies a successful payment exists for this transaction before writing anything. */
 export async function activateAssistantSubscription(transactionId: string): Promise<void> {
   const { error } = await supabase.rpc('activate_assistant_subscription', { p_transaction_id: transactionId })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 /** Updates the caller's own tone/hours/requested-number — never plan_id or status, which stay admin/RPC-only. */
@@ -1554,7 +1554,7 @@ export async function updateMyAssistantSettings(settings: {
     p_business_hours: settings.businessHours,
     p_requested_whatsapp_number: settings.requestedWhatsappNumber,
   }).single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as AssistantClient
 }
 
@@ -1583,7 +1583,7 @@ export async function completeAssistantOnboarding(step: {
     p_requested_whatsapp_number: step.requestedWhatsappNumber ?? null,
     p_finish: step.finish ?? false,
   }).single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as AssistantClient
 }
 
@@ -1595,14 +1595,14 @@ export async function completeAssistantOnboarding(step: {
  */
 export async function adminAssignSourcingPlan(userId: string, planId: string): Promise<Profile> {
   const { data, error } = await supabase.rpc('admin_assign_sourcing_plan', { p_user_id: userId, p_plan_id: planId }).single()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as Profile
 }
 
 /** Admin-only: grants (or updates) a user's Assistant subscription. Pass assistantPlanId null to revoke (cancels rather than deletes, so their conversation/FAQ history survives). */
 export async function adminAssignAssistantPlan(userId: string, assistantPlanId: string | null): Promise<AssistantClient | null> {
   const { data, error } = await supabase.rpc('admin_assign_assistant_plan', { p_user_id: userId, p_assistant_plan_id: assistantPlanId }).maybeSingle()
-  if (error) throw error
+  if (error) throw new Error(error.message)
   return data as AssistantClient | null
 }
 

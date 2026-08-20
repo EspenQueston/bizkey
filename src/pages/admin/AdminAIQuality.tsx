@@ -28,7 +28,7 @@ export default function AdminAIQuality() {
           .order('created_at', { ascending: false })
           .limit(100)
 
-        if (error) throw error
+        if (error) throw new Error(error.message)
         setRows((data ?? []) as AnalysisQualityRow[])
       } catch (err) {
         console.error(err)
