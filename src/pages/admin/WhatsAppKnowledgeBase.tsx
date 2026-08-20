@@ -297,10 +297,15 @@ export default function WhatsAppKnowledgeBasePage() {
   async function handleImport() {
     if (!assistantClient || !pendingFile) return
     setImporting(true)
+    // Tracked outside the try body so a failure partway through a multi-part
+    // split (batch 2 of 3 fails, say) can still report exactly how many
+    // parts made it in — each one is already a real, independent row in the
+    // database by the time it's pushed here, so the catch block below must
+    // never let it go unreported just because a later part failed.
+    const createdDocs: KnowledgeDocument[] = []
     try {
       const baseTitle = pendingFile.name.replace(/\.(csv|xlsx?|xls|pdf|docx)$/i, '')
       const title = pendingKind === 'spreadsheet' && sheetNames.length > 1 ? `${baseTitle} — ${selectedSheet}` : baseTitle
-      const createdDocs: KnowledgeDocument[] = []
       if (pendingKind === 'spreadsheet') {
         if (rowBatches.length === 0) return
         const sourceType = /\.csv$/i.test(pendingFile.name) ? 'csv' : 'xlsx'
@@ -308,14 +313,15 @@ export default function WhatsAppKnowledgeBasePage() {
           const partTitle = rowBatches.length > 1 ? `${title} (partie ${i + 1}/${rowBatches.length})` : title
           const doc = await createKnowledgeDocumentWithRecords({ clientId: assistantClient.id, sourceType, title: partTitle, file: pendingFile, records: rowBatches[i] })
           createdDocs.push(doc)
+          setDocuments(prev => [doc, ...prev])
         }
       } else {
         if (pendingChunks.length === 0) return
         const sourceType = /\.pdf$/i.test(pendingFile.name) ? 'pdf' : 'docx'
         const doc = await createKnowledgeDocumentWithChunks({ clientId: assistantClient.id, sourceType, title, file: pendingFile, chunks: pendingChunks })
         createdDocs.push(doc)
+        setDocuments(prev => [doc, ...prev])
       }
-      setDocuments(prev => [...createdDocs, ...prev])
       cancelImport()
       const totalRows = createdDocs.reduce((sum, d) => sum + d.row_count, 0)
       const unit = pendingKind === 'spreadsheet' ? 'ligne' : 'passage'
@@ -325,7 +331,12 @@ export default function WhatsAppKnowledgeBasePage() {
           : `${totalRows} ${unit}${totalRows > 1 ? 's' : ''} importé${totalRows > 1 ? 's' : ''}`
       )
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Échec de l'import")
+      const reason = err instanceof Error ? err.message : "Échec de l'import"
+      toast.error(
+        createdDocs.length > 0
+          ? `${createdDocs.length} partie${createdDocs.length > 1 ? 's' : ''} importée${createdDocs.length > 1 ? 's' : ''} avant l'échec — ${reason}`
+          : reason
+      )
     } finally {
       setImporting(false)
     }

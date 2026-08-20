@@ -120,18 +120,17 @@ export function rankKnowledgeChunks(query: string, chunks: KnowledgeChunk[], lim
 /**
  * Formats a matched catalog record into a WhatsApp-ready reply. Records no
  * longer have a fixed name/price/stock/description shape — a business picks
- * whichever columns it wants to keep at import time — so this renders every
- * populated field as "Column : value", bolding the first one as the title
- * (the leftmost kept column is typically the product/service name in a real
- * spreadsheet export, matching how guessDefaultColumns prioritizes it).
+ * whichever columns it wants to keep at import time — so every populated
+ * field is rendered as its own bolded "*Column* : value" line rather than
+ * singling one out as "the title". That's deliberate, not just simpler:
+ * Postgres's jsonb does not preserve object key insertion order (confirmed
+ * empirically — a round-tripped object comes back sorted by key length then
+ * alphabetically), so treating "whichever field happens to come back first"
+ * as the product name would silently bold the wrong field once a record
+ * round-trips through the database.
  */
 export function formatKnowledgeRecordReply(record: KnowledgeRecord): string {
   const entries = Object.entries(record.data).filter(([, v]) => v != null && v !== '')
   if (entries.length === 0) return ''
-  const [, title] = entries[0]
-  const lines = [`*${title}*`]
-  for (const [key, value] of entries.slice(1)) {
-    lines.push(`${key} : ${value}`)
-  }
-  return lines.join('\n')
+  return entries.map(([key, value]) => `*${key}* : ${value}`).join('\n')
 }
