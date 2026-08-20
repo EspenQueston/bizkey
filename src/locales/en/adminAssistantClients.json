@@ -21,6 +21,7 @@
   "customerSince": "Client since {{date}}",
   "period": "Period: {{start}} → {{end}}",
   "edit": "Edit",
+  "realAiCost": "Real AI cost (30d): ${{cost}}",
   "deletedToast": "Client deleted",
   "deleteError": "Error while deleting",
   "modal": {

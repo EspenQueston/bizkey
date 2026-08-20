@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase'
 import { getFunctionErrorMessage } from '@/lib/api'
 import {
   getAllPlans, getAllAssistantPlans, getUserSubscription, getMyAssistantClient,
-  adminAssignSourcingPlan, adminAssignAssistantPlan, syncSubscriptionStatus,
+  adminAssignSourcingPlan, adminAssignAssistantPlan, syncSubscriptionStatus, getAssistantClients,
 } from '@/lib/db'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -39,6 +39,16 @@ export default function AdminUsers() {
   const [sourcingPlans, setSourcingPlans] = useState<Plan[]>([])
   const [assistantPlans, setAssistantPlans] = useState<AssistantPlan[]>([])
 
+  // "Paid" on this page has always meant "has a real Sourcing subscription
+  // (subscription_tier !== 'free')" — but a business can just as well be
+  // paying for BizKey WhatsApp Assistant only, which lives in a separate
+  // table (assistant_clients, keyed by profile_id) that profiles.subscription_tier
+  // knows nothing about. Without this map, granting/revoking an Assistant
+  // plan here was invisible everywhere on this page except inside the one
+  // modal that just made the change — the Free/Payants stats and the list
+  // itself never reflected it, even after a full reload.
+  const [assistantByProfile, setAssistantByProfile] = useState<Map<string, AssistantClient>>(new Map())
+
   // The editing user's *current* real state, not a hand-typed guess — and
   // the pending selection until "Appliquer" actually commits it.
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null)
@@ -55,9 +65,12 @@ export default function AdminUsers() {
     // each user (once opened) is never reading a stale "Actif" label.
     syncSubscriptionStatus().catch(err => console.warn('syncSubscriptionStatus failed:', err))
     loadUsers()
-    Promise.allSettled([getAllPlans(), getAllAssistantPlans()]).then(([p, ap]) => {
+    Promise.allSettled([getAllPlans(), getAllAssistantPlans(), getAssistantClients()]).then(([p, ap, ac]) => {
       if (p.status === 'fulfilled') setSourcingPlans(p.value.filter(x => x.is_active))
       if (ap.status === 'fulfilled') setAssistantPlans(ap.value.filter(x => x.is_active))
+      if (ac.status === 'fulfilled') {
+        setAssistantByProfile(new Map(ac.value.filter(c => c.profile_id).map(c => [c.profile_id as string, c])))
+      }
     })
   }, [])
 
@@ -166,6 +179,15 @@ export default function AdminUsers() {
       const client = await adminAssignAssistantPlan(editingUser.id, planId)
       setCurrentAssistantClient(client)
       setSelectedAssistantPlanId(planId ?? '')
+      // Keeps the outer list/stats in sync with what the modal just did —
+      // without this, the grant only ever showed up here until the next
+      // full page load.
+      setAssistantByProfile(prev => {
+        const next = new Map(prev)
+        if (client) next.set(editingUser.id, client)
+        else next.delete(editingUser.id)
+        return next
+      })
       toast.success(planId ? t('toast.assistantGranted') : t('toast.assistantRevoked'))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('toast.assistantApplyError'))
@@ -214,11 +236,22 @@ export default function AdminUsers() {
     return (u.email ?? '').toLowerCase().includes(s) || (u.name ?? '').toLowerCase().includes(s)
   })
 
+  // A user counts as "paying" if either product bills them — a Sourcing
+  // subscription/PAYG pack (subscription_tier !== 'free') or an active
+  // WhatsApp Assistant plan. Either alone is enough; this is a business
+  // relationship question ("are they paying us"), not specific to one product.
+  function hasActiveAssistantPlan(userId: string): boolean {
+    return assistantByProfile.get(userId)?.status === 'active'
+  }
+  function isPayingUser(u: UserProfile): boolean {
+    return u.subscription_tier !== 'free' || hasActiveAssistantPlan(u.id)
+  }
+
   const stats = {
     total: users.length,
     admins: users.filter(u => u.is_admin).length,
-    free: users.filter(u => u.subscription_tier === 'free').length,
-    paid: users.filter(u => u.subscription_tier !== 'free').length,
+    free: users.filter(u => !isPayingUser(u)).length,
+    paid: users.filter(u => isPayingUser(u)).length,
   }
 
   return (
@@ -421,6 +454,12 @@ export default function AdminUsers() {
                         {u.subscription_tier !== 'free' && <Crown className="h-2.5 w-2.5 mr-0.5" />}
                         {u.subscription_tier}
                       </Badge>
+                      {hasActiveAssistantPlan(u.id) && (
+                        <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-600 bg-blue-500/5 gap-0.5">
+                          <Bot className="h-2.5 w-2.5" />
+                          {assistantPlans.find(p => p.id === assistantByProfile.get(u.id)?.plan_id)?.display_name ?? t('assistantBadge')}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{u.email}</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">

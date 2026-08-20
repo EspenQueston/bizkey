@@ -36,30 +36,30 @@ export function BusinessHoursEditor({ value, onChange }: { value: BusinessHours;
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5">
       {DAY_ORDER.map(day => {
         const d = value[day]
         return (
-          <div key={day} className="flex items-center gap-3 py-1">
-            <span className="text-sm w-24 shrink-0">{DAY_LABELS[day]}</span>
+          <div key={day} className="flex items-center gap-2.5 py-1 rounded-lg px-1.5 -mx-1.5 hover:bg-secondary/40 transition-colors">
+            <span className="text-sm w-20 shrink-0">{DAY_LABELS[day]}</span>
             <label className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
               <input type="checkbox" checked={d.closed} onChange={e => updateDay(day, { closed: e.target.checked })} />
               Fermé
             </label>
             {!d.closed && (
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <input
                   type="time"
                   value={d.open}
                   onChange={e => updateDay(day, { open: e.target.value })}
-                  className="h-9 rounded-lg border border-input bg-background px-2 text-xs flex-1 min-w-0"
+                  className="h-8 rounded-lg border border-input bg-background px-1.5 text-xs flex-1 min-w-0"
                 />
-                <span className="text-muted-foreground text-xs">à</span>
+                <span className="text-muted-foreground text-xs shrink-0">à</span>
                 <input
                   type="time"
                   value={d.close}
                   onChange={e => updateDay(day, { close: e.target.value })}
-                  className="h-9 rounded-lg border border-input bg-background px-2 text-xs flex-1 min-w-0"
+                  className="h-8 rounded-lg border border-input bg-background px-1.5 text-xs flex-1 min-w-0"
                 />
               </div>
             )}

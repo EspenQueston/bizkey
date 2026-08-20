@@ -21,6 +21,7 @@
   "customerSince": "Client depuis le {{date}}",
   "period": "Période : {{start}} → {{end}}",
   "edit": "Modifier",
+  "realAiCost": "Coût IA réel (30j) : ${{cost}}",
   "deletedToast": "Client supprimé",
   "deleteError": "Erreur lors de la suppression",
   "modal": {

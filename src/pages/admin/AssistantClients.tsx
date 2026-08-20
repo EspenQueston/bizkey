@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Plus, Search, Edit2, Trash2, X, Save, Phone, Mail, Building2, Smartphone, CalendarClock,
+  Plus, Search, Edit2, Trash2, X, Save, Phone, Mail, Building2, Smartphone, CalendarClock, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import {
   getAssistantClients, createAssistantClient, updateAssistantClient, deleteAssistantClient,
-  getAllAssistantPlans, getWhatsAppNumbers, syncSubscriptionStatus,
+  getAllAssistantPlans, getWhatsAppNumbers, syncSubscriptionStatus, getUsageSummaryAllTenants,
 } from '@/lib/db'
 import { toast } from 'sonner'
 import type { AssistantClient, AssistantClientStatus, AssistantPlan, WhatsAppNumber } from '@/lib/supabase'
@@ -40,6 +40,10 @@ export default function AssistantClientsPage() {
   const [clients, setClients] = useState<AssistantClient[]>([])
   const [plans, setPlans] = useState<AssistantPlan[]>([])
   const [numbers, setNumbers] = useState<WhatsAppNumber[]>([])
+  // Real (unmarked-up) AI spend per business over the last 30 days — the
+  // admin's own view of cost, distinct from the ×10 display figure a
+  // business owner sees on their own Billing page (AssistantBilling.tsx).
+  const [costByClient, setCostByClient] = useState<Map<string, number>>(new Map())
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -54,11 +58,22 @@ export default function AssistantClientsPage() {
     // Best-effort, awaited before the list loads — a business whose period
     // lapsed since the last hourly sweep should show "Expiré" the moment an
     // admin opens this page, not whatever stale status it had before.
+    const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     syncSubscriptionStatus().catch(err => console.warn('syncSubscriptionStatus failed:', err)).finally(() => {
-      Promise.allSettled([getAssistantClients(), getAllAssistantPlans(), getWhatsAppNumbers()]).then(([c, p, n]) => {
+      Promise.allSettled([
+        getAssistantClients(), getAllAssistantPlans(), getWhatsAppNumbers(), getUsageSummaryAllTenants(since30d),
+      ]).then(([c, p, n, usage]) => {
         if (c.status === 'fulfilled') setClients(c.value)
         if (p.status === 'fulfilled') setPlans(p.value)
         if (n.status === 'fulfilled') setNumbers(n.value)
+        if (usage.status === 'fulfilled') {
+          const byClient = new Map<string, number>()
+          for (const row of usage.value) {
+            if (!row.client_id) continue
+            byClient.set(row.client_id, (byClient.get(row.client_id) ?? 0) + row.total_cost)
+          }
+          setCostByClient(byClient)
+        }
       }).finally(() => setLoading(false))
     })
   }, [])
@@ -209,9 +224,17 @@ export default function AssistantClientsPage() {
                       </div>
                     )}
                   </div>
-                  {plan && (
-                    <Badge variant="outline" className="mt-2 text-[10px] text-primary border-primary/30">{plan.display_name}</Badge>
-                  )}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    {plan && (
+                      <Badge variant="outline" className="text-[10px] text-primary border-primary/30">{plan.display_name}</Badge>
+                    )}
+                    {costByClient.has(client.id) && (
+                      <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30 gap-1">
+                        <Sparkles className="h-2.5 w-2.5" />
+                        {t('realAiCost', { cost: costByClient.get(client.id)!.toFixed(4) })}
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex gap-1.5 mt-3 pt-3 border-t border-border">
                     <Button size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs gap-1" onClick={() => openEdit(client)}>
                       <Edit2 className="h-3 w-3" />{t('edit')}

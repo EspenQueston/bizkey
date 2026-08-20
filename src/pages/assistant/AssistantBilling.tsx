@@ -16,6 +16,13 @@ const STATUS_META: Record<AssistantClientStatus, { label: string; color: string 
   expired:   { label: 'Expiré',    color: 'bg-secondary text-muted-foreground' },
 }
 
+// The AI cost shown to a business owner is a display markup over the real
+// OpenAI spend, not the actual cost basis — the admin panel (WhatsAppOverview,
+// AssistantClients) shows the real, unmarked-up figure from the same
+// usage_events rows. Only the multiplier differs; nothing about the
+// underlying cost tracking/billing data changes.
+const CUSTOMER_AI_COST_MULTIPLIER = 10
+
 const TX_STATUS_META: Record<PaymentTransaction['status'], { label: string; color: string }> = {
   success: { label: 'Payé',     color: 'text-primary border-primary/30' },
   pending: { label: 'En cours', color: 'text-amber-600 border-amber-500/30' },
@@ -80,81 +87,83 @@ export default function AssistantBillingPage() {
     : 0
 
   return (
-    <div className="p-6 space-y-5 max-w-2xl">
+    <div className="p-6 space-y-5 max-w-6xl">
       <div>
         <h1 className="font-serif text-2xl font-bold flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Facturation & abonnement</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{assistantClient.company_name}</p>
       </div>
 
-      {/* Current plan */}
-      <Card className="border-2 border-primary/20">
-        <CardContent className="p-5 space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
-                <Crown className="h-3.5 w-3.5 text-primary" /> Formule actuelle
-              </p>
-              <p className="text-xl font-bold">{currentPlan?.display_name ?? 'Aucune formule'}</p>
+      <div className="grid lg:grid-cols-2 gap-5 items-start">
+        {/* Current plan */}
+        <Card className="border-2 border-primary/20">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-1">
+                  <Crown className="h-3.5 w-3.5 text-primary" /> Formule actuelle
+                </p>
+                <p className="text-xl font-bold">{currentPlan?.display_name ?? 'Aucune formule'}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <Badge className={`text-xs ${statusMeta.color}`}>{statusMeta.label}</Badge>
+                {currentPlan && <p className="text-lg font-black text-primary">¥{currentPlan.price_yuan}<span className="text-xs font-normal text-muted-foreground">/mois</span></p>}
+              </div>
             </div>
-            <div className="flex flex-col items-end gap-1.5">
-              <Badge className={`text-xs ${statusMeta.color}`}>{statusMeta.label}</Badge>
-              {currentPlan && <p className="text-lg font-black text-primary">¥{currentPlan.price_yuan}<span className="text-xs font-normal text-muted-foreground">/mois</span></p>}
-            </div>
-          </div>
-          {currentPlan && (
-            <div className="space-y-1.5 pt-2 border-t border-border">
-              {currentPlan.features.slice(0, 4).map(f => (
-                <div key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <span className="h-1 w-1 rounded-full bg-primary mt-1.5 shrink-0" />
-                  {f}
-                </div>
-              ))}
-            </div>
-          )}
-          <Button asChild variant="outline" className="w-full rounded-full gap-1.5">
-            <Link to="/pricing">
-              <ArrowUpRight className="h-4 w-4" /> Changer de formule
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+            {currentPlan && (
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 pt-2 border-t border-border">
+                {currentPlan.features.map(f => (
+                  <div key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <span className="h-1 w-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button asChild variant="outline" className="w-full rounded-full gap-1.5">
+              <Link to="/pricing">
+                <ArrowUpRight className="h-4 w-4" /> Changer de formule
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
-      {/* Usage snapshot */}
-      <Card>
-        <CardContent className="p-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <MessageSquare className="h-3.5 w-3.5" /> Consommation ce mois-ci
-          </p>
-          <div className="flex items-end justify-between">
-            <p className="text-2xl font-black">{conversationsThisMonth.toLocaleString('fr-FR')}</p>
-            <p className="text-xs text-muted-foreground">
-              {currentPlan ? `sur ${currentPlan.max_conversations_per_month.toLocaleString('fr-FR')} conversations/mois` : 'conversations'}
+        {/* Usage snapshot */}
+        <Card>
+          <CardContent className="p-5 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" /> Consommation ce mois-ci
             </p>
-          </div>
-          {currentPlan && (
-            <div className="h-2 rounded-full bg-secondary overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${usagePercent >= 90 ? 'bg-destructive' : usagePercent >= 70 ? 'bg-amber-500' : 'bg-primary'}`}
-                style={{ width: `${usagePercent}%` }}
-              />
+            <div className="flex items-end justify-between">
+              <p className="text-2xl font-black">{conversationsThisMonth.toLocaleString('fr-FR')}</p>
+              <p className="text-xs text-muted-foreground">
+                {currentPlan ? `sur ${currentPlan.max_conversations_per_month.toLocaleString('fr-FR')} conversations/mois` : 'conversations'}
+              </p>
             </div>
-          )}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-            <Smartphone className="h-3.5 w-3.5" />
-            {currentPlan ? `${currentPlan.max_numbers} numéro${currentPlan.max_numbers > 1 ? 's' : ''} inclus` : ''}
-          </div>
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><MessageSquare className="h-3 w-3" /> Messages</p>
-              <p className="text-sm font-semibold">{messagesThisMonth.toLocaleString('fr-FR')}</p>
+            {currentPlan && (
+              <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${usagePercent >= 90 ? 'bg-destructive' : usagePercent >= 70 ? 'bg-amber-500' : 'bg-primary'}`}
+                  style={{ width: `${usagePercent}%` }}
+                />
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
+              <Smartphone className="h-3.5 w-3.5" />
+              {currentPlan ? `${currentPlan.max_numbers} numéro${currentPlan.max_numbers > 1 ? 's' : ''} inclus` : ''}
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3 w-3" /> Coût IA</p>
-              <p className="text-sm font-semibold">${aiCostThisMonth.toFixed(4)}</p>
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
+              <div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><MessageSquare className="h-3 w-3" /> Messages</p>
+                <p className="text-sm font-semibold">{messagesThisMonth.toLocaleString('fr-FR')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3 w-3" /> Coût IA</p>
+                <p className="text-sm font-semibold">${(aiCostThisMonth * CUSTOMER_AI_COST_MULTIPLIER).toFixed(4)}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Billing history */}
       <Card>
@@ -165,19 +174,29 @@ export default function AssistantBillingPage() {
           {transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Aucun paiement pour l'instant</p>
           ) : (
-            <div className="divide-y divide-border">
-              {transactions.map(tx => (
-                <div key={tx.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <div>
-                    <p className="font-medium">{new Date(tx.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                    <p className="text-xs text-muted-foreground">{tx.payment_method ?? tx.gateway}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{tx.amount_local.toLocaleString('fr-FR')} {tx.currency}</p>
-                    <Badge variant="outline" className={`text-[10px] ${TX_STATUS_META[tx.status].color}`}>{TX_STATUS_META[tx.status].label}</Badge>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left font-medium text-xs text-muted-foreground uppercase tracking-wide pb-2">Date</th>
+                    <th className="text-left font-medium text-xs text-muted-foreground uppercase tracking-wide pb-2">Méthode</th>
+                    <th className="text-right font-medium text-xs text-muted-foreground uppercase tracking-wide pb-2">Montant</th>
+                    <th className="text-right font-medium text-xs text-muted-foreground uppercase tracking-wide pb-2">Statut</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {transactions.map(tx => (
+                    <tr key={tx.id}>
+                      <td className="py-2.5 font-medium">{new Date(tx.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td className="py-2.5 text-muted-foreground capitalize">{tx.payment_method ?? tx.gateway}</td>
+                      <td className="py-2.5 text-right font-semibold whitespace-nowrap">{tx.amount_local.toLocaleString('fr-FR')} {tx.currency}</td>
+                      <td className="py-2.5 text-right">
+                        <Badge variant="outline" className={`text-[10px] ${TX_STATUS_META[tx.status].color}`}>{TX_STATUS_META[tx.status].label}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

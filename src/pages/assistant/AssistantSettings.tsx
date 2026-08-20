@@ -137,71 +137,76 @@ export default function AssistantSettingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-5 max-w-2xl">
-      <div>
-        <h1 className="font-serif text-2xl font-bold flex items-center gap-2"><Settings className="h-6 w-6 text-primary" /> Réglages de l'assistant</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{assistantClient.company_name}</p>
+    <div className="p-6 space-y-5 max-w-6xl">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="font-serif text-2xl font-bold flex items-center gap-2"><Settings className="h-6 w-6 text-primary" /> Réglages de l'assistant</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{assistantClient.company_name}</p>
+        </div>
+        <Button onClick={handleSave} disabled={saving} className="rounded-full gap-1.5">
+          {saving ? <span className="h-3.5 w-3.5 border-2 border-current border-t-transparent animate-spin rounded-full" /> : <Save className="h-4 w-4" />}
+          Enregistrer les réglages
+        </Button>
       </div>
 
-      {/* WhatsApp number */}
-      <Card>
-        <CardContent className="p-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Smartphone className="h-3.5 w-3.5" /> Numéro WhatsApp
-          </p>
-          {connectedNumber ? (
-            <div className="flex items-center gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3">
-              <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-              <div>
-                <p className="text-sm font-medium font-mono">{connectedNumber.phone_number}</p>
-                <p className="text-xs text-muted-foreground">{connectedNumber.label} — connecté et actif</p>
-              </div>
-              <Badge variant="outline" className="ml-auto text-[10px] text-primary border-primary/30">Actif</Badge>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-                <HelpCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                Aucun numéro connecté pour le moment. Indiquez le numéro à connecter — notre équipe le vérifie et l'active sous 24h.
-              </div>
-              <div className="space-y-1.5">
-                <Label>Numéro à connecter</Label>
-                <Input
-                  placeholder="Ex: +229 XX XX XX XX"
-                  value={requestedNumber}
-                  onChange={e => setRequestedNumber(e.target.value)}
-                  className="h-10 font-mono"
-                />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid lg:grid-cols-2 gap-5 items-start">
+        <div className="space-y-5">
+          {/* WhatsApp number */}
+          <Card>
+            <CardContent className="p-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Smartphone className="h-3.5 w-3.5" /> Numéro WhatsApp
+              </p>
+              {connectedNumber ? (
+                <div className="flex items-center gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium font-mono">{connectedNumber.phone_number}</p>
+                    <p className="text-xs text-muted-foreground">{connectedNumber.label} — connecté et actif</p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto text-[10px] text-primary border-primary/30">Actif</Badge>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+                    <HelpCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    Aucun numéro connecté pour le moment. Indiquez le numéro à connecter — notre équipe le vérifie et l'active sous 24h.
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Numéro à connecter</Label>
+                    <Input
+                      placeholder="Ex: +229 XX XX XX XX"
+                      value={requestedNumber}
+                      onChange={e => setRequestedNumber(e.target.value)}
+                      className="h-10 font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Tone */}
-      <Card>
-        <CardContent className="p-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5" /> Ton de l'assistant
-          </p>
-          <ToneSelector value={tone} onChange={setTone} />
-        </CardContent>
-      </Card>
+          {/* Tone */}
+          <Card>
+            <CardContent className="p-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> Ton de l'assistant
+              </p>
+              <ToneSelector value={tone} onChange={setTone} />
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Business hours */}
-      <Card>
-        <CardContent className="p-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" /> Horaires d'ouverture
-          </p>
-          <BusinessHoursEditor value={hours} onChange={setHours} />
-        </CardContent>
-      </Card>
-
-      <Button onClick={handleSave} disabled={saving} className="rounded-full gap-1.5">
-        {saving ? <span className="h-3.5 w-3.5 border-2 border-current border-t-transparent animate-spin rounded-full" /> : <Save className="h-4 w-4" />}
-        Enregistrer les réglages
-      </Button>
+        {/* Business hours */}
+        <Card>
+          <CardContent className="p-5 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" /> Horaires d'ouverture
+            </p>
+            <BusinessHoursEditor value={hours} onChange={setHours} />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Team */}
       <Card>
@@ -215,7 +220,7 @@ export default function AssistantSettingsPage() {
               <div className="h-4 w-4 border-2 border-primary border-t-transparent animate-spin rounded-full mx-auto" />
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
               {members.map(m => {
                 const meta = ROLE_META[m.role]
                 return (
@@ -231,7 +236,7 @@ export default function AssistantSettingsPage() {
                       <select
                         value={m.role}
                         onChange={e => handleRoleChange(m, e.target.value as AssistantMemberRole)}
-                        className="h-8 rounded-lg border border-input bg-background px-2 text-xs"
+                        className="h-8 rounded-lg border border-input bg-background px-2 text-xs shrink-0"
                       >
                         <option value="manager">Responsable</option>
                         <option value="viewer">Lecture seule</option>
