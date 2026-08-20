@@ -1,0 +1,43 @@
+{
+  "title": "Analytics",
+  "subtitle": "Revenue and usage",
+  "metrics": {
+    "mrr": "MRR (current month)",
+    "activeSubs": "Active subscriptions",
+    "requests": "Requests (month)",
+    "newAccounts": "New accounts (30d)"
+  },
+  "health": {
+    "fallbackRate": "AI fallback rate",
+    "fallbackHint": "Share of analyses served without real data.",
+    "paymentFailure": "Payment failures",
+    "paymentFailureHint": "Failed transactions over the total recorded.",
+    "avgLatency": "Average latency",
+    "avgLatencyHint": "Average service response time this month."
+  },
+  "alerts": "Operational alerts",
+  "revenueChart": {
+    "title": "Monthly revenue (last 6 months)",
+    "empty": "No data yet",
+    "revenue": "Revenue"
+  },
+  "requestsChart": {
+    "title": "Requests per day (last 30 days)",
+    "emptyTitle": "No requests in the last 30 days",
+    "emptyHint": "The curve will appear as soon as analyses are run."
+  },
+  "qualityChart": {
+    "title": "Analysis quality",
+    "empty": "No data",
+    "high": "High quality",
+    "medium": "Medium quality",
+    "low": "Low quality",
+    "unknown": "Unknown"
+  },
+  "signupsChart": {
+    "title": "New signups (last 30 days)",
+    "emptyTitle": "No signups in the last 30 days",
+    "emptyHint": "New accounts will show up here day by day.",
+    "signups": "Signups"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Transactions",
+  "subtitle": "Historique des paiements",
+  "refresh": "Actualiser",
+  "searchPlaceholder": "Rechercher…",
+  "all": "Tous",
+  "loadError": "Impossible de charger les transactions. Vérifiez les permissions RLS.",
+  "noResults": "Aucune transaction trouvée"
+}

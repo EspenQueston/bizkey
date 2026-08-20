@@ -1,0 +1,14 @@
+{
+  "title": "AI Quality & Fallback",
+  "subtitle": "Tracking analysis quality and fallback cases",
+  "stats": {
+    "observed": "Analyses observed",
+    "fallbackCases": "Fallback cases",
+    "fallbackRate": "Fallback rate"
+  },
+  "recentFallback": "Recent fallback cases",
+  "noRecentFallback": "No recent fallbacks.",
+  "unnamedProduct": "Unnamed product",
+  "reason": "reason",
+  "unknown": "unknown"
+}

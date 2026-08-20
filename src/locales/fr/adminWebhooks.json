@@ -1,0 +1,16 @@
+{
+  "title": "Webhooks",
+  "subtitle": "Transactions en attente ou échouées",
+  "refresh": "Actualiser",
+  "loadError": "Impossible de charger les webhooks. Vérifiez les permissions RLS.",
+  "statusUpdated": "Statut mis à jour: {{status}}",
+  "stillPending": "Paiement toujours en attente",
+  "replayError": "Erreur de relance",
+  "empty": {
+    "title": "Aucune transaction en suspens",
+    "subtitle": "Tous les webhooks ont été traités correctement"
+  },
+  "pendingBanner": "{{count}} transaction(s) sans webhook confirmé. Relancez pour vérifier le statut.",
+  "noGatewayId": "Pas d'ID gateway",
+  "replay": "Relancer"
+}

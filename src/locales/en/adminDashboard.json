@@ -1,0 +1,81 @@
+{
+  "loading": "Loading dashboard…",
+  "title": "Dashboard",
+  "subtitle": "Real-time data — BizKey",
+  "alerts": "{{count}} alert",
+  "alerts_other": "{{count}} alerts",
+  "online": "Online",
+  "refresh": "Refresh",
+  "operationalAlerts": "{{count}} operational alert",
+  "operationalAlerts_other": "{{count}} operational alerts",
+  "sections": {
+    "growth": "Growth & revenue",
+    "usage": "Usage & AI quality",
+    "erp": "ERP operations"
+  },
+  "metrics": {
+    "monthlyRevenue": "Monthly revenue",
+    "monthlyRevenueSub": "{{count}} successful transactions",
+    "totalRevenue": "Total revenue",
+    "totalRevenueSub": "Payment failure rate: {{rate}}%",
+    "users": "Users",
+    "usersSub": "{{admins}} admins · {{subs}} subscribers",
+    "analyses30d": "Analyses (30d)",
+    "analyses30dSub": "{{count}} account total",
+    "analyses30dSub_other": "{{count}} accounts total",
+    "requests": "Requests (month)",
+    "fallbackRate": "AI fallback rate",
+    "aboveThreshold": "Above recommended threshold",
+    "withinNorm": "Within normal range",
+    "promoCodes": "Promo Codes",
+    "promoCodesSub": "{{count}} total created",
+    "avgLatency": "Average latency",
+    "serverErrorSuffix": "{{rate}}% server errors",
+    "serverStable": "Server stable",
+    "erpOrders": "ERP Orders",
+    "erpOrdersSub": "{{active}} in progress · {{transit}} in transit",
+    "pendingPayments": "Pending payments",
+    "toVerifyWithSupplier": "To verify with supplier",
+    "allProcessed": "All processed"
+  },
+  "requestsChart": {
+    "title": "Requests — last 30 days",
+    "emptyTitle": "No requests in the last 30 days",
+    "emptyHint": "The curve will fill in as soon as analyses start running."
+  },
+  "transactions": {
+    "title": "Recent transactions",
+    "viewAll": "View all",
+    "subtitle": "Latest recorded payments",
+    "empty": "No transactions",
+    "shown": "Showing the {{count}} most recent transactions"
+  },
+  "usagePanel": {
+    "title": "Usage (month)",
+    "basicRequests": "Basic requests",
+    "advancedRequests": "Advanced requests",
+    "fallbackRate": "AI fallback rate",
+    "serverErrorRate": "Server error rate",
+    "unavailable": "Data unavailable"
+  },
+  "systemStatus": {
+    "title": "System status",
+    "payments": "Payments",
+    "paymentsDetail": "{{rate}}% failure",
+    "apiServer": "API server",
+    "apiServerDetail": "{{ms}}ms avg latency",
+    "ai": "AI (OpenRouter)",
+    "aiDetail": "{{rate}}% fallback",
+    "subscriptions": "Subscriptions",
+    "subscriptionsDetail": "{{count}} active"
+  },
+  "quickActions": {
+    "title": "Quick actions",
+    "analyses": "Analyses",
+    "users": "Users",
+    "promoCodes": "Promo Codes",
+    "orders": "Orders",
+    "deliveries": "Deliveries",
+    "analytics": "Analytics"
+  }
+}

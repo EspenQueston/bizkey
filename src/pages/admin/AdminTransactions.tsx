@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,6 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function AdminTransactions() {
+  const { t } = useTranslation('adminTransactions')
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -29,7 +31,7 @@ export default function AdminTransactions() {
     } catch (err) {
       console.warn('AdminTransactions load error:', err)
       setTransactions([])
-      toast.error('Impossible de charger les transactions. Vérifiez les permissions RLS.')
+      toast.error(t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -52,12 +54,12 @@ export default function AdminTransactions() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Transactions</h1>
-          <p className="text-muted-foreground text-sm">Historique des paiements</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={load}>
           <RefreshCw className="h-4 w-4 mr-1" />
-          Actualiser
+          {t('refresh')}
         </Button>
       </div>
 
@@ -65,7 +67,7 @@ export default function AdminTransactions() {
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9" placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-1">
           {['all', 'pending', 'success', 'failed', 'refunded'].map(s => (
@@ -76,7 +78,7 @@ export default function AdminTransactions() {
               onClick={() => setStatusFilter(s)}
               className="capitalize text-xs"
             >
-              {s === 'all' ? 'Tous' : s}
+              {s === 'all' ? t('all') : s}
             </Button>
           ))}
         </div>
@@ -89,7 +91,7 @@ export default function AdminTransactions() {
       ) : (
         <div className="space-y-2">
           {filtered.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">Aucune transaction trouvée</p>
+            <p className="text-center text-muted-foreground py-8">{t('noResults')}</p>
           )}
           {filtered.map(tx => (
             <Card key={tx.id} className="border">

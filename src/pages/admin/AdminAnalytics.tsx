@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle, BarChart3, TrendingUp, Users, Zap, Loader2, UserPlus, ShieldCheck } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -16,12 +17,6 @@ interface MonthlyRevenue {
   amount: number
 }
 
-const QUALITY_LABELS: Record<string, string> = {
-  high: 'Haute qualité',
-  medium: 'Qualité moyenne',
-  low: 'Qualité faible',
-  inconnu: 'Inconnue',
-}
 const QUALITY_COLORS: Record<string, string> = {
   high: 'var(--chart-1)',
   medium: 'var(--chart-3)',
@@ -40,6 +35,13 @@ function tooltipStyle() {
 }
 
 export default function AdminAnalytics() {
+  const { t } = useTranslation('adminAnalytics')
+  const QUALITY_LABELS: Record<string, string> = {
+    high: t('qualityChart.high'),
+    medium: t('qualityChart.medium'),
+    low: t('qualityChart.low'),
+    inconnu: t('qualityChart.unknown'),
+  }
   const [stats, setStats] = useState<Awaited<ReturnType<typeof getAdminStats>> | null>(null)
   const [loading, setLoading] = useState(true)
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([])
@@ -90,17 +92,17 @@ export default function AdminAnalytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Analytiques</h1>
-        <p className="text-muted-foreground text-sm">Revenus et utilisation</p>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {([
-          { accent: 'sapphire', icon: TrendingUp, label: 'MRR (mois en cours)', value: `$${stats?.mrr.toFixed(2) ?? '—'}` },
-          { accent: 'sky',     icon: Users,      label: 'Abonnements actifs',  value: stats?.activeSubs ?? '—' },
-          { accent: 'amber',   icon: Zap,        label: 'Requêtes (mois)',     value: stats?.totalRequests ?? '—',
+          { accent: 'sapphire', icon: TrendingUp, label: t('metrics.mrr'), value: `$${stats?.mrr.toFixed(2) ?? '—'}` },
+          { accent: 'sky',     icon: Users,      label: t('metrics.activeSubs'),  value: stats?.activeSubs ?? '—' },
+          { accent: 'amber',   icon: Zap,        label: t('metrics.requests'),     value: stats?.totalRequests ?? '—',
             sub: `${stats?.basicRequests ?? 0} Basic · ${stats?.advancedRequests ?? 0} Advanced` },
-          { accent: 'violet',  icon: UserPlus,   label: 'Nouveaux comptes (30j)', value: totalSignups30d },
+          { accent: 'violet',  icon: UserPlus,   label: t('metrics.newAccounts'), value: totalSignups30d },
         ] as const).map(m => {
           const a = ACCENTS[m.accent]
           return (
@@ -124,25 +126,25 @@ export default function AdminAnalytics() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <HealthStat
-          label="Taux fallback IA"
+          label={t('health.fallbackRate')}
           value={stats?.fallbackRate ?? 0}
           unit="%"
           threshold={40}
-          hint="Part des analyses servies sans données réelles."
+          hint={t('health.fallbackHint')}
         />
         <HealthStat
-          label="Échec paiements"
+          label={t('health.paymentFailure')}
           value={stats?.paymentFailureRate ?? 0}
           unit="%"
           threshold={20}
-          hint="Transactions échouées sur le total enregistré."
+          hint={t('health.paymentFailureHint')}
         />
         <HealthStat
-          label="Latence moyenne"
+          label={t('health.avgLatency')}
           value={stats?.avgLatencyMs ?? 0}
           unit=" ms"
           threshold={3000}
-          hint="Temps de réponse moyen des services ce mois-ci."
+          hint={t('health.avgLatencyHint')}
         />
       </div>
 
@@ -151,7 +153,7 @@ export default function AdminAnalytics() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
-              Alertes opérationnelles
+              {t('alerts')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -167,20 +169,20 @@ export default function AdminAnalytics() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-primary" />
-            Revenus mensuels (6 derniers mois)
+            {t('revenueChart.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {monthlyRevenue.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Pas encore de données</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t('revenueChart.empty')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={monthlyRevenue} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={tooltipStyle()} formatter={(v: number) => [`$${v.toFixed(2)}`, 'Revenu']} />
-                <Bar dataKey="amount" name="Revenu" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                <Tooltip contentStyle={tooltipStyle()} formatter={(v: number) => [`$${v.toFixed(2)}`, t('revenueChart.revenue')]} />
+                <Bar dataKey="amount" name={t('revenueChart.revenue')} fill="var(--primary)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -193,15 +195,15 @@ export default function AdminAnalytics() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
-              Requêtes par jour (30 derniers jours)
+              {t('requestsChart.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!hasRequestData ? (
               <ChartEmpty
                 icon={Zap}
-                title="Aucune requête sur les 30 derniers jours"
-                hint="La courbe apparaîtra dès que des analyses seront lancées."
+                title={t('requestsChart.emptyTitle')}
+                hint={t('requestsChart.emptyHint')}
               />
             ) : (
             <ResponsiveContainer width="100%" height={220}>
@@ -233,7 +235,7 @@ export default function AdminAnalytics() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              Qualité des analyses
+              {t('qualityChart.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -249,7 +251,7 @@ export default function AdminAnalytics() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[180px] grid place-items-center text-xs text-muted-foreground">Pas de données</div>
+              <div className="h-[180px] grid place-items-center text-xs text-muted-foreground">{t('qualityChart.empty')}</div>
             )}
             <div className="flex flex-wrap gap-2 mt-1 justify-center">
               {qualityBreakdown.map((q) => (
@@ -268,15 +270,15 @@ export default function AdminAnalytics() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <UserPlus className="h-4 w-4 text-primary" />
-            Nouvelles inscriptions (30 derniers jours)
+            {t('signupsChart.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!hasSignupData ? (
             <ChartEmpty
               icon={UserPlus}
-              title="Aucune inscription sur les 30 derniers jours"
-              hint="Les nouveaux comptes s'afficheront ici jour par jour."
+              title={t('signupsChart.emptyTitle')}
+              hint={t('signupsChart.emptyHint')}
             />
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -285,7 +287,7 @@ export default function AdminAnalytics() {
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} interval={4} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={28} />
                 <Tooltip contentStyle={tooltipStyle()} />
-                <Bar dataKey="count" name="Inscriptions" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" name={t('signupsChart.signups')} fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

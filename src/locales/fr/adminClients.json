@@ -1,0 +1,37 @@
+{
+  "title": "👥 Clients",
+  "registeredCount": "{{count}} client enregistré",
+  "registeredCount_other": "{{count}} clients enregistrés",
+  "newClient": "Nouveau client",
+  "searchPlaceholder": "Rechercher...",
+  "allStatuses": "Tous les statuts",
+  "status": {
+    "active": "Actif",
+    "inactive": "Inactif",
+    "prospect": "Prospect"
+  },
+  "statusFilter": {
+    "active": "Actifs",
+    "prospect": "Prospects",
+    "inactive": "Inactifs"
+  },
+  "empty": "Aucun client pour l'instant",
+  "noResults": "Aucun résultat",
+  "addClient": "Ajouter un client",
+  "edit": "Modifier",
+  "confirmDelete": "Supprimer ce client ?",
+  "modal": {
+    "editTitle": "Modifier le client",
+    "createTitle": "Nouveau client",
+    "fullName": "Nom complet *",
+    "company": "Entreprise",
+    "email": "Email",
+    "phone": "Téléphone",
+    "city": "Ville",
+    "country": "Pays",
+    "status": "Statut",
+    "notes": "Notes",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  }
+}

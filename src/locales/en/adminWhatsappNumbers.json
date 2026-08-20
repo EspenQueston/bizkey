@@ -1,0 +1,28 @@
+{
+  "title": "📱 WhatsApp Numbers",
+  "configuredCount": "{{count}} number configured",
+  "configuredCount_other": "{{count}} numbers configured",
+  "addNumber": "Add a number",
+  "infoBanner": "Connecting a real number requires a WhatsApp Business API (Meta) account. In the meantime, a number can be created here with \"Pending\" status — the assistant stays testable via the Conversations simulator, independent of the real connection status.",
+  "empty": "No numbers configured",
+  "accountId": "Account ID: {{id}}",
+  "edit": "Edit",
+  "delete": "Delete",
+  "confirmDelete": "Delete this WhatsApp number?",
+  "status": {
+    "pending": "Pending validation",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "modal": {
+    "editTitle": "Edit number",
+    "createTitle": "Add a number",
+    "label": "Label *",
+    "labelPlaceholder": "E.g. Customer support Benin",
+    "phone": "Number (international format) *",
+    "businessAccountId": "WhatsApp Business account ID (optional)",
+    "status": "Status",
+    "cancel": "Cancel",
+    "save": "Save"
+  }
+}

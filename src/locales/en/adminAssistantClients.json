@@ -1,0 +1,46 @@
+{
+  "title": "🏢 Assistant Clients",
+  "summary": "{{count}} company",
+  "summary_other": "{{count}} companies",
+  "activeSubs": "{{count}} active subscription",
+  "activeSubs_other": "{{count}} active subscriptions",
+  "newClient": "New client",
+  "infoBanner": "This client book is distinct from BizKey Sourcing's \"ERP Management\" — it tracks businesses subscribed to the WhatsApp assistant, their plan and connected number, separately from import clients.",
+  "searchPlaceholder": "Search a company...",
+  "allStatuses": "All statuses",
+  "status": {
+    "trial": "Trial",
+    "active": "Active",
+    "suspended": "Suspended",
+    "cancelled": "Cancelled",
+    "expired": "Expired"
+  },
+  "empty": "No clients yet",
+  "noResults": "No results",
+  "addClient": "Add a client",
+  "customerSince": "Client since {{date}}",
+  "period": "Period: {{start}} → {{end}}",
+  "edit": "Edit",
+  "deletedToast": "Client deleted",
+  "deleteError": "Error while deleting",
+  "modal": {
+    "editTitle": "Edit client",
+    "createTitle": "New client",
+    "company": "Company *",
+    "contact": "Contact",
+    "phone": "Phone",
+    "email": "Email",
+    "plan": "Plan",
+    "none": "None",
+    "status": "Status",
+    "whatsappNumber": "Connected WhatsApp number",
+    "noNumber": "None",
+    "notes": "Notes",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "deleteDialog": {
+    "title": "Delete this client?",
+    "description": "{{name}} will be permanently deleted — conversations, knowledge base, and associated rules. Their WhatsApp number is released, not deleted. This action is irreversible."
+  }
+}

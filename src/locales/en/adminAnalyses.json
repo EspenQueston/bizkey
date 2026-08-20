@@ -1,0 +1,70 @@
+{
+  "title": "Analyses",
+  "subtitleAll": "Full platform history, across all accounts",
+  "subtitleMine": "Your own analyses only",
+  "scope": {
+    "mine": "My analyses",
+    "all": "All users"
+  },
+  "csv": "CSV",
+  "source": {
+    "verified": "Verified data",
+    "aiEstimate": "AI estimate",
+    "limited": "Limited data",
+    "unknown": "Unknown"
+  },
+  "loadError": "Could not load analyses",
+  "loading": "Loading analyses…",
+  "tiles": {
+    "analyses": "Analyses",
+    "onPlatform": "on the platform",
+    "byYou": "by you",
+    "activeAccounts": "Active accounts",
+    "haveAnalyzed": "have analyzed",
+    "avgScore": "Average score",
+    "confidenceOutOf100": "confidence /100",
+    "creditsConsumed": "Credits consumed",
+    "cumulative": "cumulative",
+    "degradedData": "Degraded data",
+    "analysesCount": "{{count}} analysis",
+    "analysesCount_other": "{{count}} analyses"
+  },
+  "searchPlaceholder": "Search product, supplier, or email…",
+  "qualityFilter": {
+    "all": "All",
+    "high": "Real data",
+    "degraded": "Degraded"
+  },
+  "empty": {
+    "noneInScope": "No analyses in this scope",
+    "noneForFilter": "No results for this filter",
+    "hintEmptyScope": "Analyses will appear here as soon as a user runs one.",
+    "hintFilter": "Adjust the search or the quality filter."
+  },
+  "table": {
+    "product": "Product",
+    "user": "User",
+    "score": "Score",
+    "price": "Price",
+    "source": "Source",
+    "credits": "Credits",
+    "date": "Date",
+    "unnamedProduct": "Analyzed product",
+    "openAnalysis": "Open analysis"
+  },
+  "footer": {
+    "shown": "{{count}} analysis shown",
+    "shown_other": "{{count}} analyses shown",
+    "adminView": "— admin view, across all accounts"
+  },
+  "csvExport": {
+    "date": "Date",
+    "user": "User",
+    "product": "Product",
+    "supplier": "Supplier",
+    "price": "Price",
+    "score": "Score",
+    "source": "Source",
+    "credits": "Credits"
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   TrendingUp, Users, CreditCard, Zap, ShoppingCart, Truck,
   Tag, BarChart3, Activity, DollarSign, Search,
@@ -91,6 +92,7 @@ const TX_STATUS: Record<string, string> = {
 
 // ─── Main dashboard ───────────────────────────────────────────────────────────
 export default function ERPPanelDashboard() {
+  const { t } = useTranslation('adminDashboard')
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -123,7 +125,7 @@ export default function ERPPanelDashboard() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">Chargement du tableau de bord…</p>
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     )
@@ -148,26 +150,26 @@ export default function ERPPanelDashboard() {
             <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-400 to-blue-700 shadow-lg shadow-blue-500/40 grid place-items-center">
               <Activity className="h-5 w-5 text-white" />
             </span>
-            Tableau de bord
+            {t('title')}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Données en temps réel — BizKey
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {alerts.length > 0 && (
             <Badge variant="destructive" className="gap-1.5 rounded-full">
               <Bell className="h-3 w-3" />
-              {alerts.length} alerte{alerts.length > 1 ? 's' : ''}
+              {t('alerts', { count: alerts.length })}
             </Badge>
           )}
           <Badge variant="secondary" className="rounded-full gap-1.5 hidden sm:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            En ligne
+            {t('online')}
           </Badge>
           <Button variant="outline" size="sm" onClick={loadAll} disabled={refreshing} className="rounded-full h-8 px-3">
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualiser
+            {t('refresh')}
           </Button>
         </div>
       </div>
@@ -177,7 +179,7 @@ export default function ERPPanelDashboard() {
         <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-destructive mb-2">
             <Bell className="h-4 w-4" />
-            {alerts.length} alerte{alerts.length > 1 ? 's' : ''} opérationnelle{alerts.length > 1 ? 's' : ''}
+            {t('operationalAlerts', { count: alerts.length })}
           </div>
           <ul className="space-y-1.5">
             {alerts.map((alert, i) => (
@@ -194,41 +196,41 @@ export default function ERPPanelDashboard() {
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider mb-2.5 flex items-center gap-2">
           <span className="h-4 w-1 rounded-full bg-gradient-to-b from-blue-400 to-blue-700" />
-          Croissance & revenus
+          {t('sections.growth')}
         </p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
-            title="Revenus mensuels"
+            title={t('metrics.monthlyRevenue')}
             accent="sapphire"
             value={`$${(adminStats?.mrr ?? 0).toFixed(2)}`}
-            sub={`${successTx} transactions réussies`}
+            sub={t('metrics.monthlyRevenueSub', { count: successTx })}
             icon={DollarSign}
             trend="up"
             to="/app/analytics"
           />
           <MetricCard
-            title="Revenu total"
+            title={t('metrics.totalRevenue')}
             accent="indigo"
             value={`$${(adminStats?.totalRevenue ?? 0).toFixed(2)}`}
-            sub={`Taux échec paiement : ${adminStats?.paymentFailureRate ?? 0}%`}
+            sub={t('metrics.totalRevenueSub', { rate: adminStats?.paymentFailureRate ?? 0 })}
             icon={TrendingUp}
             trend="up"
             to="/app/transactions"
           />
           <MetricCard
-            title="Utilisateurs"
+            title={t('metrics.users')}
             accent="sky"
             value={users.length.toLocaleString('fr-FR')}
-            sub={`${users.filter(u => u.is_admin).length} admins · ${adminStats?.activeSubs ?? 0} abonnés`}
+            sub={t('metrics.usersSub', { admins: users.filter(u => u.is_admin).length, subs: adminStats?.activeSubs ?? 0 })}
             icon={Users}
             trend="up"
             to="/app/users"
           />
           <MetricCard
-            title="Analyses (30j)"
+            title={t('metrics.analyses30d')}
             accent="violet"
             value={adminStats?.analyses30d ?? 0}
-            sub={`${users.length} compte${users.length > 1 ? 's' : ''} au total`}
+            sub={t('metrics.analyses30dSub', { count: users.length })}
             icon={Search}
             trend="neutral"
             to="/app/analyses"
@@ -240,11 +242,11 @@ export default function ERPPanelDashboard() {
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider mb-2.5 flex items-center gap-2">
           <span className="h-4 w-1 rounded-full bg-gradient-to-b from-amber-400 to-orange-500" />
-          Utilisation & qualité IA
+          {t('sections.usage')}
         </p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
-            title="Requêtes (mois)"
+            title={t('metrics.requests')}
             accent="amber"
             value={(adminStats?.totalRequests ?? 0).toLocaleString('fr-FR')}
             sub={`${adminStats?.basicRequests ?? 0} Basic · ${adminStats?.advancedRequests ?? 0} Advanced`}
@@ -253,28 +255,28 @@ export default function ERPPanelDashboard() {
             to="/app/analytics"
           />
           <MetricCard
-            title="Taux fallback IA"
+            title={t('metrics.fallbackRate')}
             accent="rose"
             value={`${adminStats?.fallbackRate ?? 0}%`}
-            sub={(adminStats?.fallbackRate ?? 0) >= 40 ? 'Au-dessus du seuil recommandé' : 'Dans la norme'}
+            sub={(adminStats?.fallbackRate ?? 0) >= 40 ? t('metrics.aboveThreshold') : t('metrics.withinNorm')}
             icon={Activity}
             trend={(adminStats?.fallbackRate ?? 0) >= 40 ? 'down' : 'up'}
             to="/app/ai-quality"
           />
           <MetricCard
-            title="Codes Promo"
+            title={t('metrics.promoCodes')}
             accent="rose"
             value={promos.filter(p => p.is_active).length}
-            sub={`${promos.length} total créés`}
+            sub={t('metrics.promoCodesSub', { count: promos.length })}
             icon={Tag}
             trend="neutral"
             to="/app/promo"
           />
           <MetricCard
-            title="Latence moyenne"
+            title={t('metrics.avgLatency')}
             accent="teal"
             value={`${adminStats?.avgLatencyMs ?? 0}ms`}
-            sub={(adminStats?.serverErrorRate ?? 0) >= 10 ? `${adminStats?.serverErrorRate}% d'erreurs serveur` : 'Serveur stable'}
+            sub={(adminStats?.serverErrorRate ?? 0) >= 10 ? t('metrics.serverErrorSuffix', { rate: adminStats?.serverErrorRate }) : t('metrics.serverStable')}
             icon={Activity}
             trend={(adminStats?.serverErrorRate ?? 0) >= 10 ? 'down' : 'up'}
             to="/app/analytics"
@@ -286,23 +288,23 @@ export default function ERPPanelDashboard() {
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider mb-2.5 flex items-center gap-2">
           <span className="h-4 w-1 rounded-full bg-gradient-to-b from-sky-400 to-indigo-600" />
-          Opérations ERP
+          {t('sections.erp')}
         </p>
         <div className="grid grid-cols-2 gap-4 max-w-2xl">
           <MetricCard
-            title="Commandes ERP"
+            title={t('metrics.erpOrders')}
             accent="amber"
             value={orders.length}
-            sub={`${activeOrders} en cours · ${inTransit} en transit`}
+            sub={t('metrics.erpOrdersSub', { active: activeOrders, transit: inTransit })}
             icon={ShoppingCart}
             trend="neutral"
             to="/app/orders"
           />
           <MetricCard
-            title="Paiements en attente"
+            title={t('metrics.pendingPayments')}
             accent="rose"
             value={pendingTx}
-            sub={pendingTx > 0 ? 'À vérifier avec le fournisseur' : 'Tout est traité'}
+            sub={pendingTx > 0 ? t('metrics.toVerifyWithSupplier') : t('metrics.allProcessed')}
             icon={Webhook}
             trend={pendingTx > 0 ? 'down' : 'up'}
             to="/app/transactions"
@@ -315,15 +317,15 @@ export default function ERPPanelDashboard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            Requêtes — 30 derniers jours
+            {t('requestsChart.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!hasRequestData ? (
             <ChartEmpty
               icon={Zap}
-              title="Aucune requête sur les 30 derniers jours"
-              hint="La courbe se remplira dès les premières analyses."
+              title={t('requestsChart.emptyTitle')}
+              hint={t('requestsChart.emptyHint')}
               height={200}
             />
           ) : (
@@ -362,21 +364,21 @@ export default function ERPPanelDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-primary" />
-                  Transactions récentes
+                  {t('transactions.title')}
                 </CardTitle>
                 <Button asChild size="sm" variant="ghost" className="h-7 text-xs rounded-full gap-1">
                   <Link to="/app/transactions">
-                    Voir tout <ArrowUpRight className="h-3 w-3" />
+                    {t('transactions.viewAll')} <ArrowUpRight className="h-3 w-3" />
                   </Link>
                 </Button>
               </div>
-              <CardDescription>Derniers paiements enregistrés</CardDescription>
+              <CardDescription>{t('transactions.subtitle')}</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {recentTx.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                   <CreditCard className="h-8 w-8 opacity-30" />
-                  <p className="text-sm">Aucune transaction</p>
+                  <p className="text-sm">{t('transactions.empty')}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
@@ -417,7 +419,7 @@ export default function ERPPanelDashboard() {
             </CardContent>
             {recentTx.length > 0 && (
               <CardFooter className="pt-3 text-xs text-muted-foreground border-t border-border">
-                Affichage des {recentTx.length} transactions les plus récentes
+                {t('transactions.shown', { count: recentTx.length })}
               </CardFooter>
             )}
           </Card>
@@ -431,39 +433,39 @@ export default function ERPPanelDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-primary" />
-                Utilisation (mois)
+                {t('usagePanel.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {adminStats ? (
                 <>
                   <ProgressRow
-                    label="Requêtes Basic"
+                    label={t('usagePanel.basicRequests')}
                     value={adminStats.basicRequests}
                     max={adminStats.totalRequests || 1}
                     color="bg-gradient-to-r from-sky-400 to-blue-600"
                   />
                   <ProgressRow
-                    label="Requêtes Advanced"
+                    label={t('usagePanel.advancedRequests')}
                     value={adminStats.advancedRequests}
                     max={adminStats.totalRequests || 1}
                     color="bg-gradient-to-r from-violet-400 to-purple-600"
                   />
                   <ProgressRow
-                    label="Taux fallback IA"
+                    label={t('usagePanel.fallbackRate')}
                     value={adminStats.fallbackRate}
                     max={100}
                     color={adminStats.fallbackRate > 40 ? 'bg-gradient-to-r from-rose-400 to-red-600' : 'bg-gradient-to-r from-amber-400 to-orange-500'}
                   />
                   <ProgressRow
-                    label="Taux erreurs serveur"
+                    label={t('usagePanel.serverErrorRate')}
                     value={adminStats.serverErrorRate}
                     max={100}
                     color={adminStats.serverErrorRate > 10 ? 'bg-gradient-to-r from-rose-400 to-red-600' : 'bg-gradient-to-r from-emerald-400 to-teal-500'}
                   />
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">Données indisponibles</p>
+                <p className="text-sm text-muted-foreground text-center py-4">{t('usagePanel.unavailable')}</p>
               )}
             </CardContent>
           </Card>
@@ -473,30 +475,30 @@ export default function ERPPanelDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
-                État du système
+                {t('systemStatus.title')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {[
                 {
-                  label: 'Paiements',
+                  label: t('systemStatus.payments'),
                   ok: (adminStats?.paymentFailureRate ?? 0) < 20,
-                  detail: `${adminStats?.paymentFailureRate ?? 0}% d'échec`,
+                  detail: t('systemStatus.paymentsDetail', { rate: adminStats?.paymentFailureRate ?? 0 }),
                 },
                 {
-                  label: 'Serveur API',
+                  label: t('systemStatus.apiServer'),
                   ok: (adminStats?.serverErrorRate ?? 0) < 10,
-                  detail: `${adminStats?.avgLatencyMs ?? 0}ms latence moy.`,
+                  detail: t('systemStatus.apiServerDetail', { ms: adminStats?.avgLatencyMs ?? 0 }),
                 },
                 {
-                  label: 'IA (OpenRouter)',
+                  label: t('systemStatus.ai'),
                   ok: (adminStats?.fallbackRate ?? 0) < 40,
-                  detail: `${adminStats?.fallbackRate ?? 0}% fallback`,
+                  detail: t('systemStatus.aiDetail', { rate: adminStats?.fallbackRate ?? 0 }),
                 },
                 {
-                  label: 'Abonnements',
+                  label: t('systemStatus.subscriptions'),
                   ok: (adminStats?.activeSubs ?? 0) >= 0,
-                  detail: `${adminStats?.activeSubs ?? 0} actifs`,
+                  detail: t('systemStatus.subscriptionsDetail', { count: adminStats?.activeSubs ?? 0 }),
                 },
               ].map(item => (
                 <div key={item.label} className="flex items-center justify-between py-1.5">
@@ -519,16 +521,16 @@ export default function ERPPanelDashboard() {
       <Card className="border-dashed border-2">
         <CardContent className="p-5">
           <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-4">
-            Actions rapides
+            {t('quickActions.title')}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {([
-              { icon: Search,       label: 'Analyses',     to: '/app/analyses',   accent: 'violet'  },
-              { icon: Users,        label: 'Utilisateurs', to: '/app/users',      accent: 'sky'     },
-              { icon: Tag,          label: 'Codes Promo',  to: '/app/promo',      accent: 'rose'    },
-              { icon: ShoppingCart, label: 'Commandes',    to: '/app/orders',     accent: 'amber'   },
-              { icon: Truck,        label: 'Livraisons',   to: '/app/delivery',   accent: 'indigo'  },
-              { icon: BarChart3,    label: 'Analytiques',  to: '/app/analytics',  accent: 'sapphire' },
+              { icon: Search,       label: t('quickActions.analyses'),   to: '/app/analyses',   accent: 'violet'  },
+              { icon: Users,        label: t('quickActions.users'),      to: '/app/users',      accent: 'sky'     },
+              { icon: Tag,          label: t('quickActions.promoCodes'), to: '/app/promo',      accent: 'rose'    },
+              { icon: ShoppingCart, label: t('quickActions.orders'),     to: '/app/orders',     accent: 'amber'   },
+              { icon: Truck,        label: t('quickActions.deliveries'), to: '/app/delivery',   accent: 'indigo'  },
+              { icon: BarChart3,    label: t('quickActions.analytics'),  to: '/app/analytics',  accent: 'sapphire' },
             ] as const).map(action => {
               const a = DASHBOARD_ACCENTS[action.accent]
               return (

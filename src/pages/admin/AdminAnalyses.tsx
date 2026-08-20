@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Search, Loader2, ExternalLink, Users, User as UserIcon,
   ShieldCheck, Zap, AlertTriangle, TrendingUp, Coins, Download,
@@ -17,14 +18,8 @@ import { toast } from 'sonner'
 type Scope = 'mine' | 'all'
 type QualityFilter = 'all' | 'high' | 'degraded'
 
-const SOURCE_META: Record<string, { label: string; cls: string }> = {
-  onebound:    { label: 'Données vérifiées', cls: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25' },
-  ai_estimate: { label: 'Estimation IA',      cls: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25' },
-  fallback:    { label: 'Données limitées',   cls: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/25' },
-}
-
-function sourceBadge(source: string | null) {
-  const meta = SOURCE_META[source ?? ''] ?? { label: source ?? 'Inconnu', cls: 'bg-muted text-muted-foreground border-border' }
+function sourceBadge(source: string | null, sourceMeta: Record<string, { label: string; cls: string }>, unknownLabel: string) {
+  const meta = sourceMeta[source ?? ''] ?? { label: source ?? unknownLabel, cls: 'bg-muted text-muted-foreground border-border' }
   return <Badge variant="outline" className={`text-[10px] rounded-full ${meta.cls}`}>{meta.label}</Badge>
 }
 
@@ -61,6 +56,12 @@ function StatTile({ icon: Icon, label, value, sub, accent, tone }: {
 }
 
 export default function AdminAnalyses() {
+  const { t } = useTranslation('adminAnalyses')
+  const SOURCE_META: Record<string, { label: string; cls: string }> = {
+    onebound:    { label: t('source.verified'), cls: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25' },
+    ai_estimate: { label: t('source.aiEstimate'), cls: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/25' },
+    fallback:    { label: t('source.limited'), cls: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/25' },
+  }
   const { user } = useAuth()
   const [rows, setRows] = useState<AdminAnalysisRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,7 +74,7 @@ export default function AdminAnalyses() {
       .then(setRows)
       .catch(err => {
         console.warn('AdminAnalyses load error:', err)
-        toast.error("Impossible de charger les analyses")
+        toast.error(t('loadError'))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -115,7 +116,10 @@ export default function AdminAnalyses() {
   }, [scoped])
 
   function exportCsv() {
-    const header = ['Date', 'Utilisateur', 'Produit', 'Fournisseur', 'Prix', 'Score', 'Source', 'Crédits']
+    const header = [
+      t('csvExport.date'), t('csvExport.user'), t('csvExport.product'), t('csvExport.supplier'),
+      t('csvExport.price'), t('csvExport.score'), t('csvExport.source'), t('csvExport.credits'),
+    ]
     const lines = filtered.map(r => [
       new Date(r.created_at).toLocaleString('fr-FR'),
       r.user_email,
@@ -140,7 +144,7 @@ export default function AdminAnalyses() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">Chargement des analyses…</p>
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     )
@@ -155,12 +159,10 @@ export default function AdminAnalyses() {
             <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-400 to-blue-700 shadow-lg shadow-blue-500/40 grid place-items-center">
               <Search className="h-5 w-5 text-white" />
             </span>
-            Analyses
+            {t('title')}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {scope === 'all'
-              ? "Historique complet de la plateforme, tous comptes confondus"
-              : "Vos propres analyses uniquement"}
+            {scope === 'all' ? t('subtitleAll') : t('subtitleMine')}
           </p>
         </div>
 
@@ -176,7 +178,7 @@ export default function AdminAnalyses() {
               }`}
             >
               <UserIcon className="h-3.5 w-3.5" />
-              Mes analyses
+              {t('scope.mine')}
             </button>
             <button
               onClick={() => setScope('all')}
@@ -187,29 +189,29 @@ export default function AdminAnalyses() {
               }`}
             >
               <Users className="h-3.5 w-3.5" />
-              Tous les utilisateurs
+              {t('scope.all')}
             </button>
           </div>
 
           <Button variant="outline" size="sm" className="rounded-full h-9" onClick={exportCsv} disabled={filtered.length === 0}>
             <Download className="h-3.5 w-3.5 mr-1.5" />
-            CSV
+            {t('csv')}
           </Button>
         </div>
       </div>
 
       {/* Insight tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <StatTile accent="sapphire" icon={Search} label="Analyses" value={stats.total} sub={scope === 'all' ? 'sur la plateforme' : 'par vous'} />
-        <StatTile accent="sky" icon={Users} label="Comptes actifs" value={stats.uniqueUsers} sub="ayant analysé" />
-        <StatTile accent="violet" icon={TrendingUp} label="Score moyen" value={stats.avgScore || '—'} sub="confiance /100" />
-        <StatTile accent="amber" icon={Coins} label="Crédits consommés" value={stats.credits} sub="cumulés" />
+        <StatTile accent="sapphire" icon={Search} label={t('tiles.analyses')} value={stats.total} sub={scope === 'all' ? t('tiles.onPlatform') : t('tiles.byYou')} />
+        <StatTile accent="sky" icon={Users} label={t('tiles.activeAccounts')} value={stats.uniqueUsers} sub={t('tiles.haveAnalyzed')} />
+        <StatTile accent="violet" icon={TrendingUp} label={t('tiles.avgScore')} value={stats.avgScore || '—'} sub={t('tiles.confidenceOutOf100')} />
+        <StatTile accent="amber" icon={Coins} label={t('tiles.creditsConsumed')} value={stats.credits} sub={t('tiles.cumulative')} />
         <StatTile
           accent="rose"
           icon={AlertTriangle}
-          label="Données dégradées"
+          label={t('tiles.degradedData')}
           value={`${stats.degradedPct}%`}
-          sub={`${stats.degraded} analyse${stats.degraded > 1 ? 's' : ''}`}
+          sub={t('tiles.analysesCount', { count: stats.degraded })}
           tone={stats.degradedPct > 40 ? 'warn' : 'good'}
         />
       </div>
@@ -221,14 +223,14 @@ export default function AdminAnalyses() {
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher produit, fournisseur ou email…"
+            placeholder={t('searchPlaceholder')}
             className="pl-9 h-10"
           />
         </div>
         {([
-          { key: 'all', label: 'Toutes' },
-          { key: 'high', label: 'Données réelles' },
-          { key: 'degraded', label: 'Dégradées' },
+          { key: 'all', label: t('qualityFilter.all') },
+          { key: 'high', label: t('qualityFilter.high') },
+          { key: 'degraded', label: t('qualityFilter.degraded') },
         ] as const).map(f => (
           <button
             key={f.key}
@@ -248,10 +250,8 @@ export default function AdminAnalyses() {
       {filtered.length === 0 ? (
         <ChartEmpty
           icon={Search}
-          title={scoped.length === 0 ? 'Aucune analyse pour ce périmètre' : 'Aucun résultat pour ce filtre'}
-          hint={scoped.length === 0
-            ? "Les analyses apparaîtront ici dès qu'un utilisateur en lancera une."
-            : 'Ajustez la recherche ou le filtre de qualité.'}
+          title={scoped.length === 0 ? t('empty.noneInScope') : t('empty.noneForFilter')}
+          hint={scoped.length === 0 ? t('empty.hintEmptyScope') : t('empty.hintFilter')}
           height={240}
         />
       ) : (
@@ -261,7 +261,7 @@ export default function AdminAnalyses() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40">
-                    {['Produit', 'Utilisateur', 'Score', 'Prix', 'Source', 'Crédits', 'Date', ''].map(h => (
+                    {[t('table.product'), t('table.user'), t('table.score'), t('table.price'), t('table.source'), t('table.credits'), t('table.date'), ''].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -275,7 +275,7 @@ export default function AdminAnalyses() {
                     return (
                       <tr key={r.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3 max-w-64">
-                          <div className="font-medium truncate">{r.product_name ?? 'Produit analysé'}</div>
+                          <div className="font-medium truncate">{r.product_name ?? t('table.unnamedProduct')}</div>
                           <div className="text-xs text-muted-foreground truncate">{r.supplier_name ?? '—'}</div>
                         </td>
                         <td className="px-4 py-3">
@@ -288,7 +288,7 @@ export default function AdminAnalyses() {
                         <td className="px-4 py-3 tabular-nums whitespace-nowrap">
                           {r.price ? `¥${r.price}` : '—'}
                         </td>
-                        <td className="px-4 py-3">{sourceBadge(r.data_source)}</td>
+                        <td className="px-4 py-3">{sourceBadge(r.data_source, SOURCE_META, t('source.unknown'))}</td>
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center gap-1 text-xs tabular-nums">
                             <Zap className="h-3 w-3 text-yellow-500" />
@@ -303,7 +303,7 @@ export default function AdminAnalyses() {
                         </td>
                         <td className="px-4 py-3">
                           <Button asChild size="sm" variant="ghost" className="h-7 w-7 p-0">
-                            <Link to={`/app/analysis/${r.id}`} title="Ouvrir l'analyse">
+                            <Link to={`/app/analysis/${r.id}`} title={t('table.openAnalysis')}>
                               <ExternalLink className="h-3.5 w-3.5" />
                             </Link>
                           </Button>
@@ -320,8 +320,8 @@ export default function AdminAnalyses() {
 
       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
         <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-        {filtered.length} analyse{filtered.length > 1 ? 's' : ''} affichée{filtered.length > 1 ? 's' : ''}
-        {scope === 'all' && ' — vue administrateur, tous comptes confondus'}
+        {t('footer.shown', { count: filtered.length })}
+        {scope === 'all' && ` ${t('footer.adminView')}`}
       </p>
     </div>
   )

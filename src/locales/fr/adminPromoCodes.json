@@ -1,0 +1,33 @@
+{
+  "title": "Codes Promo",
+  "subtitle": "Créez et gérez des réductions",
+  "newCode": "Nouveau code",
+  "loadError": "Impossible de charger les codes promo. Vérifiez les permissions RLS.",
+  "createdToast": "Code promo créé",
+  "updatedToast": "Code mis à jour",
+  "genericError": "Erreur",
+  "copiedToast": "Code {{code}} copié",
+  "copy": "Copier",
+  "active": "Actif",
+  "inactive": "Inactif",
+  "usedCount": "Utilisé {{count}} fois",
+  "usedCountWithMax": "Utilisé {{count}}/{{max}} fois",
+  "expires": "exp. {{date}}",
+  "noResults": "Aucun code promo",
+  "dialog": {
+    "createTitle": "Nouveau code promo",
+    "editTitle": "Modifier le code",
+    "code": "Code",
+    "type": "Type",
+    "typePercent": "Pourcentage (%)",
+    "typeFixedYuan": "Fixe (¥)",
+    "typeFixedUsd": "Fixe ($)",
+    "value": "Valeur",
+    "maxUses": "Max utilisations (vide = illimité)",
+    "expiration": "Expiration (optionnel)",
+    "activeCheckbox": "Actif",
+    "cancel": "Annuler",
+    "create": "Créer",
+    "save": "Enregistrer"
+  }
+}

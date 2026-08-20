@@ -1,0 +1,46 @@
+{
+  "title": "🏢 Clients Assistant",
+  "summary": "{{count}} entreprise",
+  "summary_other": "{{count}} entreprises",
+  "activeSubs": "{{count}} abonnement actif",
+  "activeSubs_other": "{{count}} abonnements actifs",
+  "newClient": "Nouveau client",
+  "infoBanner": "Ce carnet de clients est distinct de la \"Gestion ERP\" de BizKey Sourcing — il suit les entreprises abonnées à l'assistant WhatsApp, leur formule et leur numéro connecté, séparément des clients d'importation.",
+  "searchPlaceholder": "Rechercher une entreprise...",
+  "allStatuses": "Tous les statuts",
+  "status": {
+    "trial": "Essai",
+    "active": "Actif",
+    "suspended": "Suspendu",
+    "cancelled": "Résilié",
+    "expired": "Expiré"
+  },
+  "empty": "Aucun client pour l'instant",
+  "noResults": "Aucun résultat",
+  "addClient": "Ajouter un client",
+  "customerSince": "Client depuis le {{date}}",
+  "period": "Période : {{start}} → {{end}}",
+  "edit": "Modifier",
+  "deletedToast": "Client supprimé",
+  "deleteError": "Erreur lors de la suppression",
+  "modal": {
+    "editTitle": "Modifier le client",
+    "createTitle": "Nouveau client",
+    "company": "Entreprise *",
+    "contact": "Contact",
+    "phone": "Téléphone",
+    "email": "Email",
+    "plan": "Formule",
+    "none": "Aucune",
+    "status": "Statut",
+    "whatsappNumber": "Numéro WhatsApp connecté",
+    "noNumber": "Aucun",
+    "notes": "Notes",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
+  "deleteDialog": {
+    "title": "Supprimer ce client ?",
+    "description": "{{name}} sera définitivement supprimé — conversations, base de connaissances et règles associées. Leur numéro WhatsApp est libéré, pas supprimé. Cette action est irréversible."
+  }
+}

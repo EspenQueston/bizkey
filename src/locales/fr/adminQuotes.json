@@ -1,0 +1,47 @@
+{
+  "title": "💬 Demandes de devis",
+  "summary": "{{count}} demande",
+  "summary_other": "{{count}} demandes",
+  "pendingReply": "{{count}} en attente de réponse",
+  "status": {
+    "pending": "En attente",
+    "reviewing": "En cours d'étude",
+    "quoted": "Devis envoyé",
+    "accepted": "Accepté",
+    "rejected": "Refusé",
+    "expired": "Expiré"
+  },
+  "searchPlaceholder": "Rechercher produit ou client...",
+  "empty": "Aucune demande de devis",
+  "noResults": "Aucun résultat",
+  "table": {
+    "client": "Client",
+    "product": "Produit",
+    "qty": "Qté",
+    "target": "Cible",
+    "quote": "Devis",
+    "status": "Statut",
+    "actions": "Actions",
+    "link": "Lien"
+  },
+  "actions": {
+    "review": "Étudier",
+    "sendQuote": "Envoyer un devis",
+    "edit": "Modifier",
+    "createOrder": "Créer la commande",
+    "orderCreated": "Commande créée"
+  },
+  "modal": {
+    "title": "Envoyer un devis",
+    "units": "{{count}} unité",
+    "units_other": "{{count}} unités",
+    "targetPerUnit": " · cible ¥{{price}}/unité",
+    "unitPrice": "Prix unitaire *",
+    "currency": "Devise",
+    "total": "Total : ",
+    "clientNote": "Note pour le client",
+    "clientNotePlaceholder": "Délai de livraison estimé, conditions...",
+    "cancel": "Annuler",
+    "send": "Envoyer le devis"
+  }
+}

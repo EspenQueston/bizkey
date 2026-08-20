@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Search, X, Save, FileText, ExternalLink, ArrowRight,
 } from 'lucide-react'
@@ -12,16 +13,16 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getAllQuoteRequests, updateQuoteRequest, convertQuoteToOrder, getAllUsers } from '@/lib/db'
 import type { QuoteRequest, QuoteRequestStatus } from '@/lib/supabase'
 
-const STATUS_PIPELINE: { key: QuoteRequestStatus; label: string; color: string; icon: string }[] = [
-  { key: 'pending',   label: 'En attente',      color: 'bg-secondary text-secondary-foreground', icon: '⏳' },
-  { key: 'reviewing', label: "En cours d'étude", color: 'bg-blue-500/15 text-blue-600',            icon: '🔍' },
-  { key: 'quoted',    label: 'Devis envoyé',     color: 'bg-primary/15 text-primary',              icon: '💰' },
-  { key: 'accepted',  label: 'Accepté',          color: 'bg-emerald-500/15 text-emerald-600',      icon: '✅' },
-  { key: 'rejected',  label: 'Refusé',           color: 'bg-destructive/15 text-destructive',      icon: '❌' },
-  { key: 'expired',   label: 'Expiré',           color: 'bg-muted text-muted-foreground',          icon: '⌛' },
-]
-
 export default function QuotesPage() {
+  const { t } = useTranslation('adminQuotes')
+  const STATUS_PIPELINE: { key: QuoteRequestStatus; label: string; color: string; icon: string }[] = [
+    { key: 'pending',   label: t('status.pending'),   color: 'bg-secondary text-secondary-foreground', icon: '⏳' },
+    { key: 'reviewing', label: t('status.reviewing'), color: 'bg-blue-500/15 text-blue-600',            icon: '🔍' },
+    { key: 'quoted',    label: t('status.quoted'),    color: 'bg-primary/15 text-primary',              icon: '💰' },
+    { key: 'accepted',  label: t('status.accepted'),  color: 'bg-emerald-500/15 text-emerald-600',      icon: '✅' },
+    { key: 'rejected',  label: t('status.rejected'),  color: 'bg-destructive/15 text-destructive',      icon: '❌' },
+    { key: 'expired',   label: t('status.expired'),   color: 'bg-muted text-muted-foreground',          icon: '⌛' },
+  ]
   const { user } = useAuth()
   const navigate = useNavigate()
   const [quotes, setQuotes] = useState<QuoteRequest[]>([])
@@ -107,9 +108,9 @@ export default function QuotesPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="font-serif text-2xl font-bold">💬 Demandes de devis</h1>
+        <h1 className="font-serif text-2xl font-bold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {quotes.length} demandes · {quotes.filter(q => ['pending', 'reviewing'].includes(q.status)).length} en attente de réponse
+          {t('summary', { count: quotes.length })} · {t('pendingReply', { count: quotes.filter(q => ['pending', 'reviewing'].includes(q.status)).length })}
         </p>
       </div>
 
@@ -133,7 +134,7 @@ export default function QuotesPage() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Rechercher produit ou client..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+        <Input placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
       </div>
 
       {loading ? (
@@ -144,7 +145,7 @@ export default function QuotesPage() {
       ) : filtered.length === 0 ? (
         <div className="py-16 text-center">
           <FileText className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium">{quotes.length === 0 ? 'Aucune demande de devis' : 'Aucun résultat'}</p>
+          <p className="text-sm font-medium">{quotes.length === 0 ? t('empty') : t('noResults')}</p>
         </div>
       ) : (
         <Card>
@@ -153,7 +154,7 @@ export default function QuotesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-secondary/30">
-                    {['Client', 'Produit', 'Qté', 'Cible', 'Devis', 'Statut', 'Actions'].map(h => (
+                    {[t('table.client'), t('table.product'), t('table.qty'), t('table.target'), t('table.quote'), t('table.status'), t('table.actions')].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">{h}</th>
                     ))}
                   </tr>
@@ -168,7 +169,7 @@ export default function QuotesPage() {
                           <div className="font-medium truncate max-w-40">{q.product_name}</div>
                           {q.product_url && (
                             <a href={q.product_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                              Lien <ExternalLink className="h-3 w-3" />
+                              {t('table.link')} <ExternalLink className="h-3 w-3" />
                             </a>
                           )}
                         </td>
@@ -184,17 +185,17 @@ export default function QuotesPage() {
                           <div className="flex items-center gap-1">
                             {q.status === 'pending' && (
                               <Button size="sm" variant="ghost" className="h-7 text-xs rounded-lg px-2" onClick={() => markReviewing(q)}>
-                                Étudier
+                                {t('actions.review')}
                               </Button>
                             )}
                             {(q.status === 'pending' || q.status === 'reviewing') && (
                               <Button size="sm" variant="outline" className="h-7 text-xs rounded-lg px-2" onClick={() => openQuote(q)}>
-                                Envoyer un devis
+                                {t('actions.sendQuote')}
                               </Button>
                             )}
                             {q.status === 'quoted' && (
                               <Button size="sm" variant="ghost" className="h-7 text-xs rounded-lg px-2" onClick={() => openQuote(q)}>
-                                Modifier
+                                {t('actions.edit')}
                               </Button>
                             )}
                             {q.status === 'accepted' && !q.erp_order_id && (
@@ -207,11 +208,11 @@ export default function QuotesPage() {
                                 {convertingId === q.id
                                   ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" />
                                   : <ArrowRight className="h-3 w-3" />}
-                                Créer la commande
+                                {t('actions.createOrder')}
                               </Button>
                             )}
                             {q.erp_order_id && (
-                              <Badge variant="outline" className="text-[10px] text-primary border-primary/30">Commande créée</Badge>
+                              <Badge variant="outline" className="text-[10px] text-primary border-primary/30">{t('actions.orderCreated')}</Badge>
                             )}
                           </div>
                         </td>
@@ -229,23 +230,23 @@ export default function QuotesPage() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-border">
-              <h2 className="font-serif font-bold">Envoyer un devis</h2>
+              <h2 className="font-serif font-bold">{t('modal.title')}</h2>
               <button onClick={() => setEditing(null)}><X className="h-5 w-5 text-muted-foreground" /></button>
             </div>
             <div className="p-5 space-y-3">
               <div className="rounded-xl border border-border bg-secondary/30 p-3">
                 <p className="text-sm font-medium">{editing.product_name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{editing.quantity} unité{editing.quantity > 1 ? 's' : ''}
-                  {editing.target_price_cny != null && ` · cible ¥${editing.target_price_cny}/unité`}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('modal.units', { count: editing.quantity })}
+                  {editing.target_price_cny != null && t('modal.targetPerUnit', { price: editing.target_price_cny })}</p>
                 {editing.notes && <p className="text-xs text-muted-foreground italic mt-1">{editing.notes}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Prix unitaire *</Label>
+                  <Label>{t('modal.unitPrice')}</Label>
                   <Input type="number" step="0.01" min="0" value={form.quoted_unit_price} onChange={e => setForm(f => ({ ...f, quoted_unit_price: e.target.value }))} className="h-10" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Devise</Label>
+                  <Label>{t('modal.currency')}</Label>
                   <select
                     value={form.quoted_currency}
                     onChange={e => setForm(f => ({ ...f, quoted_currency: e.target.value }))}
@@ -257,14 +258,14 @@ export default function QuotesPage() {
               </div>
               {form.quoted_unit_price && (
                 <p className="text-xs text-muted-foreground">
-                  Total : <span className="font-semibold text-foreground">{(Number(form.quoted_unit_price) * editing.quantity).toLocaleString()} {form.quoted_currency}</span>
+                  {t('modal.total')}<span className="font-semibold text-foreground">{(Number(form.quoted_unit_price) * editing.quantity).toLocaleString()} {form.quoted_currency}</span>
                 </p>
               )}
               <div className="space-y-1.5">
-                <Label>Note pour le client</Label>
+                <Label>{t('modal.clientNote')}</Label>
                 <textarea
                   rows={3}
-                  placeholder="Délai de livraison estimé, conditions..."
+                  placeholder={t('modal.clientNotePlaceholder')}
                   value={form.admin_notes}
                   onChange={e => setForm(f => ({ ...f, admin_notes: e.target.value }))}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
@@ -272,10 +273,10 @@ export default function QuotesPage() {
               </div>
             </div>
             <div className="flex gap-2 p-5 border-t border-border">
-              <Button variant="outline" className="flex-1 rounded-full" onClick={() => setEditing(null)}>Annuler</Button>
+              <Button variant="outline" className="flex-1 rounded-full" onClick={() => setEditing(null)}>{t('modal.cancel')}</Button>
               <Button className="flex-1 rounded-full gap-1.5" onClick={handleSendQuote} disabled={saving || !form.quoted_unit_price}>
                 {saving ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <Save className="h-3.5 w-3.5" />}
-                Envoyer le devis
+                {t('modal.send')}
               </Button>
             </div>
           </div>

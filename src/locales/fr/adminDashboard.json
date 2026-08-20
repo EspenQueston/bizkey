@@ -1,0 +1,81 @@
+{
+  "loading": "Chargement du tableau de bord…",
+  "title": "Tableau de bord",
+  "subtitle": "Données en temps réel — BizKey",
+  "alerts": "{{count}} alerte",
+  "alerts_other": "{{count}} alertes",
+  "online": "En ligne",
+  "refresh": "Actualiser",
+  "operationalAlerts": "{{count}} alerte opérationnelle",
+  "operationalAlerts_other": "{{count}} alertes opérationnelles",
+  "sections": {
+    "growth": "Croissance & revenus",
+    "usage": "Utilisation & qualité IA",
+    "erp": "Opérations ERP"
+  },
+  "metrics": {
+    "monthlyRevenue": "Revenus mensuels",
+    "monthlyRevenueSub": "{{count}} transactions réussies",
+    "totalRevenue": "Revenu total",
+    "totalRevenueSub": "Taux échec paiement : {{rate}}%",
+    "users": "Utilisateurs",
+    "usersSub": "{{admins}} admins · {{subs}} abonnés",
+    "analyses30d": "Analyses (30j)",
+    "analyses30dSub": "{{count}} compte au total",
+    "analyses30dSub_other": "{{count}} comptes au total",
+    "requests": "Requêtes (mois)",
+    "fallbackRate": "Taux fallback IA",
+    "aboveThreshold": "Au-dessus du seuil recommandé",
+    "withinNorm": "Dans la norme",
+    "promoCodes": "Codes Promo",
+    "promoCodesSub": "{{count}} total créés",
+    "avgLatency": "Latence moyenne",
+    "serverErrorSuffix": "{{rate}}% d'erreurs serveur",
+    "serverStable": "Serveur stable",
+    "erpOrders": "Commandes ERP",
+    "erpOrdersSub": "{{active}} en cours · {{transit}} en transit",
+    "pendingPayments": "Paiements en attente",
+    "toVerifyWithSupplier": "À vérifier avec le fournisseur",
+    "allProcessed": "Tout est traité"
+  },
+  "requestsChart": {
+    "title": "Requêtes — 30 derniers jours",
+    "emptyTitle": "Aucune requête sur les 30 derniers jours",
+    "emptyHint": "La courbe se remplira dès les premières analyses."
+  },
+  "transactions": {
+    "title": "Transactions récentes",
+    "viewAll": "Voir tout",
+    "subtitle": "Derniers paiements enregistrés",
+    "empty": "Aucune transaction",
+    "shown": "Affichage des {{count}} transactions les plus récentes"
+  },
+  "usagePanel": {
+    "title": "Utilisation (mois)",
+    "basicRequests": "Requêtes Basic",
+    "advancedRequests": "Requêtes Advanced",
+    "fallbackRate": "Taux fallback IA",
+    "serverErrorRate": "Taux erreurs serveur",
+    "unavailable": "Données indisponibles"
+  },
+  "systemStatus": {
+    "title": "État du système",
+    "payments": "Paiements",
+    "paymentsDetail": "{{rate}}% d'échec",
+    "apiServer": "Serveur API",
+    "apiServerDetail": "{{ms}}ms latence moy.",
+    "ai": "IA (OpenRouter)",
+    "aiDetail": "{{rate}}% fallback",
+    "subscriptions": "Abonnements",
+    "subscriptionsDetail": "{{count}} actifs"
+  },
+  "quickActions": {
+    "title": "Actions rapides",
+    "analyses": "Analyses",
+    "users": "Utilisateurs",
+    "promoCodes": "Codes Promo",
+    "orders": "Commandes",
+    "deliveries": "Livraisons",
+    "analytics": "Analytiques"
+  }
+}

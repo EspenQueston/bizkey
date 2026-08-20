@@ -1,0 +1,70 @@
+{
+  "title": "Analyses",
+  "subtitleAll": "Historique complet de la plateforme, tous comptes confondus",
+  "subtitleMine": "Vos propres analyses uniquement",
+  "scope": {
+    "mine": "Mes analyses",
+    "all": "Tous les utilisateurs"
+  },
+  "csv": "CSV",
+  "source": {
+    "verified": "Données vérifiées",
+    "aiEstimate": "Estimation IA",
+    "limited": "Données limitées",
+    "unknown": "Inconnu"
+  },
+  "loadError": "Impossible de charger les analyses",
+  "loading": "Chargement des analyses…",
+  "tiles": {
+    "analyses": "Analyses",
+    "onPlatform": "sur la plateforme",
+    "byYou": "par vous",
+    "activeAccounts": "Comptes actifs",
+    "haveAnalyzed": "ayant analysé",
+    "avgScore": "Score moyen",
+    "confidenceOutOf100": "confiance /100",
+    "creditsConsumed": "Crédits consommés",
+    "cumulative": "cumulés",
+    "degradedData": "Données dégradées",
+    "analysesCount": "{{count}} analyse",
+    "analysesCount_other": "{{count}} analyses"
+  },
+  "searchPlaceholder": "Rechercher produit, fournisseur ou email…",
+  "qualityFilter": {
+    "all": "Toutes",
+    "high": "Données réelles",
+    "degraded": "Dégradées"
+  },
+  "empty": {
+    "noneInScope": "Aucune analyse pour ce périmètre",
+    "noneForFilter": "Aucun résultat pour ce filtre",
+    "hintEmptyScope": "Les analyses apparaîtront ici dès qu'un utilisateur en lancera une.",
+    "hintFilter": "Ajustez la recherche ou le filtre de qualité."
+  },
+  "table": {
+    "product": "Produit",
+    "user": "Utilisateur",
+    "score": "Score",
+    "price": "Prix",
+    "source": "Source",
+    "credits": "Crédits",
+    "date": "Date",
+    "unnamedProduct": "Produit analysé",
+    "openAnalysis": "Ouvrir l'analyse"
+  },
+  "footer": {
+    "shown": "{{count}} analyse affichée",
+    "shown_other": "{{count}} analyses affichées",
+    "adminView": "— vue administrateur, tous comptes confondus"
+  },
+  "csvExport": {
+    "date": "Date",
+    "user": "Utilisateur",
+    "product": "Produit",
+    "supplier": "Fournisseur",
+    "price": "Prix",
+    "score": "Score",
+    "source": "Source",
+    "credits": "Crédits"
+  }
+}

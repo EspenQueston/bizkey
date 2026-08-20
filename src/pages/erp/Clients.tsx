@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Plus, Search, Edit2, Trash2, X, Save, Phone,
   Mail, MapPin, Building2
@@ -18,13 +19,13 @@ const EMPTY: Omit<ERPClient, 'id' | 'user_id' | 'created_at'> = {
   company: null, notes: null, status: 'prospect',
 }
 
-const STATUS_META = {
-  active:   { label: 'Actif',     color: 'bg-primary/15 text-primary' },
-  inactive: { label: 'Inactif',   color: 'bg-secondary text-muted-foreground' },
-  prospect: { label: 'Prospect',  color: 'bg-yellow-500/15 text-yellow-700' },
-}
-
 export default function ClientsPage() {
+  const { t } = useTranslation('adminClients')
+  const STATUS_META = {
+    active:   { label: t('status.active'),   color: 'bg-primary/15 text-primary' },
+    inactive: { label: t('status.inactive'), color: 'bg-secondary text-muted-foreground' },
+    prospect: { label: t('status.prospect'), color: 'bg-yellow-500/15 text-yellow-700' },
+  }
   const { user } = useAuth()
   const [clients, setClients] = useState<ERPClient[]>([])
   const [loading, setLoading] = useState(true)
@@ -80,7 +81,7 @@ export default function ClientsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer ce client ?')) return
+    if (!confirm(t('confirmDelete'))) return
     setDeletingId(id)
     try {
       await deleteERPClient(id)
@@ -105,12 +106,12 @@ export default function ClientsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-bold">👥 Clients</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{clients.length} clients enregistrés</p>
+          <h1 className="font-serif text-2xl font-bold">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t('registeredCount', { count: clients.length })}</p>
         </div>
         <Button onClick={openCreate} className="rounded-full gap-2">
           <Plus className="h-4 w-4" />
-          Nouveau client
+          {t('newClient')}
         </Button>
       </div>
 
@@ -118,17 +119,17 @@ export default function ClientsPage() {
       <div className="flex flex-col sm:flex-row gap-2.5">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+          <Input placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
         </div>
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
           className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="all">Tous les statuts</option>
-          <option value="active">Actifs</option>
-          <option value="prospect">Prospects</option>
-          <option value="inactive">Inactifs</option>
+          <option value="all">{t('allStatuses')}</option>
+          <option value="active">{t('statusFilter.active')}</option>
+          <option value="prospect">{t('statusFilter.prospect')}</option>
+          <option value="inactive">{t('statusFilter.inactive')}</option>
         </select>
       </div>
 
@@ -141,10 +142,10 @@ export default function ClientsPage() {
       ) : filtered.length === 0 ? (
         <div className="py-16 text-center">
           <Building2 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium">{clients.length === 0 ? 'Aucun client pour l\'instant' : 'Aucun résultat'}</p>
+          <p className="text-sm font-medium">{clients.length === 0 ? t('empty') : t('noResults')}</p>
           {clients.length === 0 && (
             <Button onClick={openCreate} size="sm" className="mt-3 rounded-full">
-              <Plus className="h-4 w-4 mr-1" />Ajouter un client
+              <Plus className="h-4 w-4 mr-1" />{t('addClient')}
             </Button>
           )}
         </div>
@@ -175,7 +176,7 @@ export default function ClientsPage() {
                   </div>
                   <div className="flex gap-1.5 mt-3 pt-3 border-t border-border">
                     <Button size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs gap-1" onClick={() => openEdit(client)}>
-                      <Edit2 className="h-3 w-3" />Modifier
+                      <Edit2 className="h-3 w-3" />{t('edit')}
                     </Button>
                     <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg hover:text-destructive hover:border-destructive/30" onClick={() => handleDelete(client.id)} disabled={deletingId === client.id}>
                       {deletingId === client.id ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <Trash2 className="h-3 w-3" />}
@@ -193,16 +194,16 @@ export default function ClientsPage() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-border">
-              <h2 className="font-serif font-bold">{editing ? 'Modifier le client' : 'Nouveau client'}</h2>
+              <h2 className="font-serif font-bold">{editing ? t('modal.editTitle') : t('modal.createTitle')}</h2>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
             </div>
             <div className="p-5 space-y-3">
               {[
-                { id: 'name', label: 'Nom complet *', key: 'name', type: 'text', req: true },
-                { id: 'company', label: 'Entreprise', key: 'company', type: 'text', req: false },
-                { id: 'email', label: 'Email', key: 'email', type: 'email', req: false },
-                { id: 'phone', label: 'Téléphone', key: 'phone', type: 'tel', req: false },
-                { id: 'city', label: 'Ville', key: 'city', type: 'text', req: false },
+                { id: 'name', label: t('modal.fullName'), key: 'name', type: 'text', req: true },
+                { id: 'company', label: t('modal.company'), key: 'company', type: 'text', req: false },
+                { id: 'email', label: t('modal.email'), key: 'email', type: 'email', req: false },
+                { id: 'phone', label: t('modal.phone'), key: 'phone', type: 'tel', req: false },
+                { id: 'city', label: t('modal.city'), key: 'city', type: 'text', req: false },
               ].map(field => (
                 <div key={field.id} className="space-y-1.5">
                   <Label htmlFor={field.id}>{field.label}</Label>
@@ -217,7 +218,7 @@ export default function ClientsPage() {
                 </div>
               ))}
               <div className="space-y-1.5">
-                <Label>Pays</Label>
+                <Label>{t('modal.country')}</Label>
                 <select
                   value={form.country}
                   onChange={e => setForm(f => ({ ...f, country: e.target.value as ERPCountry }))}
@@ -229,19 +230,19 @@ export default function ClientsPage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label>Statut</Label>
+                <Label>{t('modal.status')}</Label>
                 <select
                   value={form.status}
                   onChange={e => setForm(f => ({ ...f, status: e.target.value as ERPClient['status'] }))}
                   className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="prospect">Prospect</option>
-                  <option value="active">Actif</option>
-                  <option value="inactive">Inactif</option>
+                  <option value="prospect">{t('status.prospect')}</option>
+                  <option value="active">{t('status.active')}</option>
+                  <option value="inactive">{t('status.inactive')}</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t('modal.notes')}</Label>
                 <textarea
                   id="notes"
                   value={form.notes ?? ''}
@@ -252,10 +253,10 @@ export default function ClientsPage() {
               </div>
             </div>
             <div className="flex gap-2 p-5 border-t border-border">
-              <Button variant="outline" className="flex-1 rounded-full" onClick={() => setShowModal(false)}>Annuler</Button>
+              <Button variant="outline" className="flex-1 rounded-full" onClick={() => setShowModal(false)}>{t('modal.cancel')}</Button>
               <Button className="flex-1 rounded-full gap-1.5" onClick={handleSave} disabled={saving || !form.name.trim()}>
                 {saving ? <span className="h-3 w-3 border border-current border-t-transparent animate-spin rounded-full" /> : <Save className="h-3.5 w-3.5" />}
-                Enregistrer
+                {t('modal.save')}
               </Button>
             </div>
           </div>

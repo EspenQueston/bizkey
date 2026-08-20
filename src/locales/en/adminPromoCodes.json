@@ -1,0 +1,33 @@
+{
+  "title": "Promo Codes",
+  "subtitle": "Create and manage discounts",
+  "newCode": "New code",
+  "loadError": "Could not load promo codes. Check RLS permissions.",
+  "createdToast": "Promo code created",
+  "updatedToast": "Code updated",
+  "genericError": "Error",
+  "copiedToast": "Code {{code}} copied",
+  "copy": "Copy",
+  "active": "Active",
+  "inactive": "Inactive",
+  "usedCount": "Used {{count}} times",
+  "usedCountWithMax": "Used {{count}}/{{max}} times",
+  "expires": "exp. {{date}}",
+  "noResults": "No promo codes",
+  "dialog": {
+    "createTitle": "New promo code",
+    "editTitle": "Edit code",
+    "code": "Code",
+    "type": "Type",
+    "typePercent": "Percentage (%)",
+    "typeFixedYuan": "Fixed (¥)",
+    "typeFixedUsd": "Fixed ($)",
+    "value": "Value",
+    "maxUses": "Max uses (empty = unlimited)",
+    "expiration": "Expiration (optional)",
+    "activeCheckbox": "Active",
+    "cancel": "Cancel",
+    "create": "Create",
+    "save": "Save"
+  }
+}

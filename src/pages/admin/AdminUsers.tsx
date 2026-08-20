@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Search, Shield, ShieldOff, Loader2, Pencil, Trash2,
   X, Save, Crown, Bot, Zap, XCircle
@@ -23,6 +24,7 @@ import type { Plan, AssistantPlan, Subscription, AssistantClient } from '@/lib/s
 type UserProfile = Database['public']['Tables']['profiles']['Row']
 
 export default function AdminUsers() {
+  const { t } = useTranslation('adminUsers')
   const { user: currentUser } = useAuth()
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,7 +69,7 @@ export default function AdminUsers() {
       .order('created_at', { ascending: false })
     if (error) {
       console.error(error)
-      toast.error('Erreur lors du chargement des utilisateurs')
+      toast.error(t('toast.loadError'))
     } else {
       setUsers(data as UserProfile[])
     }
@@ -76,7 +78,7 @@ export default function AdminUsers() {
 
   async function toggleAdmin(userId: string, makeAdmin: boolean) {
     if (userId === currentUser?.id) {
-      toast.error('Vous ne pouvez pas modifier votre propre rôle')
+      toast.error(t('toast.cannotEditSelf'))
       return
     }
     setTogglingId(userId)
@@ -87,9 +89,9 @@ export default function AdminUsers() {
         .eq('id', userId)
       if (error) throw new Error(error.message)
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: makeAdmin } : u))
-      toast.success(makeAdmin ? 'Admin accordé' : 'Admin retiré')
+      toast.success(makeAdmin ? t('toast.adminGranted') : t('toast.adminRevoked'))
     } catch {
-      toast.error('Erreur lors de la modification')
+      toast.error(t('toast.updateError'))
     } finally {
       setTogglingId(null)
     }
@@ -133,10 +135,10 @@ export default function AdminUsers() {
         country: editForm.country || null,
         updated_at: new Date().toISOString(),
       } : u))
-      toast.success('Utilisateur mis à jour')
+      toast.success(t('toast.userUpdated'))
       setEditingUser(null)
     } catch {
-      toast.error('Erreur lors de la mise à jour')
+      toast.error(t('toast.updateFailedError'))
     }
   }
 
@@ -149,9 +151,9 @@ export default function AdminUsers() {
       setEditingUser(updatedProfile)
       const sub = await getUserSubscription(editingUser.id)
       setCurrentSubscription(sub)
-      toast.success('Formule BizKey Sourcing appliquée')
+      toast.success(t('toast.sourcingApplied'))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erreur lors de l'attribution de la formule")
+      toast.error(err instanceof Error ? err.message : t('toast.sourcingApplyError'))
     } finally {
       setApplyingSourcing(false)
     }
@@ -164,9 +166,9 @@ export default function AdminUsers() {
       const client = await adminAssignAssistantPlan(editingUser.id, planId)
       setCurrentAssistantClient(client)
       setSelectedAssistantPlanId(planId ?? '')
-      toast.success(planId ? 'Accès BizKey WhatsApp Assistant accordé' : 'Accès BizKey WhatsApp Assistant révoqué')
+      toast.success(planId ? t('toast.assistantGranted') : t('toast.assistantRevoked'))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erreur lors de l'attribution de l'assistant")
+      toast.error(err instanceof Error ? err.message : t('toast.assistantApplyError'))
     } finally {
       setApplyingAssistant(false)
     }
@@ -174,7 +176,7 @@ export default function AdminUsers() {
 
   function requestDeleteUser(user: UserProfile) {
     if (user.id === currentUser?.id) {
-      toast.error('Vous ne pouvez pas supprimer votre propre compte')
+      toast.error(t('toast.cannotDeleteSelf'))
       return
     }
     setConfirmDeleteUser(user)
@@ -193,14 +195,14 @@ export default function AdminUsers() {
         body: { action: 'delete', userId },
       })
       if (error) throw new Error(await getFunctionErrorMessage(error))
-      if (!data?.success) throw new Error(data?.error ?? 'Échec de la suppression')
+      if (!data?.success) throw new Error(data?.error ?? t('toast.deleteFailedGeneric'))
 
       setUsers(prev => prev.filter(u => u.id !== userId))
-      toast.success('Utilisateur supprimé')
+      toast.success(t('toast.userDeleted'))
       setConfirmDeleteUser(null)
     } catch (err) {
       console.error(err)
-      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+      toast.error(err instanceof Error ? err.message : t('toast.deleteError'))
     } finally {
       setDeletingId(null)
     }
@@ -223,21 +225,21 @@ export default function AdminUsers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Gestion des utilisateurs</h1>
-          <p className="text-muted-foreground text-sm">CRUD complet — {stats.total} utilisateurs ({stats.paid} payants, {stats.admins} admins)</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground text-sm">{t('subtitle', { total: stats.total, paid: stats.paid, admins: stats.admins })}</p>
         </div>
         <Button variant="outline" onClick={loadUsers} size="sm" className="rounded-full">
-          Rafraîchir
+          {t('refresh')}
         </Button>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total', value: stats.total, color: 'text-foreground' },
-          { label: 'Admins', value: stats.admins, color: 'text-red-600' },
-          { label: 'Free', value: stats.free, color: 'text-yellow-600' },
-          { label: 'Payants', value: stats.paid, color: 'text-primary' },
+          { label: t('stats.total'), value: stats.total, color: 'text-foreground' },
+          { label: t('stats.admins'), value: stats.admins, color: 'text-red-600' },
+          { label: t('stats.free'), value: stats.free, color: 'text-yellow-600' },
+          { label: t('stats.paid'), value: stats.paid, color: 'text-primary' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border bg-card p-3 text-center">
             <div className={`text-2xl font-bold font-serif ${s.color}`}>{s.value}</div>
@@ -249,7 +251,7 @@ export default function AdminUsers() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input className="pl-9" placeholder="Rechercher par email ou nom…" value={search} onChange={e => setSearch(e.target.value)} />
+        <Input className="pl-9" placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
       {/* Edit Modal */}
@@ -260,7 +262,7 @@ export default function AdminUsers() {
             <div className="flex items-center justify-between p-5 border-b">
               <h2 className="font-semibold text-lg flex items-center gap-2">
                 <Pencil className="h-4 w-4 text-primary" />
-                Modifier l'utilisateur
+                {t('modal.title')}
               </h2>
               <button onClick={() => setEditingUser(null)} className="h-8 w-8 rounded-full hover:bg-secondary grid place-items-center">
                 <X className="h-4 w-4" />
@@ -269,16 +271,16 @@ export default function AdminUsers() {
             <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Nom</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t('modal.name')}</label>
                   <Input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Email</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t('modal.email')}</label>
                   <Input value={editForm.email} disabled className="opacity-60" />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Pays</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('modal.country')}</label>
                 <Input value={editForm.country} onChange={e => setEditForm(f => ({ ...f, country: e.target.value }))} />
               </div>
 
@@ -288,20 +290,20 @@ export default function AdminUsers() {
                   tops it up), never a hand-typed number. */}
               <div className="border-t pt-3 space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                  <Zap className="h-3 w-3" /> BizKey Sourcing
+                  <Zap className="h-3 w-3" /> {t('modal.sourcingSection')}
                 </p>
                 {loadingPlanState ? (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-1"><Loader2 className="h-3 w-3 animate-spin" /> Chargement…</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-1"><Loader2 className="h-3 w-3 animate-spin" /> {t('modal.loading')}</div>
                 ) : (
                   <p className="text-xs text-muted-foreground">
                     {currentSubscription ? (
-                      <>Actuel : <strong className="text-foreground">{sourcingPlans.find(p => p.id === currentSubscription.plan_id)?.display_name ?? 'Formule inconnue'}</strong>{' '}
+                      <>{t('modal.currentPlan')}<strong className="text-foreground">{sourcingPlans.find(p => p.id === currentSubscription.plan_id)?.display_name ?? t('modal.unknownPlan')}</strong>{' '}
                         ({currentSubscription.basic_credits_remaining} Basic · {currentSubscription.advanced_credits_remaining} Advanced)
-                        {currentSubscription.expires_at && ` — expire le ${new Date(currentSubscription.expires_at).toLocaleDateString('fr-FR')}`}
+                        {currentSubscription.expires_at && t('modal.expiresOn', { date: new Date(currentSubscription.expires_at).toLocaleDateString('fr-FR') })}
                       </>
-                    ) : 'Actuel : Free (aucun abonnement actif)'}
+                    ) : t('modal.currentFree')}
                     {(editingUser?.payg_basic_credits || editingUser?.payg_advanced_credits) ? (
-                      <> · PAYG : {editingUser?.payg_basic_credits ?? 0} Basic · {editingUser?.payg_advanced_credits ?? 0} Advanced</>
+                      t('modal.paygSuffix', { basic: editingUser?.payg_basic_credits ?? 0, advanced: editingUser?.payg_advanced_credits ?? 0 })
                     ) : null}
                   </p>
                 )}
@@ -311,10 +313,10 @@ export default function AdminUsers() {
                     onChange={e => setSelectedSourcingPlanId(e.target.value)}
                     className="flex-1 h-10 rounded-md border bg-background px-3 text-sm"
                   >
-                    <option value="">Choisir une formule…</option>
+                    <option value="">{t('modal.choosePlan')}</option>
                     {sourcingPlans.map(p => (
                       <option key={p.id} value={p.id}>
-                        {p.display_name} {p.type === 'payg' ? '(PAYG)' : '(Abonnement)'} — {p.basic_credits}B/{p.advanced_credits}A
+                        {p.display_name} {p.type === 'payg' ? t('modal.payg') : t('modal.subscription')} — {p.basic_credits}B/{p.advanced_credits}A
                       </option>
                     ))}
                   </select>
@@ -324,7 +326,7 @@ export default function AdminUsers() {
                     disabled={!selectedSourcingPlanId || applyingSourcing}
                     onClick={applySourcingPlan}
                   >
-                    {applyingSourcing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Appliquer'}
+                    {applyingSourcing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('modal.apply')}
                   </Button>
                 </div>
               </div>
@@ -332,29 +334,30 @@ export default function AdminUsers() {
               {/* BizKey WhatsApp Assistant */}
               <div className="border-t pt-3 space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                  <Bot className="h-3 w-3" /> BizKey WhatsApp Assistant
+                  <Bot className="h-3 w-3" /> {t('modal.assistantSection')}
                 </p>
                 {loadingPlanState ? (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-1"><Loader2 className="h-3 w-3 animate-spin" /> Chargement…</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5 py-1"><Loader2 className="h-3 w-3 animate-spin" /> {t('modal.loading')}</div>
                 ) : currentAssistantClient && currentAssistantClient.status !== 'cancelled' ? (
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     <p>
-                      Actuel : <strong className="text-foreground">{assistantPlans.find(p => p.id === currentAssistantClient.plan_id)?.display_name ?? 'Formule inconnue'}</strong>
-                      {' '}— statut {currentAssistantClient.status}
+                      {t('modal.assistantCurrent')}<strong className="text-foreground">{assistantPlans.find(p => p.id === currentAssistantClient.plan_id)?.display_name ?? t('modal.unknownPlan')}</strong>
+                      {t('modal.assistantStatusSuffix', { status: currentAssistantClient.status })}
                     </p>
-                    <p>Client depuis le {new Date(currentAssistantClient.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                    <p>{t('modal.clientSince', { date: new Date(currentAssistantClient.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) })}</p>
                     <p>
-                      Période en cours : {currentAssistantClient.current_period_start
-                        ? new Date(currentAssistantClient.current_period_start).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : '—'}
-                      {' → '}
-                      {currentAssistantClient.current_period_end
-                        ? new Date(currentAssistantClient.current_period_end).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : '—'}
+                      {t('modal.currentPeriod', {
+                        start: currentAssistantClient.current_period_start
+                          ? new Date(currentAssistantClient.current_period_start).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : '—',
+                        end: currentAssistantClient.current_period_end
+                          ? new Date(currentAssistantClient.current_period_end).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : '—',
+                      })}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Aucun accès Assistant WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">{t('modal.noAssistantAccess')}</p>
                 )}
                 <div className="flex gap-2">
                   <select
@@ -362,9 +365,9 @@ export default function AdminUsers() {
                     onChange={e => setSelectedAssistantPlanId(e.target.value)}
                     className="flex-1 h-10 rounded-md border bg-background px-3 text-sm"
                   >
-                    <option value="">— Aucun accès —</option>
+                    <option value="">{t('modal.noAccessOption')}</option>
                     {assistantPlans.map(p => (
-                      <option key={p.id} value={p.id}>{p.display_name} — ¥{p.price_yuan}/mois</option>
+                      <option key={p.id} value={p.id}>{p.display_name} — ¥{p.price_yuan}{t('modal.perMonth')}</option>
                     ))}
                   </select>
                   <Button
@@ -374,14 +377,14 @@ export default function AdminUsers() {
                     disabled={applyingAssistant}
                     onClick={() => applyAssistantPlan(selectedAssistantPlanId || null)}
                   >
-                    {applyingAssistant ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : selectedAssistantPlanId ? 'Appliquer' : <XCircle className="h-3.5 w-3.5" />}
+                    {applyingAssistant ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : selectedAssistantPlanId ? t('modal.apply') : <XCircle className="h-3.5 w-3.5" />}
                   </Button>
                 </div>
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 p-5 border-t">
-              <Button variant="outline" onClick={() => setEditingUser(null)} className="rounded-full">Annuler</Button>
-              <Button onClick={saveEdit} className="rounded-full gap-1"><Save className="h-4 w-4" />Sauvegarder</Button>
+              <Button variant="outline" onClick={() => setEditingUser(null)} className="rounded-full">{t('modal.cancel')}</Button>
+              <Button onClick={saveEdit} className="rounded-full gap-1"><Save className="h-4 w-4" />{t('modal.save')}</Button>
             </div>
           </div>
         </div>
@@ -395,7 +398,7 @@ export default function AdminUsers() {
       ) : (
         <div className="space-y-2">
           {filtered.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">Aucun utilisateur trouvé</p>
+            <p className="text-center text-muted-foreground py-8">{t('empty')}</p>
           )}
           {filtered.map(u => {
             const initials = (u.name ?? u.email ?? 'U').slice(0, 2).toUpperCase()
@@ -407,8 +410,8 @@ export default function AdminUsers() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm truncate">{u.name ?? 'Sans nom'}</span>
-                      {u.is_admin && <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 text-[10px]">Admin</Badge>}
+                      <span className="font-medium text-sm truncate">{u.name ?? t('noName')}</span>
+                      {u.is_admin && <Badge className="bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 text-[10px]">{t('admin')}</Badge>}
                       <Badge
                         variant="outline"
                         className={`text-[10px] capitalize ${
@@ -432,7 +435,7 @@ export default function AdminUsers() {
                       variant="ghost"
                       className="h-8 w-8 p-0"
                       onClick={() => openEdit(u)}
-                      title="Modifier"
+                      title={t('edit')}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -446,9 +449,9 @@ export default function AdminUsers() {
                       {togglingId === u.id ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : u.is_admin ? (
-                        <><ShieldOff className="h-3 w-3 mr-1" />Retirer</>
+                        <><ShieldOff className="h-3 w-3 mr-1" />{t('remove')}</>
                       ) : (
-                        <><Shield className="h-3 w-3 mr-1" />Admin</>
+                        <><Shield className="h-3 w-3 mr-1" />{t('admin')}</>
                       )}
                     </Button>
                     <Button
@@ -457,7 +460,7 @@ export default function AdminUsers() {
                       className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
                       disabled={u.id === currentUser?.id || deletingId === u.id}
                       onClick={() => requestDeleteUser(u)}
-                      title="Supprimer"
+                      title={t('delete')}
                     >
                       {deletingId === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                     </Button>
@@ -472,8 +475,8 @@ export default function AdminUsers() {
       <DeleteConfirmDialog
         open={!!confirmDeleteUser}
         onOpenChange={(v) => { if (!v) setConfirmDeleteUser(null) }}
-        title="Supprimer cet utilisateur ?"
-        description={`${confirmDeleteUser?.name ?? confirmDeleteUser?.email ?? ''} sera définitivement supprimé — compte, analyses, commandes, paiements et abonnement associés. Cette action est irréversible.`}
+        title={t('deleteDialog.title')}
+        description={t('deleteDialog.description', { name: confirmDeleteUser?.name ?? confirmDeleteUser?.email ?? '' })}
         loading={deletingId === confirmDeleteUser?.id}
         onConfirm={() => confirmDeleteUser && deleteUser(confirmDeleteUser.id)}
       />

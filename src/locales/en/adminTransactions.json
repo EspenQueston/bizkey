@@ -1,0 +1,9 @@
+{
+  "title": "Transactions",
+  "subtitle": "Payment history",
+  "refresh": "Refresh",
+  "searchPlaceholder": "Search…",
+  "all": "All",
+  "loadError": "Could not load transactions. Check RLS permissions.",
+  "noResults": "No transactions found"
+}

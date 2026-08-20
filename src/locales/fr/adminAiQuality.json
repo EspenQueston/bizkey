@@ -1,0 +1,14 @@
+{
+  "title": "Qualité IA & Fallback",
+  "subtitle": "Suivi de la qualité des analyses et des cas fallback",
+  "stats": {
+    "observed": "Analyses observées",
+    "fallbackCases": "Cas fallback",
+    "fallbackRate": "Taux fallback"
+  },
+  "recentFallback": "Derniers cas fallback",
+  "noRecentFallback": "Aucun fallback récent.",
+  "unnamedProduct": "Produit sans nom",
+  "reason": "raison",
+  "unknown": "unknown"
+}

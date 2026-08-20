@@ -1,0 +1,47 @@
+{
+  "title": "💬 Quote requests",
+  "summary": "{{count}} request",
+  "summary_other": "{{count}} requests",
+  "pendingReply": "{{count}} awaiting a reply",
+  "status": {
+    "pending": "Pending",
+    "reviewing": "Under review",
+    "quoted": "Quote sent",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "expired": "Expired"
+  },
+  "searchPlaceholder": "Search product or client...",
+  "empty": "No quote requests",
+  "noResults": "No results",
+  "table": {
+    "client": "Client",
+    "product": "Product",
+    "qty": "Qty",
+    "target": "Target",
+    "quote": "Quote",
+    "status": "Status",
+    "actions": "Actions",
+    "link": "Link"
+  },
+  "actions": {
+    "review": "Review",
+    "sendQuote": "Send a quote",
+    "edit": "Edit",
+    "createOrder": "Create order",
+    "orderCreated": "Order created"
+  },
+  "modal": {
+    "title": "Send a quote",
+    "units": "{{count}} unit",
+    "units_other": "{{count}} units",
+    "targetPerUnit": " · target ¥{{price}}/unit",
+    "unitPrice": "Unit price *",
+    "currency": "Currency",
+    "total": "Total: ",
+    "clientNote": "Note for the client",
+    "clientNotePlaceholder": "Estimated delivery time, terms...",
+    "cancel": "Cancel",
+    "send": "Send quote"
+  }
+}

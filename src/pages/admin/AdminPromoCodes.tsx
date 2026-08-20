@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, Check, X, Loader2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -21,6 +22,7 @@ const EMPTY: Omit<PromoCode, 'id' | 'created_at' | 'used_count'> = {
 }
 
 export default function AdminPromoCodes() {
+  const { t } = useTranslation('adminPromoCodes')
   const [promos, setPromos] = useState<PromoCode[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -34,7 +36,7 @@ export default function AdminPromoCodes() {
       .catch((err) => {
         console.warn('AdminPromoCodes load error:', err)
         setPromos([])
-        toast.error('Impossible de charger les codes promo. Vérifiez les permissions RLS.')
+        toast.error(t('loadError'))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -65,15 +67,15 @@ export default function AdminPromoCodes() {
       if (dialog === 'create') {
         const created = await createPromoCode({ ...form, code: form.code.toUpperCase() })
         setPromos(p => [created, ...p])
-        toast.success('Code promo créé')
+        toast.success(t('createdToast'))
       } else if (editTarget) {
         const updated = await updatePromoCode(editTarget.id, form)
         setPromos(p => p.map(x => x.id === updated.id ? updated : x))
-        toast.success('Code mis à jour')
+        toast.success(t('updatedToast'))
       }
       setDialog(null)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erreur')
+      toast.error(err instanceof Error ? err.message : t('genericError'))
     } finally {
       setSaving(false)
     }
@@ -84,25 +86,25 @@ export default function AdminPromoCodes() {
       const updated = await updatePromoCode(promo.id, { is_active: !promo.is_active })
       setPromos(p => p.map(x => x.id === updated.id ? updated : x))
     } catch {
-      toast.error('Erreur')
+      toast.error(t('genericError'))
     }
   }
 
   function copyCode(code: string) {
     navigator.clipboard.writeText(code)
-    toast.success(`Code ${code} copié`)
+    toast.success(t('copiedToast', { code }))
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Codes Promo</h1>
-          <p className="text-muted-foreground text-sm">Créez et gérez des réductions</p>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
         </div>
         <Button onClick={openCreate} size="sm">
           <Plus className="h-4 w-4 mr-1" />
-          Nouveau code
+          {t('newCode')}
         </Button>
       </div>
 
@@ -113,7 +115,7 @@ export default function AdminPromoCodes() {
       ) : (
         <div className="space-y-2">
           {promos.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">Aucun code promo</p>
+            <p className="text-center text-muted-foreground py-8">{t('noResults')}</p>
           )}
           {promos.map(promo => (
             <Card key={promo.id} className="border">
@@ -122,13 +124,13 @@ export default function AdminPromoCodes() {
                   <code
                     className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded cursor-pointer hover:bg-muted/80"
                     onClick={() => copyCode(promo.code)}
-                    title="Copier"
+                    title={t('copy')}
                   >
                     {promo.code}
                     <Copy className="inline ml-1.5 h-3 w-3 text-muted-foreground" />
                   </code>
                   <Badge variant={promo.is_active ? 'default' : 'secondary'} className="text-xs">
-                    {promo.is_active ? 'Actif' : 'Inactif'}
+                    {promo.is_active ? t('active') : t('inactive')}
                   </Badge>
                 </div>
                 <div className="flex-1 text-xs text-muted-foreground space-x-2">
@@ -139,8 +141,8 @@ export default function AdminPromoCodes() {
                       ? `-¥${promo.discount_value}`
                       : `-$${promo.discount_value}`}
                   </span>
-                  <span>· Utilisé {promo.used_count}{promo.max_uses ? `/${promo.max_uses}` : ''} fois</span>
-                  {promo.valid_until && <span>· exp. {new Date(promo.valid_until).toLocaleDateString('fr')}</span>}
+                  <span>· {promo.max_uses ? t('usedCountWithMax', { count: promo.used_count, max: promo.max_uses }) : t('usedCount', { count: promo.used_count })}</span>
+                  {promo.valid_until && <span>· {t('expires', { date: new Date(promo.valid_until).toLocaleDateString('fr') })}</span>}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button size="icon" variant="ghost" onClick={() => openEdit(promo)}>
@@ -164,51 +166,51 @@ export default function AdminPromoCodes() {
       <Dialog open={!!dialog} onOpenChange={open => !open && setDialog(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{dialog === 'create' ? 'Nouveau code promo' : 'Modifier le code'}</DialogTitle>
+            <DialogTitle>{dialog === 'create' ? t('dialog.createTitle') : t('dialog.editTitle')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-1">
-              <Label>Code</Label>
+              <Label>{t('dialog.code')}</Label>
               <Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="SUMMER25" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Type</Label>
+                <Label>{t('dialog.type')}</Label>
                 <select
                   value={form.discount_type}
                   onChange={e => setForm(f => ({ ...f, discount_type: e.target.value as PromoCode['discount_type'] }))}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 >
-                  <option value="percent">Pourcentage (%)</option>
-                  <option value="fixed_yuan">Fixe (¥)</option>
-                  <option value="fixed_usd">Fixe ($)</option>
+                  <option value="percent">{t('dialog.typePercent')}</option>
+                  <option value="fixed_yuan">{t('dialog.typeFixedYuan')}</option>
+                  <option value="fixed_usd">{t('dialog.typeFixedUsd')}</option>
                 </select>
               </div>
               <div className="space-y-1">
-                <Label>Valeur</Label>
+                <Label>{t('dialog.value')}</Label>
                 <Input type="number" value={form.discount_value} onChange={e => setForm(f => ({ ...f, discount_value: +e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Max utilisations (vide = illimité)</Label>
+                <Label>{t('dialog.maxUses')}</Label>
                 <Input type="number" value={form.max_uses ?? ''} onChange={e => setForm(f => ({ ...f, max_uses: e.target.value ? +e.target.value : null }))} />
               </div>
               <div className="space-y-1">
-                <Label>Expiration (optionnel)</Label>
+                <Label>{t('dialog.expiration')}</Label>
                 <Input type="date" value={form.valid_until?.slice(0, 10) ?? ''} onChange={e => setForm(f => ({ ...f, valid_until: e.target.value ? e.target.value + 'T23:59:59Z' : null }))} />
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
-              Actif
+              {t('dialog.activeCheckbox')}
             </label>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setDialog(null)}>{t('dialog.cancel')}</Button>
             <Button onClick={handleSave} disabled={saving || !form.code}>
               {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
-              {dialog === 'create' ? 'Créer' : 'Enregistrer'}
+              {dialog === 'create' ? t('dialog.create') : t('dialog.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
