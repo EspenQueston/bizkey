@@ -1,18 +1,33 @@
+interface FormProgressMilestones {
+  start: string
+  progress: string
+  almost: string
+  done: string
+}
+
 interface FormProgressProps {
   /** 0-100 */
   percent: number
   label?: string
+  milestones?: FormProgressMilestones
 }
 
-function milestoneText(percent: number): string {
-  if (percent >= 100) return 'Prêt ! 🎉'
-  if (percent >= 60) return 'Presque fini…'
-  if (percent > 0) return 'Continuez comme ça'
-  return 'Commencez ci-dessous'
+const DEFAULT_MILESTONES: FormProgressMilestones = {
+  start: 'Commencez ci-dessous',
+  progress: 'Continuez comme ça',
+  almost: 'Presque fini…',
+  done: 'Prêt ! 🎉',
+}
+
+function milestoneText(percent: number, milestones: FormProgressMilestones): string {
+  if (percent >= 100) return milestones.done
+  if (percent >= 60) return milestones.almost
+  if (percent > 0) return milestones.progress
+  return milestones.start
 }
 
 /** Goal-gradient progress indicator — completing a form feels closer as it fills in. */
-export function FormProgress({ percent, label = 'Progression' }: FormProgressProps) {
+export function FormProgress({ percent, label = 'Progression', milestones = DEFAULT_MILESTONES }: FormProgressProps) {
   const clamped = Math.max(0, Math.min(100, percent))
 
   return (
@@ -20,7 +35,7 @@ export function FormProgress({ percent, label = 'Progression' }: FormProgressPro
       <div className="flex items-center justify-between text-xs mb-2">
         <span className="font-medium text-foreground">{label}</span>
         <span className="text-muted-foreground">
-          {milestoneText(clamped)} · <span className="font-semibold text-primary">{Math.round(clamped)}%</span>
+          {milestoneText(clamped, milestones)} · <span className="font-semibold text-primary">{Math.round(clamped)}%</span>
         </span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">

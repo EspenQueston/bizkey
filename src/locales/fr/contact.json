@@ -1,0 +1,77 @@
+{
+  "hero": {
+    "badge": "Contact",
+    "title": "Parlons de votre projet",
+    "subtitle": "Une question, une commande, un partenariat ? Notre équipe vous répond sous 24h."
+  },
+  "info": {
+    "coordinatesTitle": "Coordonnées",
+    "addressLabel": "Adresse",
+    "address": "Beijing, Haidian District, China",
+    "socialTitle": "Réseaux sociaux",
+    "whatsappValue": "Nous écrire"
+  },
+  "countries": {
+    "benin": "Bénin",
+    "togo": "Togo",
+    "senegal": "Sénégal",
+    "coteIvoire": "Côte d'Ivoire",
+    "cameroun": "Cameroun",
+    "mali": "Mali",
+    "guinee": "Guinée",
+    "rdCongo": "RD Congo",
+    "niger": "Niger",
+    "burkinaFaso": "Burkina Faso",
+    "autre": "Autre"
+  },
+  "subjects": {
+    "commande": "Commande",
+    "support": "Support technique",
+    "partenariat": "Partenariat",
+    "tarifs": "Question sur les tarifs",
+    "autre": "Autre"
+  },
+  "form": {
+    "progressLabel": "Votre message",
+    "milestoneStart": "Commencez ci-dessous",
+    "milestoneProgress": "Continuez comme ça",
+    "milestoneAlmost": "Presque fini…",
+    "milestoneDone": "Prêt ! 🎉",
+    "firstName": "Prénom *",
+    "firstNamePlaceholder": "Votre prénom",
+    "lastName": "Nom *",
+    "lastNamePlaceholder": "Votre nom",
+    "email": "Email *",
+    "emailPlaceholder": "vous@email.com",
+    "country": "Pays *",
+    "select": "Sélectionner",
+    "subject": "Objet *",
+    "message": "Message *",
+    "messagePlaceholder": "Décrivez votre demande…",
+    "privacy": "Ce formulaire est protégé. Nous n'enverrons jamais de spam.",
+    "submit": "Envoyer le message",
+    "required": "Requis",
+    "invalidEmail": "Email invalide",
+    "messageTooShort": "Message trop court"
+  },
+  "success": {
+    "title": "Message envoyé !",
+    "subtitle": "Votre message a bien été envoyé. Nous vous répondrons sous 24h.",
+    "toast": "Message envoyé ! Nous vous répondrons sous 24h.",
+    "another": "Envoyer un autre message"
+  },
+  "faq": {
+    "eyebrow": "Avant de nous écrire",
+    "titlePrefix": "Réponses",
+    "titleHighlight": "immédiates",
+    "subtitle": "Votre question a peut-être déjà sa réponse ci-dessous — cela vous évitera d'attendre.",
+    "q1": "Sous quel délai obtiendrai-je une réponse ?",
+    "a1": "Sous 24h ouvrées pour les demandes envoyées via ce formulaire. Pour une réponse plus rapide, WhatsApp et WeChat sont les canaux les plus réactifs pendant les heures ouvrables chinoises (9h–18h UTC+8).",
+    "q2": "Je veux passer une commande, que dois-je préparer ?",
+    "a2": "Le lien du produit ou une photo nette, la quantité souhaitée, votre pays et ville de livraison. Avec ces éléments nous vous renvoyons un devis complet incluant le prix fournisseur, le transport et le total à payer.",
+    "q3": "Proposez-vous des partenariats ou du volume B2B ?",
+    "a3": "Oui. Sélectionnez « Partenariat » dans le formulaire et précisez vos volumes mensuels estimés. Les commandes récurrentes bénéficient de conditions négociées avec les fournisseurs et de tarifs de transport groupés.",
+    "q4": "J'ai un problème sur une commande en cours, qui contacter ?",
+    "a4": "Utilisez le formulaire avec le sujet « Support technique » en indiquant votre numéro de commande. Les litiges en cours sont traités en priorité et vous êtes tenu informé à chaque étape de la résolution avec le fournisseur."
+  }
+}

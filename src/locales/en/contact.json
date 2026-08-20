@@ -1,0 +1,77 @@
+{
+  "hero": {
+    "badge": "Contact",
+    "title": "Let's talk about your project",
+    "subtitle": "A question, an order, a partnership? Our team replies within 24h."
+  },
+  "info": {
+    "coordinatesTitle": "Contact details",
+    "addressLabel": "Address",
+    "address": "Beijing, Haidian District, China",
+    "socialTitle": "Social media",
+    "whatsappValue": "Message us"
+  },
+  "countries": {
+    "benin": "Benin",
+    "togo": "Togo",
+    "senegal": "Senegal",
+    "coteIvoire": "Côte d'Ivoire",
+    "cameroun": "Cameroon",
+    "mali": "Mali",
+    "guinee": "Guinea",
+    "rdCongo": "DR Congo",
+    "niger": "Niger",
+    "burkinaFaso": "Burkina Faso",
+    "autre": "Other"
+  },
+  "subjects": {
+    "commande": "Order",
+    "support": "Technical support",
+    "partenariat": "Partnership",
+    "tarifs": "Pricing question",
+    "autre": "Other"
+  },
+  "form": {
+    "progressLabel": "Your message",
+    "milestoneStart": "Start below",
+    "milestoneProgress": "Keep going",
+    "milestoneAlmost": "Almost done…",
+    "milestoneDone": "Ready! 🎉",
+    "firstName": "First name *",
+    "firstNamePlaceholder": "Your first name",
+    "lastName": "Last name *",
+    "lastNamePlaceholder": "Your last name",
+    "email": "Email *",
+    "emailPlaceholder": "you@email.com",
+    "country": "Country *",
+    "select": "Select",
+    "subject": "Subject *",
+    "message": "Message *",
+    "messagePlaceholder": "Describe your request…",
+    "privacy": "This form is protected. We will never send spam.",
+    "submit": "Send message",
+    "required": "Required",
+    "invalidEmail": "Invalid email",
+    "messageTooShort": "Message too short"
+  },
+  "success": {
+    "title": "Message sent!",
+    "subtitle": "Your message has been sent. We will reply within 24h.",
+    "toast": "Message sent! We will reply within 24h.",
+    "another": "Send another message"
+  },
+  "faq": {
+    "eyebrow": "Before you write to us",
+    "titlePrefix": "Instant",
+    "titleHighlight": "answers",
+    "subtitle": "Your question might already be answered below — it'll save you the wait.",
+    "q1": "How long will it take to get a response?",
+    "a1": "Within 24 business hours for requests sent through this form. For a faster reply, WhatsApp and WeChat are the most responsive channels during Chinese business hours (9am–6pm UTC+8).",
+    "q2": "I want to place an order, what should I prepare?",
+    "a2": "The product link or a clear photo, the desired quantity, and your delivery country and city. With these, we'll send you a full quote including the supplier price, shipping, and the total to pay.",
+    "q3": "Do you offer partnerships or B2B volume deals?",
+    "a3": "Yes. Select \"Partnership\" in the form and specify your estimated monthly volumes. Recurring orders benefit from negotiated terms with suppliers and grouped shipping rates.",
+    "q4": "I have an issue with an ongoing order, who do I contact?",
+    "a4": "Use the form with the subject \"Technical support\" and include your order number. Ongoing disputes are handled as a priority and you're kept informed at every step of the resolution with the supplier."
+  }
+}

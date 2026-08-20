@@ -1,0 +1,71 @@
+{
+  "hero": {
+    "badge": "Nos services",
+    "titlePrefix": "Tout ce dont vous avez besoin pour",
+    "titleHighlight": "importer depuis la Chine",
+    "subtitle": "De la recherche du produit jusqu'à la livraison à votre porte — BizKey couvre toute la chaîne du commerce Chine-Afrique."
+  },
+  "s1": {
+    "badge": "IA — Recherche visuelle",
+    "title": "Recherche de fournisseur par image",
+    "desc": "Prenez en photo n'importe quel produit ou envoyez une image depuis votre galerie. Notre IA identifie instantanément le produit sur les plateformes chinoises (1688, Taobao, Alibaba) et vous trouve les meilleurs fournisseurs avec les meilleurs prix.",
+    "b1": "Résultats en moins de 30 secondes",
+    "b2": "TOP 3 fournisseurs recommandés",
+    "b3": "Comparaison prix unitaire vs lot",
+    "b4": "Note et avis des fournisseurs inclus",
+    "cta": "Analyser un produit"
+  },
+  "s2": {
+    "badge": "IA — Analyse financière",
+    "title": "Analyse de rentabilité produit",
+    "desc": "Avant d'investir, sachez exactement combien vous pouvez gagner. Notre IA calcule automatiquement le prix d'achat, les frais de transport vers votre pays, le prix de revente conseillé et la marge estimée pour chaque produit.",
+    "b1": "Calcul automatique de la marge",
+    "b2": "Frais de transport vers l'Afrique",
+    "b3": "Prix de revente conseillé (x2.5–x3)",
+    "b4": "Verdict IA : Bon / Risque / Déconseillé",
+    "cta": "Analyser la rentabilité"
+  },
+  "s3": {
+    "badge": "Service premium",
+    "title": "Sourcing à la demande (agent humain)",
+    "desc": "Pour les commandes complexes ou les gros volumes, notre équipe d'agents basés en Chine prend en charge votre recherche de fournisseur de A à Z. Négociation de prix, vérification du fournisseur, échantillons, contrôle qualité — tout est géré pour vous.",
+    "b1": "Agent dédié basé en Chine",
+    "b2": "Visite physique du fournisseur",
+    "b3": "Négociation en mandarin pour vous",
+    "b4": "Contrôle qualité avant expédition",
+    "cta": "Contacter un agent"
+  },
+  "s4": {
+    "badge": "Logistique",
+    "title": "Suivi logistique Chine → Afrique",
+    "desc": "Votre commande est passée ? On s'occupe de tout. Dédouanement, fret maritime ou aérien, dernière livraison en Afrique. Vous recevez des notifications à chaque étape et un numéro de tracking international.",
+    "b1": "Suivi temps réel disponible",
+    "b2": "Fret maritime et aérien",
+    "b3": "Livraison dans 8 pays africains",
+    "b4": "Gestion douanière incluse",
+    "cta": "En savoir plus"
+  },
+  "faq": {
+    "eyebrow": "Questions sur nos services",
+    "titlePrefix": "Tout savoir sur",
+    "titleHighlight": "nos services",
+    "subtitle": "Recherche par image, analyse de rentabilité, négociation, logistique — voici les réponses aux questions qu'on nous pose le plus.",
+    "q1": "La recherche par image fonctionne-t-elle avec une photo prise au marché ?",
+    "a1": "Oui. Une photo nette du produit suffit, même prise au téléphone dans un marché local. Notre IA identifie le produit sur 1688, Taobao et Alibaba, puis vous renvoie les 3 meilleurs fournisseurs. Évitez simplement les photos floues ou avec plusieurs produits différents dans le cadre.",
+    "q2": "Sur quels critères l'IA sélectionne-t-elle les 3 meilleurs produits ?",
+    "a2": "L'algorithme pondère le volume de ventes, le nombre d'avis clients, les favoris, l'ancienneté du fournisseur sur la plateforme, sa certification, et sa note vendeur (avec un seuil recommandé à 4.0/5). Quand une donnée n'est pas publiée par la plateforme, son poids est redistribué sur les autres critères plutôt que d'être inventé.",
+    "q3": "L'analyse de rentabilité inclut-elle les frais de douane ?",
+    "a3": "L'analyse inclut le prix d'achat, les frais de transport estimés vers votre pays et le prix de revente conseillé. Les droits de douane varient de 20 à 40% selon le pays et la catégorie du produit : nous vous indiquons la fourchette applicable à votre destination pour que vous l'intégriez à votre calcul.",
+    "q4": "Puis-je utiliser vos messages de négociation si je ne parle pas chinois ?",
+    "a4": "C'est précisément l'objectif. Chaque message est généré en mandarin, prêt à être copié-collé dans Alibaba Trade Manager, WeChat ou l'application 1688, avec sa traduction française juste en dessous pour que vous sachiez exactement ce que vous envoyez.",
+    "q5": "Que se passe-t-il si aucune donnée réelle n'est trouvée pour mon lien ?",
+    "a5": "Nous ne fabriquons jamais de fausses données. Si l'API ne récupère pas le produit, le rapport l'indique clairement et vous propose de relancer la recherche par mot-clé ou par image, qui aboutissent dans la grande majorité des cas.",
+    "q6": "Combien de temps prend une analyse complète ?",
+    "a6": "Une analyse standard prend entre 15 et 30 secondes. La recherche des 3 meilleurs produits demande un peu plus de temps car chaque candidat finaliste est vérifié individuellement auprès de la plateforme."
+  },
+  "cta": {
+    "title": "Commencez dès maintenant — c'est gratuit",
+    "subtitle": "3 analyses gratuites sans inscription requise. Testez la puissance de BizKey.",
+    "button": "Analyser un produit gratuitement"
+  }
+}

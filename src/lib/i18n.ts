@@ -4,6 +4,16 @@ import commonFr from '@/locales/fr/common.json'
 import commonEn from '@/locales/en/common.json'
 import landingFr from '@/locales/fr/landing.json'
 import landingEn from '@/locales/en/landing.json'
+import aboutFr from '@/locales/fr/about.json'
+import aboutEn from '@/locales/en/about.json'
+import servicesFr from '@/locales/fr/services.json'
+import servicesEn from '@/locales/en/services.json'
+import contactFr from '@/locales/fr/contact.json'
+import contactEn from '@/locales/en/contact.json'
+import helpFr from '@/locales/fr/help.json'
+import helpEn from '@/locales/en/help.json'
+import pricingFr from '@/locales/fr/pricing.json'
+import pricingEn from '@/locales/en/pricing.json'
 
 export type AppLanguage = 'fr' | 'en'
 export const STORAGE_KEY = 'bizkey-language'
@@ -20,12 +30,12 @@ const initialLanguage: AppLanguage = isLanguage(stored) ? stored : 'fr'
 
 i18n.use(initReactI18next).init({
   resources: {
-    fr: { common: commonFr, landing: landingFr },
-    en: { common: commonEn, landing: landingEn },
+    fr: { common: commonFr, landing: landingFr, about: aboutFr, services: servicesFr, contact: contactFr, help: helpFr, pricing: pricingFr },
+    en: { common: commonEn, landing: landingEn, about: aboutEn, services: servicesEn, contact: contactEn, help: helpEn, pricing: pricingEn },
   },
   lng: initialLanguage,
   fallbackLng: 'fr',
-  ns: ['common', 'landing'],
+  ns: ['common', 'landing', 'about', 'services', 'contact', 'help', 'pricing'],
   defaultNS: 'common',
   interpolation: { escapeValue: false },
   returnNull: false,

@@ -1,0 +1,65 @@
+{
+  "hero": {
+    "badge": "Our story",
+    "titlePrefix": "About",
+    "subtitle": "Making China-Africa trade accessible to every African entrepreneur, regardless of size or capital."
+  },
+  "mission": {
+    "eyebrow": "Our mission",
+    "title": "Democratizing access to Chinese products for Africa",
+    "p1": "Millions of African entrepreneurs want to import products from China but run into barriers: language, lack of trust in suppliers, no international payment methods, and logistical complexity.",
+    "p2": "BizKey was created to break down these barriers. Through artificial intelligence and our network of partners in China and Africa, we make China-Africa trade as simple as sending a WhatsApp message.",
+    "stat1Label": "Orders delivered",
+    "stat2Value": "8 countries",
+    "stat2Label": "Francophone Africa",
+    "stat3Label": "Operating since",
+    "stat4Label": "Mobile Money payments"
+  },
+  "story": {
+    "eyebrow": "Our story",
+    "title": "From idea to platform",
+    "p1": "BizKey was founded in 2024 in Beijing by entrepreneurs passionate about the potential of China-Africa trade. The idea was born from a simple frustration: too many African entrepreneurs were losing money to Alibaba scams or didn't know how to get started.",
+    "p2": "By combining our physical presence in China with cutting-edge artificial intelligence, we built a platform that lets any African entrepreneur find the right supplier, get a transparent quote, and pay with the tools they already use — Mobile Money, Wave, Orange Money.",
+    "p3": "Today, we've supported over 300 successful orders across 8 Francophone African countries. Our goal is 10,000 by 2026, helping every African entrepreneur access the best Chinese products without risk or barriers."
+  },
+  "values": {
+    "eyebrow": "Our values",
+    "title": "What guides us",
+    "v1Title": "Transparency",
+    "v1Desc": "Detailed quotes, photos before shipping, real-time tracking. No surprises.",
+    "v2Title": "Accessibility",
+    "v2Desc": "Mobile Money accepted, small quantities possible. For every entrepreneur.",
+    "v3Title": "Innovation",
+    "v3Desc": "Artificial intelligence to find the best suppliers in seconds.",
+    "v4Title": "Reliability",
+    "v4Desc": "Verified suppliers, quality control, guaranteed refund if something goes wrong."
+  },
+  "team": {
+    "eyebrow": "Our team",
+    "title": "Experts at your service",
+    "m1Role": "Founder & CEO",
+    "m2Role": "Sourcing Manager",
+    "m3Role": "Customer Support"
+  },
+  "faq": {
+    "eyebrow": "Who we are",
+    "titlePrefix": "Questions about",
+    "subtitle": "Our model, our team, and our guarantees — in full transparency.",
+    "q1": "Who's behind BizKey?",
+    "a1": "BizKey was founded in 2024 in Beijing by entrepreneurs working between China and Francophone Africa. The team combines a physical presence in China for quality control with contacts in Abidjan and Dakar for customer service.",
+    "q2": "Are you a middleman or an automated platform?",
+    "a2": "Both. AI does the research and analysis work in seconds, but humans based in China verify suppliers, inspect goods before shipping, and handle disputes. Technology speeds things up — it doesn't replace on-the-ground verification.",
+    "q3": "How do you make money?",
+    "a3": "Two sources: a 5 to 10% commission on orders we manage end-to-end, and subscriptions/credits for using the analysis platform. We never take hidden commissions from Chinese suppliers — our recommendations are never bought.",
+    "q4": "Which countries are you present in?",
+    "a4": "We serve eight Francophone African countries: Senegal, Côte d'Ivoire, Cameroon, Guinea, Mali, Togo, DRC and Benin. Available mobile payment methods vary by country.",
+    "q5": "Is my data and product research confidential?",
+    "a5": "Yes. Your analyses and search history are only visible to you, protected at the database level. We never resell your product ideas or order volumes to third parties."
+  },
+  "cta": {
+    "title": "Ready to order from China?",
+    "subtitle": "Try it for free — 3 free analyses, no account required.",
+    "analyze": "Analyze a product",
+    "contact": "Contact us"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MapPin, MessageCircle, Smartphone, Globe, Loader2, CheckCircle, Send } from 'lucide-react'
 
 function FacebookIcon({ className }: { className?: string }) {
@@ -26,48 +27,49 @@ import { ParticlesBackground } from '@/components/ParticlesBackground'
 import { FaqSection, type FaqItem } from '@/components/FaqSection'
 import { Reveal } from '@/components/motion/Reveal'
 
-const CONTACT_FAQ: FaqItem[] = [
-  {
-    q: "Sous quel délai obtiendrai-je une réponse ?",
-    a: "Sous 24h ouvrées pour les demandes envoyées via ce formulaire. Pour une réponse plus rapide, WhatsApp et WeChat sont les canaux les plus réactifs pendant les heures ouvrables chinoises (9h–18h UTC+8).",
-  },
-  {
-    q: "Je veux passer une commande, que dois-je préparer ?",
-    a: "Le lien du produit ou une photo nette, la quantité souhaitée, votre pays et ville de livraison. Avec ces éléments nous vous renvoyons un devis complet incluant le prix fournisseur, le transport et le total à payer.",
-  },
-  {
-    q: "Proposez-vous des partenariats ou du volume B2B ?",
-    a: "Oui. Sélectionnez « Partenariat » dans le formulaire et précisez vos volumes mensuels estimés. Les commandes récurrentes bénéficient de conditions négociées avec les fournisseurs et de tarifs de transport groupés.",
-  },
-  {
-    q: "J'ai un problème sur une commande en cours, qui contacter ?",
-    a: "Utilisez le formulaire avec le sujet « Support technique » en indiquant votre numéro de commande. Les litiges en cours sont traités en priorité et vous êtes tenu informé à chaque étape de la résolution avec le fournisseur.",
-  },
-]
 import { SiteFooter } from '@/components/SiteFooter'
 import { FormProgress } from '@/components/ui/form-progress'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 
-const COUNTRIES = [
-  'Bénin', 'Togo', 'Sénégal', 'Côte d\'Ivoire', 'Cameroun', 'Mali',
-  'Guinée', 'RD Congo', 'Niger', 'Burkina Faso', 'Autre',
-]
+const COUNTRY_META = [
+  { value: 'Bénin', key: 'benin' },
+  { value: 'Togo', key: 'togo' },
+  { value: 'Sénégal', key: 'senegal' },
+  { value: 'Côte d\'Ivoire', key: 'coteIvoire' },
+  { value: 'Cameroun', key: 'cameroun' },
+  { value: 'Mali', key: 'mali' },
+  { value: 'Guinée', key: 'guinee' },
+  { value: 'RD Congo', key: 'rdCongo' },
+  { value: 'Niger', key: 'niger' },
+  { value: 'Burkina Faso', key: 'burkinaFaso' },
+  { value: 'Autre', key: 'autre' },
+] as const
 
-const SUBJECTS = [
-  'Commande',
-  'Support technique',
-  'Partenariat',
-  'Question sur les tarifs',
-  'Autre',
-]
+const SUBJECT_META = [
+  { value: 'Commande', key: 'commande' },
+  { value: 'Support technique', key: 'support' },
+  { value: 'Partenariat', key: 'partenariat' },
+  { value: 'Question sur les tarifs', key: 'tarifs' },
+  { value: 'Autre', key: 'autre' },
+] as const
 
-const SOCIAL_LINKS = [
+interface SocialLinkMeta {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  valueKey?: 'whatsapp'
+  staticValue?: string
+  href: string
+  color: string
+  bgColor: string
+}
+
+const SOCIAL_LINKS: SocialLinkMeta[] = [
   {
     icon: MessageCircle,
     label: 'WeChat',
-    value: 'bizkey2025',
+    staticValue: 'bizkey2025',
     href: buildWhatsAppUrl(),
     color: 'text-green-500',
     bgColor: 'bg-green-500/10',
@@ -75,7 +77,7 @@ const SOCIAL_LINKS = [
   {
     icon: Smartphone,
     label: 'WhatsApp',
-    value: 'Nous écrire',
+    valueKey: 'whatsapp',
     href: buildWhatsAppUrl(),
     color: 'text-green-400',
     bgColor: 'bg-green-400/10',
@@ -83,7 +85,7 @@ const SOCIAL_LINKS = [
   {
     icon: FacebookIcon,
     label: 'Facebook',
-    value: 'BizKey',
+    staticValue: 'BizKey',
     href: 'https://facebook.com',
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
@@ -91,7 +93,7 @@ const SOCIAL_LINKS = [
   {
     icon: InstagramIcon,
     label: 'Instagram',
-    value: '@bizkey',
+    staticValue: '@bizkey',
     href: 'https://instagram.com',
     color: 'text-pink-500',
     bgColor: 'bg-pink-500/10',
@@ -99,7 +101,7 @@ const SOCIAL_LINKS = [
   {
     icon: Globe,
     label: 'TikTok',
-    value: '@bizkey',
+    staticValue: '@bizkey',
     href: 'https://tiktok.com',
     color: 'text-foreground',
     bgColor: 'bg-secondary',
@@ -125,6 +127,8 @@ const EMPTY_FORM: FormState = {
 }
 
 export default function ContactPage() {
+  const { t } = useTranslation('contact')
+  const CONTACT_FAQ: FaqItem[] = [1, 2, 3, 4].map(n => ({ q: t(`faq.q${n}`), a: t(`faq.a${n}`) }))
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -149,12 +153,12 @@ export default function ContactPage() {
 
   function validate(): boolean {
     const errs: Partial<FormState> = {}
-    if (!form.firstName.trim()) errs.firstName = 'Requis'
-    if (!form.lastName.trim()) errs.lastName = 'Requis'
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Email invalide'
-    if (!form.country) errs.country = 'Requis'
-    if (!form.subject) errs.subject = 'Requis'
-    if (!form.message.trim() || form.message.trim().length < 10) errs.message = 'Message trop court'
+    if (!form.firstName.trim()) errs.firstName = t('form.required')
+    if (!form.lastName.trim()) errs.lastName = t('form.required')
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = t('form.invalidEmail')
+    if (!form.country) errs.country = t('form.required')
+    if (!form.subject) errs.subject = t('form.required')
+    if (!form.message.trim() || form.message.trim().length < 10) errs.message = t('form.messageTooShort')
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -179,7 +183,7 @@ export default function ContactPage() {
       setForm(EMPTY_FORM)
     } catch {
       // If table doesn't exist yet, just show success (graceful degradation)
-      toast.success('Message envoyé ! Nous vous répondrons sous 24h.')
+      toast.success(t('success.toast'))
       setSent(true)
       setForm(EMPTY_FORM)
     } finally {
@@ -200,13 +204,13 @@ export default function ContactPage() {
           <Reveal className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
             <Badge variant="secondary" className="rounded-full mb-6">
               <Send className="h-3.5 w-3.5 text-primary mr-1" />
-              Contact
+              {t('hero.badge')}
             </Badge>
             <h1 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-4">
-              Parlons de votre projet
+              {t('hero.title')}
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Une question, une commande, un partenariat ? Notre équipe vous répond sous 24h.
+              {t('hero.subtitle')}
             </p>
           </Reveal>
         </section>
@@ -218,20 +222,20 @@ export default function ContactPage() {
               {/* Left — Contact info */}
               <div className="md:col-span-2 space-y-6">
                 <div>
-                  <h2 className="font-serif text-xl font-bold mb-4">Coordonnées</h2>
+                  <h2 className="font-serif text-xl font-bold mb-4">{t('info.coordinatesTitle')}</h2>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3 text-sm">
                       <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium">Adresse</p>
-                        <p className="text-muted-foreground">Beijing, Haidian District, China</p>
+                        <p className="font-medium">{t('info.addressLabel')}</p>
+                        <p className="text-muted-foreground">{t('info.address')}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h2 className="font-serif text-xl font-bold mb-4">Réseaux sociaux</h2>
+                  <h2 className="font-serif text-xl font-bold mb-4">{t('info.socialTitle')}</h2>
                   <div className="space-y-3">
                     {SOCIAL_LINKS.map(link => (
                       <a
@@ -246,7 +250,7 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <p className="text-sm font-medium group-hover:text-primary transition-colors">{link.label}</p>
-                          <p className="text-xs text-muted-foreground">{link.value}</p>
+                          <p className="text-xs text-muted-foreground">{link.valueKey ? t('info.whatsappValue') : link.staticValue}</p>
                         </div>
                       </a>
                     ))}
@@ -263,70 +267,79 @@ export default function ContactPage() {
                         <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-950/30 grid place-items-center mx-auto">
                           <CheckCircle className="h-8 w-8 text-green-600" />
                         </div>
-                        <h3 className="font-serif text-xl font-bold">Message envoyé !</h3>
+                        <h3 className="font-serif text-xl font-bold">{t('success.title')}</h3>
                         <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                          Votre message a bien été envoyé. Nous vous répondrons sous 24h.
+                          {t('success.subtitle')}
                         </p>
                         <Button variant="outline" className="rounded-full mt-2" onClick={() => setSent(false)}>
-                          Envoyer un autre message
+                          {t('success.another')}
                         </Button>
                       </div>
                     ) : (
                       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                        <FormProgress percent={formProgress} label="Votre message" />
+                        <FormProgress
+                          percent={formProgress}
+                          label={t('form.progressLabel')}
+                          milestones={{
+                            start: t('form.milestoneStart'),
+                            progress: t('form.milestoneProgress'),
+                            almost: t('form.milestoneAlmost'),
+                            done: t('form.milestoneDone'),
+                          }}
+                        />
 
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <Label>Prénom *</Label>
-                            <Input value={form.firstName} onChange={update('firstName')} placeholder="Votre prénom" />
+                            <Label>{t('form.firstName')}</Label>
+                            <Input value={form.firstName} onChange={update('firstName')} placeholder={t('form.firstNamePlaceholder')} />
                             {errors.firstName && <p className="text-xs text-destructive">{errors.firstName}</p>}
                           </div>
                           <div className="space-y-1">
-                            <Label>Nom *</Label>
-                            <Input value={form.lastName} onChange={update('lastName')} placeholder="Votre nom" />
+                            <Label>{t('form.lastName')}</Label>
+                            <Input value={form.lastName} onChange={update('lastName')} placeholder={t('form.lastNamePlaceholder')} />
                             {errors.lastName && <p className="text-xs text-destructive">{errors.lastName}</p>}
                           </div>
                         </div>
 
                         <div className="space-y-1">
-                          <Label>Email *</Label>
-                          <Input type="email" value={form.email} onChange={update('email')} placeholder="vous@email.com" />
+                          <Label>{t('form.email')}</Label>
+                          <Input type="email" value={form.email} onChange={update('email')} placeholder={t('form.emailPlaceholder')} />
                           {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                         </div>
 
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div className="space-y-1">
-                            <Label>Pays *</Label>
+                            <Label>{t('form.country')}</Label>
                             <select
                               value={form.country}
                               onChange={update('country')}
                               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
                             >
-                              <option value="">Sélectionner</option>
-                              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                              <option value="">{t('form.select')}</option>
+                              {COUNTRY_META.map(c => <option key={c.value} value={c.value}>{t(`countries.${c.key}`)}</option>)}
                             </select>
                             {errors.country && <p className="text-xs text-destructive">{errors.country}</p>}
                           </div>
                           <div className="space-y-1">
-                            <Label>Objet *</Label>
+                            <Label>{t('form.subject')}</Label>
                             <select
                               value={form.subject}
                               onChange={update('subject')}
                               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
                             >
-                              <option value="">Sélectionner</option>
-                              {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                              <option value="">{t('form.select')}</option>
+                              {SUBJECT_META.map(s => <option key={s.value} value={s.value}>{t(`subjects.${s.key}`)}</option>)}
                             </select>
                             {errors.subject && <p className="text-xs text-destructive">{errors.subject}</p>}
                           </div>
                         </div>
 
                         <div className="space-y-1">
-                          <Label>Message *</Label>
+                          <Label>{t('form.message')}</Label>
                           <textarea
                             value={form.message}
                             onChange={update('message')}
-                            placeholder="Décrivez votre demande…"
+                            placeholder={t('form.messagePlaceholder')}
                             rows={5}
                             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                           />
@@ -334,14 +347,14 @@ export default function ContactPage() {
                         </div>
 
                         <p className="text-xs text-muted-foreground">
-                          Ce formulaire est protégé. Nous n'enverrons jamais de spam.
+                          {t('form.privacy')}
                         </p>
 
                         <Button type="submit" className="w-full rounded-xl gap-2 h-11" disabled={loading}>
                           {loading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <><Send className="h-4 w-4" />Envoyer le message</>
+                            <><Send className="h-4 w-4" />{t('form.submit')}</>
                           )}
                         </Button>
                       </form>
@@ -355,9 +368,9 @@ export default function ContactPage() {
 
         <FaqSection
           items={CONTACT_FAQ}
-          eyebrow="Avant de nous écrire"
-          title={<>Réponses <span className="text-primary">immédiates</span></>}
-          subtitle="Votre question a peut-être déjà sa réponse ci-dessous — cela vous évitera d'attendre."
+          eyebrow={t('faq.eyebrow')}
+          title={<>{t('faq.titlePrefix')} <span className="text-primary">{t('faq.titleHighlight')}</span></>}
+          subtitle={t('faq.subtitle')}
           showContactCta={false}
         />
       </main>

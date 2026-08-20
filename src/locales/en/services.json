@@ -1,0 +1,71 @@
+{
+  "hero": {
+    "badge": "Our services",
+    "titlePrefix": "Everything you need to",
+    "titleHighlight": "import from China",
+    "subtitle": "From finding the product to delivery at your door — BizKey covers the entire China-Africa trade chain."
+  },
+  "s1": {
+    "badge": "AI — Visual search",
+    "title": "Find suppliers by image",
+    "desc": "Take a photo of any product or send an image from your gallery. Our AI instantly identifies the product on Chinese platforms (1688, Taobao, Alibaba) and finds you the best suppliers at the best prices.",
+    "b1": "Results in under 30 seconds",
+    "b2": "TOP 3 recommended suppliers",
+    "b3": "Unit price vs bulk comparison",
+    "b4": "Supplier rating and reviews included",
+    "cta": "Analyze a product"
+  },
+  "s2": {
+    "badge": "AI — Financial analysis",
+    "title": "Product profitability analysis",
+    "desc": "Before investing, know exactly how much you can earn. Our AI automatically calculates the purchase price, shipping costs to your country, recommended resale price, and estimated margin for each product.",
+    "b1": "Automatic margin calculation",
+    "b2": "Shipping costs to Africa",
+    "b3": "Recommended resale price (x2.5–x3)",
+    "b4": "AI verdict: Good / Risky / Not recommended",
+    "cta": "Analyze profitability"
+  },
+  "s3": {
+    "badge": "Premium service",
+    "title": "On-demand sourcing (human agent)",
+    "desc": "For complex orders or large volumes, our team of China-based agents handles your supplier search from A to Z. Price negotiation, supplier verification, samples, quality control — all managed for you.",
+    "b1": "Dedicated agent based in China",
+    "b2": "Physical supplier visit",
+    "b3": "Negotiation in Mandarin on your behalf",
+    "b4": "Quality control before shipping",
+    "cta": "Contact an agent"
+  },
+  "s4": {
+    "badge": "Logistics",
+    "title": "China → Africa logistics tracking",
+    "desc": "Your order is placed? We take care of everything. Customs clearance, sea or air freight, final delivery in Africa. You receive notifications at every step and an international tracking number.",
+    "b1": "Real-time tracking available",
+    "b2": "Sea and air freight",
+    "b3": "Delivery to 8 African countries",
+    "b4": "Customs management included",
+    "cta": "Learn more"
+  },
+  "faq": {
+    "eyebrow": "Questions about our services",
+    "titlePrefix": "Everything about",
+    "titleHighlight": "our services",
+    "subtitle": "Image search, profitability analysis, negotiation, logistics — here are the answers to the questions we're asked most.",
+    "q1": "Does image search work with a photo taken at the market?",
+    "a1": "Yes. A clear photo of the product is enough, even taken on a phone in a local market. Our AI identifies the product on 1688, Taobao, and Alibaba, then returns the 3 best suppliers. Just avoid blurry photos or ones with several different products in frame.",
+    "q2": "What criteria does the AI use to select the top 3 products?",
+    "a2": "The algorithm weighs sales volume, number of customer reviews, favorites, the supplier's tenure on the platform, its certification, and its seller rating (with a recommended threshold of 4.0/5). When a data point isn't published by the platform, its weight is redistributed across the other criteria rather than being invented.",
+    "q3": "Does the profitability analysis include customs fees?",
+    "a3": "The analysis includes the purchase price, estimated shipping costs to your country, and the recommended resale price. Customs duties vary from 20 to 40% depending on the country and product category: we give you the applicable range for your destination so you can factor it into your calculation.",
+    "q4": "Can I use your negotiation messages if I don't speak Chinese?",
+    "a4": "That's exactly the point. Every message is generated in Mandarin, ready to be copy-pasted into Alibaba Trade Manager, WeChat, or the 1688 app, with its French translation right below so you know exactly what you're sending.",
+    "q5": "What happens if no real data is found for my link?",
+    "a5": "We never fabricate fake data. If the API can't retrieve the product, the report states it clearly and suggests retrying the search by keyword or by image, which succeed in the vast majority of cases.",
+    "q6": "How long does a full analysis take?",
+    "a6": "A standard analysis takes between 15 and 30 seconds. Finding the top 3 products takes a bit longer since each finalist candidate is individually verified with the platform."
+  },
+  "cta": {
+    "title": "Get started now — it's free",
+    "subtitle": "3 free analyses, no signup required. Test the power of BizKey.",
+    "button": "Analyze a product for free"
+  }
+}

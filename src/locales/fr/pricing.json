@@ -1,0 +1,58 @@
+{
+  "loadingPlans": "Chargement des formules…",
+  "hero": {
+    "badge": "Tarifs transparents",
+    "titlePrefix": "Choisissez votre",
+    "titleHighlight": "formule",
+    "subtitle": "Abonnement mensuel ou recharge à la carte — payez uniquement ce que vous utilisez."
+  },
+  "switcher": {
+    "sourcing": "BizKey Sourcing",
+    "assistant": "BizKey WhatsApp Assistant"
+  },
+  "tabs": {
+    "subscription": "Abonnement",
+    "payg": "À la carte (PAYG)"
+  },
+  "popular": "★ Populaire",
+  "popularShort": "Populaire",
+  "perMonth": "/mois",
+  "creditsBasic": "Basic",
+  "creditsAdvanced": "Advanced",
+  "paygNote": "Achetez des crédits une fois, sans abonnement. Ils n'expirent pas.",
+  "paygBadge": "PAYG",
+  "paygCreditsBasic": "crédits Basic",
+  "paygCreditsAdvanced": "crédits Advanced",
+  "buy": "Acheter",
+  "creditTypes": {
+    "title": "Types de crédits",
+    "basicLabel": "Basic",
+    "basicTitle": "Tâches rapides",
+    "basicDesc": "Analyse standard, recherche d'image simple, messages de contact.",
+    "advancedLabel": "Advanced",
+    "advancedTitle": "Analyse profonde",
+    "advancedDesc": "Rapport détaillé avec images, comparaison multi-sources, stratégie de négociation complète.",
+    "priorityNote": "Priorité de consommation : crédits d'abonnement d'abord, puis crédits PAYG."
+  },
+  "faq": {
+    "title": "Questions fréquentes sur les tarifs",
+    "q1": "Comment payer depuis l'Afrique ?",
+    "a1": "Nous acceptons Orange Money, Wave, MTN Mobile Money, Moov Money et les virements bancaires locaux. Vous n'avez pas besoin d'une carte Visa ou d'un compte bancaire international. Le paiement se fait directement depuis votre téléphone, comme d'habitude.",
+    "q2": "Quelle est la différence entre Basic et Advanced ?",
+    "a2": "Les crédits Basic permettent des analyses rapides : recherche d'un fournisseur par image, rapport sommaire, messages de contact. Les crédits Advanced déclenchent une analyse approfondie avec rapport complet (images, comparaison multi-sources, calcul de rentabilité détaillé, stratégie de négociation, estimation des risques douaniers).",
+    "q3": "Mobile Money est-il vraiment supporté ?",
+    "a3": "Oui, totalement. Orange Money, Wave, MTN MoMo, Moov Money sont tous acceptés. Pour les packs PAYG, le paiement se fait en ligne sur notre plateforme sécurisée. Pour les abonnements, vous recevez un lien de paiement mobile à chaque renouvellement mensuel.",
+    "q4": "Puis-je annuler mon abonnement à tout moment ?",
+    "a4": "Oui, sans frais. Vous pouvez annuler votre abonnement Standard ou Pro depuis votre espace \"Paramètres\" à tout moment. L'annulation prend effet à la fin de la période en cours — vous continuez à bénéficier de vos crédits jusqu'à la date de renouvellement.",
+    "q5": "Les crédits inutilisés expirent-ils ?",
+    "a5": "Les crédits issus des abonnements mensuels expirent à la fin du mois de facturation (pas de report). Les crédits achetés en PAYG (packs à la carte) sont valides 12 mois à compter de la date d'achat, sans limite de report."
+  },
+  "assistant": {
+    "numberSingular": "numéro",
+    "numberPlural": "numéros",
+    "convPerMonth": "conv./mois",
+    "subscribe": "S'abonner",
+    "howTitle": "Comment ça démarre ?",
+    "howDesc": "BizKey WhatsApp Assistant connecte votre numéro WhatsApp Business à un agent automatisé : réponses instantanées, base de connaissances, et transfert vers un humain dès que nécessaire. Contactez-nous pour connecter votre numéro et configurer votre assistant — la mise en route est accompagnée par notre équipe."
+  }
+}

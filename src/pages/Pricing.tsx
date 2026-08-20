@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Check, Zap, Crown, Sparkles, Package, Loader2, Bot, Search as SearchIcon, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ function getIcon(name?: string | null) {
 }
 
 export default function PricingPage() {
+  const { t } = useTranslation('pricing')
   const { user } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -67,7 +69,7 @@ export default function PricingPage() {
   const features = (plan: Plan) => (meta(plan).features as string[] | undefined) ?? []
   const excludedFeatures = (plan: Plan) => (meta(plan).excluded_features as string[] | undefined) ?? []
   const isPopular = (plan: Plan) => (meta(plan).is_popular as boolean | undefined) ?? false
-  const ctaLabel = (plan: Plan) => (meta(plan).cta_label as string | undefined) ?? 'Acheter'
+  const ctaLabel = (plan: Plan) => (meta(plan).cta_label as string | undefined) ?? t('buy')
   const ctaVariant = (plan: Plan) => (meta(plan).cta_variant as 'default' | 'outline' | undefined) ?? 'default'
   const description = (plan: Plan) => (meta(plan).description as string | undefined) ?? ''
   const tagColor = (plan: Plan) => (meta(plan).tag_color as string | undefined) ?? 'bg-secondary text-secondary-foreground'
@@ -80,7 +82,7 @@ export default function PricingPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Chargement des formules…</span>
+            <span className="text-sm text-muted-foreground">{t('loadingPlans')}</span>
           </div>
         </div>
       </div>
@@ -99,13 +101,13 @@ export default function PricingPage() {
         <Reveal className="relative max-w-6xl mx-auto w-full px-4 text-center space-y-3">
           <Badge variant="secondary" className="rounded-full mb-2">
             <Sparkles className="h-3.5 w-3.5 text-primary mr-1" />
-            Tarifs transparents
+            {t('hero.badge')}
           </Badge>
           <h1 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight">
-            Choisissez votre <span className="text-primary">formule</span>
+            {t('hero.titlePrefix')} <span className="text-primary">{t('hero.titleHighlight')}</span>
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Abonnement mensuel ou recharge à la carte — payez uniquement ce que vous utilisez.
+            {t('hero.subtitle')}
           </p>
         </Reveal>
       </section>
@@ -122,7 +124,7 @@ export default function PricingPage() {
               }`}
             >
               <SearchIcon className="h-4 w-4" />
-              BizKey Sourcing
+              {t('switcher.sourcing')}
             </button>
             <button
               onClick={() => setProduct('assistant')}
@@ -131,7 +133,7 @@ export default function PricingPage() {
               }`}
             >
               <Bot className="h-4 w-4" />
-              BizKey WhatsApp Assistant
+              {t('switcher.assistant')}
             </button>
           </div>
         </div>
@@ -156,8 +158,8 @@ export default function PricingPage() {
         <>
         <Tabs value={tab} onValueChange={v => setTab(v as typeof tab)} className="w-full">
           <TabsList className="grid w-full max-w-sm mx-auto grid-cols-2">
-            <TabsTrigger value="subscription">Abonnement</TabsTrigger>
-            <TabsTrigger value="payg">À la carte (PAYG)</TabsTrigger>
+            <TabsTrigger value="subscription">{t('tabs.subscription')}</TabsTrigger>
+            <TabsTrigger value="payg">{t('tabs.payg')}</TabsTrigger>
           </TabsList>
 
           {/* ── Subscription Plans ── */}
@@ -193,7 +195,7 @@ export default function PricingPage() {
                             transition={{ duration: 1.4, repeat: Infinity, ease: 'linear', repeatType: 'loop' }}
                             className="text-xs px-3 py-1 rounded-full border border-primary/30 bg-[linear-gradient(to_right,#F2C94C,#F7E7A7,#F2C94C)] [background-size:200%] text-transparent bg-clip-text font-semibold shrink-0"
                           >
-                            ★ Populaire
+                            {t('popular')}
                           </motion.div>
                         ) : plan.duration_days ? (
                           <Badge className="text-xs bg-secondary text-secondary-foreground shrink-0">{plan.duration_days}j</Badge>
@@ -204,15 +206,15 @@ export default function PricingPage() {
                           <div className="flex items-baseline gap-1">
                             <span className="text-4xl font-extrabold tracking-tight">{formatPrice(Number(plan.price_yuan))}</span>
                             {Number(plan.price_yuan) > 0 && (
-                              <span className={`font-medium ${popular ? 'text-white/60' : 'text-muted-foreground'}`}>/mois</span>
+                              <span className={`font-medium ${popular ? 'text-white/60' : 'text-muted-foreground'}`}>{t('perMonth')}</span>
                             )}
                           </div>
                           {description(plan) && (
                             <p className={`text-xs mt-1 ${popular ? 'text-white/70' : 'text-muted-foreground'}`}>{description(plan)}</p>
                           )}
                           <div className="flex gap-2 text-xs mt-2">
-                            <span className={`rounded-full px-2.5 py-0.5 font-medium ${popular ? 'bg-white/10' : 'bg-muted'}`}>{plan.basic_credits} Basic</span>
-                            <span className={`rounded-full px-2.5 py-0.5 font-medium ${popular ? 'bg-white/10' : 'bg-muted'}`}>{plan.advanced_credits} Advanced</span>
+                            <span className={`rounded-full px-2.5 py-0.5 font-medium ${popular ? 'bg-white/10' : 'bg-muted'}`}>{plan.basic_credits} {t('creditsBasic')}</span>
+                            <span className={`rounded-full px-2.5 py-0.5 font-medium ${popular ? 'bg-white/10' : 'bg-muted'}`}>{plan.advanced_credits} {t('creditsAdvanced')}</span>
                           </div>
                         </div>
 
@@ -250,7 +252,7 @@ export default function PricingPage() {
           {tab === 'payg' && (
             <div className="mt-8 space-y-4">
               <p className="text-center text-sm text-muted-foreground">
-                Achetez des crédits une fois, sans abonnement. Ils n'expirent pas.
+                {t('paygNote')}
               </p>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto">
                 {paygPacks.map((pack, i) => {
@@ -277,26 +279,26 @@ export default function PricingPage() {
                       >
                         {popular && (
                           <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                            <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5">Populaire</Badge>
+                            <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5">{t('popularShort')}</Badge>
                           </div>
                         )}
                         <CardContent className="pt-5 pb-4 space-y-3">
                           <div className="flex items-center gap-2">
                             {Icon && <Icon className="h-4 w-4 text-primary" />}
                             <span className="font-semibold text-sm">{pack.display_name}</span>
-                            <Badge className={`ml-auto text-xs ${tagColor(pack)}`}>PAYG</Badge>
+                            <Badge className={`ml-auto text-xs ${tagColor(pack)}`}>{t('paygBadge')}</Badge>
                           </div>
                           <div className="text-2xl font-bold">{formatPrice(Number(pack.price_yuan))}</div>
                           <p className="text-xs text-muted-foreground">{description(pack)}</p>
                           <div className="flex flex-col gap-1 text-xs">
                             <span className="flex items-center gap-1">
                               <Check className="h-3 w-3 text-green-500" />
-                              {pack.basic_credits} crédits Basic
+                              {pack.basic_credits} {t('paygCreditsBasic')}
                             </span>
                             {pack.advanced_credits > 0 && (
                               <span className="flex items-center gap-1">
                                 <Check className="h-3 w-3 text-purple-500" />
-                                {pack.advanced_credits} crédits Advanced
+                                {pack.advanced_credits} {t('paygCreditsAdvanced')}
                               </span>
                             )}
                           </div>
@@ -305,7 +307,7 @@ export default function PricingPage() {
                             className="w-full transition-transform duration-200 hover:scale-[1.02]"
                             onClick={e => { e.stopPropagation(); handleSelectPlan(pack.name) }}
                           >
-                            Acheter
+                            {t('buy')}
                           </Button>
                         </CardContent>
                       </Card>
@@ -319,54 +321,33 @@ export default function PricingPage() {
 
         {/* Credit types */}
         <div className="max-w-3xl mx-auto border rounded-xl p-6 bg-card space-y-4">
-          <h2 className="font-semibold text-base">Types de crédits</h2>
+          <h2 className="font-semibold text-base">{t('creditTypes.title')}</h2>
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="rounded bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-2 py-0.5 text-xs font-medium">Basic</span>
-                <span className="font-medium">Tâches rapides</span>
+                <span className="rounded bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-2 py-0.5 text-xs font-medium">{t('creditTypes.basicLabel')}</span>
+                <span className="font-medium">{t('creditTypes.basicTitle')}</span>
               </div>
-              <p className="text-muted-foreground text-xs">Analyse standard, recherche d'image simple, messages de contact.</p>
+              <p className="text-muted-foreground text-xs">{t('creditTypes.basicDesc')}</p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 px-2 py-0.5 text-xs font-medium">Advanced</span>
-                <span className="font-medium">Analyse profonde</span>
+                <span className="rounded bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 px-2 py-0.5 text-xs font-medium">{t('creditTypes.advancedLabel')}</span>
+                <span className="font-medium">{t('creditTypes.advancedTitle')}</span>
               </div>
-              <p className="text-muted-foreground text-xs">Rapport détaillé avec images, comparaison multi-sources, stratégie de négociation complète.</p>
+              <p className="text-muted-foreground text-xs">{t('creditTypes.advancedDesc')}</p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground border-t pt-3">
-            Priorité de consommation : crédits d'abonnement d'abord, puis crédits PAYG.
+            {t('creditTypes.priorityNote')}
           </p>
         </div>
 
         {/* FAQ */}
         <div className="max-w-3xl mx-auto space-y-4 pb-8">
-          <h2 className="font-semibold text-xl text-center">Questions fréquentes sur les tarifs</h2>
+          <h2 className="font-semibold text-xl text-center">{t('faq.title')}</h2>
           <Accordion type="single" collapsible className="space-y-3">
-            {[
-              {
-                q: "Comment payer depuis l'Afrique ?",
-                a: "Nous acceptons Orange Money, Wave, MTN Mobile Money, Moov Money et les virements bancaires locaux. Vous n'avez pas besoin d'une carte Visa ou d'un compte bancaire international. Le paiement se fait directement depuis votre téléphone, comme d'habitude.",
-              },
-              {
-                q: "Quelle est la différence entre Basic et Advanced ?",
-                a: "Les crédits Basic permettent des analyses rapides : recherche d'un fournisseur par image, rapport sommaire, messages de contact. Les crédits Advanced déclenchent une analyse approfondie avec rapport complet (images, comparaison multi-sources, calcul de rentabilité détaillé, stratégie de négociation, estimation des risques douaniers).",
-              },
-              {
-                q: "Mobile Money est-il vraiment supporté ?",
-                a: "Oui, totalement. Orange Money, Wave, MTN MoMo, Moov Money sont tous acceptés. Pour les packs PAYG, le paiement se fait en ligne sur notre plateforme sécurisée. Pour les abonnements, vous recevez un lien de paiement mobile à chaque renouvellement mensuel.",
-              },
-              {
-                q: "Puis-je annuler mon abonnement à tout moment ?",
-                a: "Oui, sans frais. Vous pouvez annuler votre abonnement Standard ou Pro depuis votre espace \"Paramètres\" à tout moment. L'annulation prend effet à la fin de la période en cours — vous continuez à bénéficier de vos crédits jusqu'à la date de renouvellement.",
-              },
-              {
-                q: "Les crédits inutilisés expirent-ils ?",
-                a: "Les crédits issus des abonnements mensuels expirent à la fin du mois de facturation (pas de report). Les crédits achetés en PAYG (packs à la carte) sont valides 12 mois à compter de la date d'achat, sans limite de report.",
-              },
-            ].map((item, i) => (
+            {[1, 2, 3, 4, 5].map(n => ({ q: t(`faq.q${n}`), a: t(`faq.a${n}`) })).map((item, i) => (
               <AccordionItem
                 key={i}
                 value={`faq-${i}`}
@@ -405,23 +386,23 @@ export default function PricingPage() {
                         <span className="font-bold text-lg">{plan.display_name}</span>
                       </div>
                       {plan.is_popular && (
-                        <Badge className="text-xs bg-white/15 text-white border-white/30 shrink-0">★ Populaire</Badge>
+                        <Badge className="text-xs bg-white/15 text-white border-white/30 shrink-0">{t('popular')}</Badge>
                       )}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
                         <div className="flex items-baseline gap-1">
                           <span className="text-4xl font-extrabold tracking-tight">{formatPrice(Number(plan.price_yuan))}</span>
-                          <span className={`font-medium ${plan.is_popular ? 'text-white/70' : 'text-muted-foreground'}`}>/mois</span>
+                          <span className={`font-medium ${plan.is_popular ? 'text-white/70' : 'text-muted-foreground'}`}>{t('perMonth')}</span>
                         </div>
                         <div className="flex gap-2 text-xs mt-2 flex-wrap">
-                          <span className={`rounded-full px-2.5 py-0.5 font-medium ${plan.is_popular ? 'bg-white/15' : 'bg-muted'}`}>{plan.max_numbers} numéro{plan.max_numbers > 1 ? 's' : ''}</span>
-                          <span className={`rounded-full px-2.5 py-0.5 font-medium ${plan.is_popular ? 'bg-white/15' : 'bg-muted'}`}>{plan.max_conversations_per_month.toLocaleString('fr-FR')} conv./mois</span>
+                          <span className={`rounded-full px-2.5 py-0.5 font-medium ${plan.is_popular ? 'bg-white/15' : 'bg-muted'}`}>{plan.max_numbers} {plan.max_numbers > 1 ? t('assistant.numberPlural') : t('assistant.numberSingular')}</span>
+                          <span className={`rounded-full px-2.5 py-0.5 font-medium ${plan.is_popular ? 'bg-white/15' : 'bg-muted'}`}>{plan.max_conversations_per_month.toLocaleString('fr-FR')} {t('assistant.convPerMonth')}</span>
                         </div>
                       </div>
 
                       <Button asChild variant={plan.is_popular ? 'secondary' : 'default'} className="w-full transition-transform duration-200 hover:scale-[1.02]">
-                        <Link to={`/checkout-assistant?plan=${plan.name}`}>S'abonner</Link>
+                        <Link to={`/checkout-assistant?plan=${plan.name}`}>{t('assistant.subscribe')}</Link>
                       </Button>
 
                       <ul className="flex flex-col gap-2.5 pt-1 text-sm">
@@ -440,11 +421,9 @@ export default function PricingPage() {
 
             <div className="max-w-3xl mx-auto border rounded-xl p-6 bg-card space-y-3 text-center">
               <MessageCircle className="h-8 w-8 text-blue-600 mx-auto" />
-              <h2 className="font-semibold text-base">Comment ça démarre ?</h2>
+              <h2 className="font-semibold text-base">{t('assistant.howTitle')}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                BizKey WhatsApp Assistant connecte votre numéro WhatsApp Business à un agent automatisé : réponses instantanées,
-                base de connaissances, et transfert vers un humain dès que nécessaire. Contactez-nous pour connecter votre numéro
-                et configurer votre assistant — la mise en route est accompagnée par notre équipe.
+                {t('assistant.howDesc')}
               </p>
             </div>
           </div>

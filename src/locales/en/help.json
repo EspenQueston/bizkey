@@ -1,0 +1,18 @@
+{
+  "hero": {
+    "badge": "Help center",
+    "titlePrefix": "How can we",
+    "titleHighlight": "help you",
+    "subtitle": "The most requested answers about BizKey Sourcing and BizKey WhatsApp Assistant."
+  },
+  "loading": "Loading...",
+  "empty": {
+    "title": "No articles yet",
+    "subtitle": "Our team updates the help center regularly — in the meantime, contact us directly."
+  },
+  "faq": {
+    "eyebrow": "Knowledge base",
+    "titlePrefix": "Frequently",
+    "titleHighlight": "asked questions"
+  }
+}

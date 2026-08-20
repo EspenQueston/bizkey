@@ -1,0 +1,58 @@
+{
+  "loadingPlans": "Loading plans…",
+  "hero": {
+    "badge": "Transparent pricing",
+    "titlePrefix": "Choose your",
+    "titleHighlight": "plan",
+    "subtitle": "Monthly subscription or pay-as-you-go top-up — pay only for what you use."
+  },
+  "switcher": {
+    "sourcing": "BizKey Sourcing",
+    "assistant": "BizKey WhatsApp Assistant"
+  },
+  "tabs": {
+    "subscription": "Subscription",
+    "payg": "Pay-as-you-go (PAYG)"
+  },
+  "popular": "★ Popular",
+  "popularShort": "Popular",
+  "perMonth": "/mo",
+  "creditsBasic": "Basic",
+  "creditsAdvanced": "Advanced",
+  "paygNote": "Buy credits once, no subscription. They never expire.",
+  "paygBadge": "PAYG",
+  "paygCreditsBasic": "Basic credits",
+  "paygCreditsAdvanced": "Advanced credits",
+  "buy": "Buy",
+  "creditTypes": {
+    "title": "Credit types",
+    "basicLabel": "Basic",
+    "basicTitle": "Quick tasks",
+    "basicDesc": "Standard analysis, simple image search, contact messages.",
+    "advancedLabel": "Advanced",
+    "advancedTitle": "Deep analysis",
+    "advancedDesc": "Detailed report with images, multi-source comparison, full negotiation strategy.",
+    "priorityNote": "Consumption priority: subscription credits first, then PAYG credits."
+  },
+  "faq": {
+    "title": "Frequently asked pricing questions",
+    "q1": "How can I pay from Africa?",
+    "a1": "We accept Orange Money, Wave, MTN Mobile Money, Moov Money, and local bank transfers. You don't need a Visa card or an international bank account. Payment is made directly from your phone, as usual.",
+    "q2": "What's the difference between Basic and Advanced?",
+    "a2": "Basic credits power quick analyses: finding a supplier by image, summary report, contact messages. Advanced credits trigger a deep analysis with a full report (images, multi-source comparison, detailed profitability calculation, negotiation strategy, customs risk estimate).",
+    "q3": "Is Mobile Money really supported?",
+    "a3": "Yes, fully. Orange Money, Wave, MTN MoMo, and Moov Money are all accepted. For PAYG packs, payment happens online on our secure platform. For subscriptions, you receive a mobile payment link on each monthly renewal.",
+    "q4": "Can I cancel my subscription at any time?",
+    "a4": "Yes, at no cost. You can cancel your Standard or Pro subscription from your \"Settings\" area at any time. Cancellation takes effect at the end of the current period — you keep your credits until the renewal date.",
+    "q5": "Do unused credits expire?",
+    "a5": "Credits from monthly subscriptions expire at the end of the billing month (no rollover). Credits purchased via PAYG (one-off packs) are valid for 12 months from the purchase date, with no rollover limit."
+  },
+  "assistant": {
+    "numberSingular": "number",
+    "numberPlural": "numbers",
+    "convPerMonth": "conv./mo",
+    "subscribe": "Subscribe",
+    "howTitle": "How does it start?",
+    "howDesc": "BizKey WhatsApp Assistant connects your WhatsApp Business number to an automated agent: instant replies, a knowledge base, and handoff to a human whenever needed. Contact us to connect your number and configure your assistant — our team guides you through setup."
+  }
+}

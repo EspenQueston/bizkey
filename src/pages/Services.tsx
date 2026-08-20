@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowRight, Search, BarChart3, Users, Truck, Sparkles, CheckCircle, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -6,104 +7,26 @@ import { SiteNavbar } from '@/components/SiteNavbar'
 import { ParticlesBackground } from '@/components/ParticlesBackground'
 import { FaqSection, type FaqItem } from '@/components/FaqSection'
 import { Reveal } from '@/components/motion/Reveal'
-
-const SERVICES_FAQ: FaqItem[] = [
-  {
-    q: "La recherche par image fonctionne-t-elle avec une photo prise au marché ?",
-    a: "Oui. Une photo nette du produit suffit, même prise au téléphone dans un marché local. Notre IA identifie le produit sur 1688, Taobao et Alibaba, puis vous renvoie les 3 meilleurs fournisseurs. Évitez simplement les photos floues ou avec plusieurs produits différents dans le cadre.",
-  },
-  {
-    q: "Sur quels critères l'IA sélectionne-t-elle les 3 meilleurs produits ?",
-    a: "L'algorithme pondère le volume de ventes, le nombre d'avis clients, les favoris, l'ancienneté du fournisseur sur la plateforme, sa certification, et sa note vendeur (avec un seuil recommandé à 4.0/5). Quand une donnée n'est pas publiée par la plateforme, son poids est redistribué sur les autres critères plutôt que d'être inventé.",
-  },
-  {
-    q: "L'analyse de rentabilité inclut-elle les frais de douane ?",
-    a: "L'analyse inclut le prix d'achat, les frais de transport estimés vers votre pays et le prix de revente conseillé. Les droits de douane varient de 20 à 40% selon le pays et la catégorie du produit : nous vous indiquons la fourchette applicable à votre destination pour que vous l'intégriez à votre calcul.",
-  },
-  {
-    q: "Puis-je utiliser vos messages de négociation si je ne parle pas chinois ?",
-    a: "C'est précisément l'objectif. Chaque message est généré en mandarin, prêt à être copié-collé dans Alibaba Trade Manager, WeChat ou l'application 1688, avec sa traduction française juste en dessous pour que vous sachiez exactement ce que vous envoyez.",
-  },
-  {
-    q: "Que se passe-t-il si aucune donnée réelle n'est trouvée pour mon lien ?",
-    a: "Nous ne fabriquons jamais de fausses données. Si l'API ne récupère pas le produit, le rapport l'indique clairement et vous propose de relancer la recherche par mot-clé ou par image, qui aboutissent dans la grande majorité des cas.",
-  },
-  {
-    q: "Combien de temps prend une analyse complète ?",
-    a: "Une analyse standard prend entre 15 et 30 secondes. La recherche des 3 meilleurs produits demande un peu plus de temps car chaque candidat finaliste est vérifié individuellement auprès de la plateforme.",
-  },
-]
 import { SiteFooter } from '@/components/SiteFooter'
 
-const SERVICES = [
-  {
-    id: '01',
-    icon: ImageIcon,
-    badge: 'IA — Recherche visuelle',
-    title: 'Recherche de fournisseur par image',
-    desc: 'Prenez en photo n\'importe quel produit ou envoyez une image depuis votre galerie. Notre IA identifie instantanément le produit sur les plateformes chinoises (1688, Taobao, Alibaba) et vous trouve les meilleurs fournisseurs avec les meilleurs prix.',
-    benefits: [
-      'Résultats en moins de 30 secondes',
-      'TOP 3 fournisseurs recommandés',
-      'Comparaison prix unitaire vs lot',
-      'Note et avis des fournisseurs inclus',
-    ],
-    cta: 'Analyser un produit',
-    href: '/',
-    color: 'from-primary/10 to-primary/5',
-  },
-  {
-    id: '02',
-    icon: BarChart3,
-    badge: 'IA — Analyse financière',
-    title: 'Analyse de rentabilité produit',
-    desc: 'Avant d\'investir, sachez exactement combien vous pouvez gagner. Notre IA calcule automatiquement le prix d\'achat, les frais de transport vers votre pays, le prix de revente conseillé et la marge estimée pour chaque produit.',
-    benefits: [
-      'Calcul automatique de la marge',
-      'Frais de transport vers l\'Afrique',
-      'Prix de revente conseillé (x2.5–x3)',
-      'Verdict IA : Bon / Risque / Déconseillé',
-    ],
-    cta: 'Analyser la rentabilité',
-    href: '/',
-    color: 'from-chart-2/10 to-chart-2/5',
-  },
-  {
-    id: '03',
-    icon: Users,
-    badge: 'Service premium',
-    title: 'Sourcing à la demande (agent humain)',
-    desc: 'Pour les commandes complexes ou les gros volumes, notre équipe d\'agents basés en Chine prend en charge votre recherche de fournisseur de A à Z. Négociation de prix, vérification du fournisseur, échantillons, contrôle qualité — tout est géré pour vous.',
-    benefits: [
-      'Agent dédié basé en Chine',
-      'Visite physique du fournisseur',
-      'Négociation en mandarin pour vous',
-      'Contrôle qualité avant expédition',
-    ],
-    cta: 'Contacter un agent',
-    href: '/contact',
-    color: 'from-chart-3/10 to-chart-3/5',
-  },
-  {
-    id: '04',
-    icon: Truck,
-    badge: 'Logistique',
-    title: 'Suivi logistique Chine → Afrique',
-    desc: 'Votre commande est passée ? On s\'occupe de tout. Dédouanement, fret maritime ou aérien, dernière livraison en Afrique. Vous recevez des notifications à chaque étape et un numéro de tracking international.',
-    benefits: [
-      'Suivi temps réel disponible',
-      'Fret maritime et aérien',
-      'Livraison dans 8 pays africains',
-      'Gestion douanière incluse',
-    ],
-    cta: 'En savoir plus',
-    href: '/contact',
-    color: 'from-chart-4/10 to-chart-4/5',
-    comingSoon: false,
-  },
-]
+const SERVICE_META = [
+  { id: '01', key: 's1', icon: ImageIcon, href: '/', color: 'from-primary/10 to-primary/5' },
+  { id: '02', key: 's2', icon: BarChart3, href: '/', color: 'from-chart-2/10 to-chart-2/5' },
+  { id: '03', key: 's3', icon: Users, href: '/contact', color: 'from-chart-3/10 to-chart-3/5' },
+  { id: '04', key: 's4', icon: Truck, href: '/contact', color: 'from-chart-4/10 to-chart-4/5' },
+] as const
 
-type Service = (typeof SERVICES)[number]
+interface Service {
+  id: string
+  icon: (typeof SERVICE_META)[number]['icon']
+  href: string
+  color: string
+  badge: string
+  title: string
+  desc: string
+  benefits: string[]
+  cta: string
+}
 
 /**
  * One service presented as a large alternating row: a stat/visual panel on one
@@ -163,6 +86,22 @@ function ServiceRow({ service, index }: { service: Service; index: number }) {
 }
 
 export default function ServicesPage() {
+  const { t } = useTranslation('services')
+
+  const SERVICES: Service[] = SERVICE_META.map(m => ({
+    id: m.id,
+    icon: m.icon,
+    href: m.href,
+    color: m.color,
+    badge: t(`${m.key}.badge`),
+    title: t(`${m.key}.title`),
+    desc: t(`${m.key}.desc`),
+    benefits: [t(`${m.key}.b1`), t(`${m.key}.b2`), t(`${m.key}.b3`), t(`${m.key}.b4`)],
+    cta: t(`${m.key}.cta`),
+  }))
+
+  const SERVICES_FAQ: FaqItem[] = [1, 2, 3, 4, 5, 6].map(n => ({ q: t(`faq.q${n}`), a: t(`faq.a${n}`) }))
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteNavbar />
@@ -176,14 +115,14 @@ export default function ServicesPage() {
           <Reveal className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
             <Badge variant="secondary" className="rounded-full mb-6">
               <Search className="h-3.5 w-3.5 text-primary mr-1" />
-              Nos services
+              {t('hero.badge')}
             </Badge>
             <h1 className="font-serif text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-              Tout ce dont vous avez besoin pour{' '}
-              <span className="text-primary">importer depuis la Chine</span>
+              {t('hero.titlePrefix')}{' '}
+              <span className="text-primary">{t('hero.titleHighlight')}</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              De la recherche du produit jusqu'à la livraison à votre porte — BizKey couvre toute la chaîne du commerce Chine-Afrique.
+              {t('hero.subtitle')}
             </p>
           </Reveal>
         </section>
@@ -199,20 +138,20 @@ export default function ServicesPage() {
 
         <FaqSection
           items={SERVICES_FAQ}
-          eyebrow="Questions sur nos services"
-          title={<>Tout savoir sur <span className="text-primary">nos services</span></>}
-          subtitle="Recherche par image, analyse de rentabilité, négociation, logistique — voici les réponses aux questions qu'on nous pose le plus."
+          eyebrow={t('faq.eyebrow')}
+          title={<>{t('faq.titlePrefix')} <span className="text-primary">{t('faq.titleHighlight')}</span></>}
+          subtitle={t('faq.subtitle')}
         />
 
         {/* CTA */}
         <section className="py-20 bg-primary/5 border-t border-border">
           <Reveal className="max-w-3xl mx-auto px-4 text-center">
-            <h2 className="font-serif text-3xl font-bold mb-4">Commencez dès maintenant — c'est gratuit</h2>
-            <p className="text-muted-foreground mb-8">3 analyses gratuites sans inscription requise. Testez la puissance de BizKey.</p>
+            <h2 className="font-serif text-3xl font-bold mb-4">{t('cta.title')}</h2>
+            <p className="text-muted-foreground mb-8">{t('cta.subtitle')}</p>
             <Button asChild size="lg" className="rounded-full gap-2 shadow-xl shadow-primary/25">
               <Link to="/">
                 <Sparkles className="h-5 w-5" />
-                Analyser un produit gratuitement
+                {t('cta.button')}
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>

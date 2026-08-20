@@ -1,0 +1,65 @@
+{
+  "hero": {
+    "badge": "Notre histoire",
+    "titlePrefix": "À propos de",
+    "subtitle": "Rendre le commerce Chine-Afrique accessible à tous les entrepreneurs africains, quelle que soit leur taille ou leur capital."
+  },
+  "mission": {
+    "eyebrow": "Notre mission",
+    "title": "Démocratiser l'accès aux produits chinois pour l'Afrique",
+    "p1": "Des millions d'entrepreneurs africains souhaitent importer des produits depuis la Chine mais se heurtent à des barrières : la langue, le manque de confiance dans les fournisseurs, l'absence de moyens de paiement internationaux, et la complexité logistique.",
+    "p2": "BizKey est né pour briser ces barrières. Grâce à l'intelligence artificielle et à notre réseau de partenaires en Chine et en Afrique, nous rendons le commerce Chine-Afrique aussi simple que d'envoyer un message WhatsApp.",
+    "stat1Label": "Commandes livrées",
+    "stat2Value": "8 pays",
+    "stat2Label": "Afrique francophone",
+    "stat3Label": "Opérationnel depuis",
+    "stat4Label": "Paiements Mobile Money"
+  },
+  "story": {
+    "eyebrow": "Notre histoire",
+    "title": "De l'idée à la plateforme",
+    "p1": "BizKey a été fondé en 2024 à Beijing par des entrepreneurs passionnés par le potentiel du commerce Chine-Afrique. L'idée est née d'une frustration simple : trop d'entrepreneurs africains perdaient de l'argent dans des escroqueries sur Alibaba ou ne savaient pas comment démarrer.",
+    "p2": "En combinant notre présence physique en Chine et l'intelligence artificielle de pointe, nous avons développé une plateforme qui permet à n'importe quel entrepreneur africain de trouver le bon fournisseur, d'obtenir un devis transparent, et de payer avec les outils qu'il utilise déjà — Mobile Money, Wave, Orange Money.",
+    "p3": "Aujourd'hui, nous avons accompagné plus de 300 commandes réussies dans 8 pays d'Afrique francophone. Notre objectif est d'en faire 10 000 d'ici 2026, en aidant chaque entrepreneur africain à accéder aux meilleurs produits chinois sans risque et sans barrières."
+  },
+  "values": {
+    "eyebrow": "Nos valeurs",
+    "title": "Ce qui nous guide",
+    "v1Title": "Transparence",
+    "v1Desc": "Devis détaillés, photos avant expédition, suivi temps réel. Aucune surprise.",
+    "v2Title": "Accessibilité",
+    "v2Desc": "Mobile Money accepté, petites quantités possibles. Pour tous les entrepreneurs.",
+    "v3Title": "Innovation",
+    "v3Desc": "Intelligence artificielle pour trouver les meilleurs fournisseurs en secondes.",
+    "v4Title": "Fiabilité",
+    "v4Desc": "Fournisseurs vérifiés, contrôle qualité, remboursement garanti en cas de problème."
+  },
+  "team": {
+    "eyebrow": "Notre équipe",
+    "title": "Des experts à votre service",
+    "m1Role": "Fondateur & CEO",
+    "m2Role": "Responsable Sourcing",
+    "m3Role": "Service Client"
+  },
+  "faq": {
+    "eyebrow": "Qui sommes-nous",
+    "titlePrefix": "Questions sur",
+    "subtitle": "Notre modèle, notre équipe et nos garanties — en toute transparence.",
+    "q1": "Qui est derrière BizKey ?",
+    "a1": "BizKey a été fondé en 2024 à Beijing par des entrepreneurs travaillant entre la Chine et l'Afrique francophone. L'équipe combine une présence physique en Chine pour le contrôle qualité et des relais à Abidjan et Dakar pour le service client.",
+    "q2": "Êtes-vous un intermédiaire ou une plateforme automatisée ?",
+    "a2": "Les deux. L'IA fait le travail de recherche et d'analyse en quelques secondes, mais des humains basés en Chine vérifient les fournisseurs, contrôlent la marchandise avant expédition et gèrent les litiges. La technologie accélère, elle ne remplace pas la vérification terrain.",
+    "q3": "Comment gagnez-vous de l'argent ?",
+    "a3": "Deux sources : une commission de 5 à 10% sur les commandes que nous gérons de bout en bout, et les abonnements/crédits pour l'usage de la plateforme d'analyse. Nous ne touchons aucune commission cachée de la part des fournisseurs chinois — notre recommandation n'est jamais achetée.",
+    "q4": "Dans quels pays êtes-vous présents ?",
+    "a4": "Nous desservons huit pays d'Afrique francophone : Sénégal, Côte d'Ivoire, Cameroun, Guinée, Mali, Togo, RDC et Bénin. Les moyens de paiement mobile disponibles varient selon le pays.",
+    "q5": "Mes données et mes recherches produits sont-elles confidentielles ?",
+    "a5": "Oui. Vos analyses et l'historique de vos recherches ne sont visibles que par vous, protégés au niveau de la base de données. Nous ne revendons pas vos idées de produits ni vos volumes de commande à des tiers."
+  },
+  "cta": {
+    "title": "Prêt à commander depuis la Chine ?",
+    "subtitle": "Testez gratuitement — 3 analyses offertes, sans compte requis.",
+    "analyze": "Analyser un produit",
+    "contact": "Nous contacter"
+  }
+}
