@@ -318,7 +318,7 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="bizkey-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="bizkey-theme">
       {/* reducedMotion="user" makes every Framer Motion component in the app
           honour the OS setting without each one opting in individually —
           it can't be done in CSS because Motion animates through inline

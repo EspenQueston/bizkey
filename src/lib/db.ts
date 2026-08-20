@@ -1369,6 +1369,16 @@ export async function deleteKnowledgeDocument(doc: KnowledgeDocument) {
   if (error) throw new Error(error.message)
 }
 
+export interface FaqSuggestion { question: string; answer: string }
+
+/** Calls the generate-faq-from-document edge function — the OpenAI call and its authorization check happen server-side, this just returns suggestions for the caller to review before creating any real whatsapp_kb_articles rows. */
+export async function generateFaqFromDocument(documentId: string): Promise<FaqSuggestion[]> {
+  const { data, error } = await supabase.functions.invoke('generate-faq-from-document', { body: { documentId } })
+  if (error) throw new Error(error.message)
+  if (data?.error) throw new Error(data.error)
+  return (data?.faqs ?? []) as FaqSuggestion[]
+}
+
 export async function getWhatsAppAutoReplies(): Promise<WhatsAppAutoReply[]> {
   const { data, error } = await supabase.from('whatsapp_auto_replies').select('*').order('sort_order', { ascending: true })
   if (error) throw new Error(error.message)

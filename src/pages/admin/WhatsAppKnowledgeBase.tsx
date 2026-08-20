@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch, Eye, Layers } from 'lucide-react'
+import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch, Eye, Layers, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,7 @@ import {
   getWhatsAppKbArticles, createWhatsAppKbArticle, updateWhatsAppKbArticle, deleteWhatsAppKbArticle,
   getKnowledgeDocuments, createKnowledgeDocumentWithRecords, createKnowledgeDocumentWithChunks, deleteKnowledgeDocument,
   getKnowledgeRecordsByDocument, getKnowledgeChunksByDocument, deleteKnowledgeRecord, deleteKnowledgeChunk,
+  generateFaqFromDocument, type FaqSuggestion,
 } from '@/lib/db'
 import { loadSpreadsheetWorkbook, parseWorkbookSheet, guessColumnMapping, buildRecordsFromMapping, extractPdfText, extractDocxText, chunkText, MAPPABLE_FIELDS, type MappableField } from '@/lib/knowledgeImport'
 import { useAuth } from '@/contexts/AuthContext'
@@ -115,6 +116,62 @@ export default function WhatsAppKnowledgeBasePage() {
   }
 
   useEffect(loadDocuments, [assistantClient])
+
+  // AI-generated FAQ suggestions (from an existing imported document) —
+  // review-before-commit, same spirit as the CSV column-mapping preview:
+  // the model's output is never written to whatsapp_kb_articles directly.
+  const [generatingDocId, setGeneratingDocId] = useState<string | null>(null)
+  const [faqSuggestions, setFaqSuggestions] = useState<FaqSuggestion[]>([])
+  const [faqSelected, setFaqSelected] = useState<Set<number>>(new Set())
+  const [faqSourceDoc, setFaqSourceDoc] = useState<KnowledgeDocument | null>(null)
+  const [savingFaqSuggestions, setSavingFaqSuggestions] = useState(false)
+
+  async function handleGenerateFaq(doc: KnowledgeDocument) {
+    setGeneratingDocId(doc.id)
+    try {
+      const suggestions = await generateFaqFromDocument(doc.id)
+      setFaqSuggestions(suggestions)
+      setFaqSelected(new Set(suggestions.map((_, i) => i)))
+      setFaqSourceDoc(doc)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Échec de la génération')
+    } finally {
+      setGeneratingDocId(null)
+    }
+  }
+
+  function closeFaqSuggestions() {
+    setFaqSuggestions([])
+    setFaqSelected(new Set())
+    setFaqSourceDoc(null)
+  }
+
+  function toggleFaqSelected(index: number) {
+    setFaqSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+  }
+
+  async function handleAddSelectedFaqs() {
+    if (!assistantClient || faqSelected.size === 0) return
+    setSavingFaqSuggestions(true)
+    try {
+      const toAdd = faqSuggestions.filter((_, i) => faqSelected.has(i))
+      const created = await Promise.all(toAdd.map(f =>
+        createWhatsAppKbArticle({ title: f.question, keywords: [], answer: f.answer, is_active: true, client_id: assistantClient.id })
+      ))
+      setArticles(prev => [...created, ...prev])
+      toast.success(`${created.length} question${created.length > 1 ? 's' : ''} ajoutée${created.length > 1 ? 's' : ''} à la FAQ`)
+      closeFaqSuggestions()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Échec de l'ajout")
+    } finally {
+      setSavingFaqSuggestions(false)
+    }
+  }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -487,6 +544,18 @@ export default function WhatsAppKnowledgeBasePage() {
                     {canWriteCatalog && (
                       <Button
                         size="sm" variant="ghost"
+                        className="h-7 px-2 rounded-lg gap-1 text-primary hover:text-primary shrink-0"
+                        onClick={() => handleGenerateFaq(doc)}
+                        disabled={generatingDocId === doc.id}
+                        title="Générer une FAQ avec l'IA à partir de ce document"
+                      >
+                        {generatingDocId === doc.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        <span className="text-[11px] hidden sm:inline">FAQ IA</span>
+                      </Button>
+                    )}
+                    {canWriteCatalog && (
+                      <Button
+                        size="sm" variant="ghost"
                         className="h-7 w-7 p-0 rounded-lg hover:text-destructive shrink-0"
                         onClick={() => setConfirmDeleteDoc(doc)}
                         disabled={deletingDocId === doc.id}
@@ -694,6 +763,57 @@ export default function WhatsAppKnowledgeBasePage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {faqSourceDoc && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                <h2 className="font-serif font-bold truncate">FAQ générée depuis « {faqSourceDoc.title} »</h2>
+              </div>
+              <button onClick={closeFaqSuggestions}><X className="h-5 w-5 text-muted-foreground shrink-0" /></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-3">
+              <p className="text-xs text-muted-foreground -mt-1">
+                Décochez les questions à ne pas ajouter. Vous pourrez modifier chaque article ensuite depuis la liste ci-dessus.
+              </p>
+              {faqSuggestions.map((f, i) => (
+                <label
+                  key={i}
+                  className={`flex items-start gap-3 rounded-xl border p-3.5 cursor-pointer transition-colors ${
+                    faqSelected.has(i) ? 'border-primary/40 bg-primary/5' : 'border-border'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={faqSelected.has(i)}
+                    onChange={() => toggleFaqSelected(i)}
+                    className="mt-1 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{f.question}</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{f.answer}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex gap-2 p-5 border-t border-border shrink-0">
+              <Button variant="outline" className="flex-1 rounded-full" onClick={closeFaqSuggestions}>Annuler</Button>
+              <Button
+                className="flex-1 rounded-full gap-1.5"
+                onClick={handleAddSelectedFaqs}
+                disabled={savingFaqSuggestions || faqSelected.size === 0}
+              >
+                {savingFaqSuggestions ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                Ajouter {faqSelected.size} question{faqSelected.size > 1 ? 's' : ''} à la FAQ
+              </Button>
             </div>
           </div>
         </div>

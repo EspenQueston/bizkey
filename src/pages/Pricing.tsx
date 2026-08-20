@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { SiteNavbar } from '@/components/SiteNavbar'
 import { ParticlesBackground } from '@/components/ParticlesBackground'
-import { Footer } from '@/components/Footer'
+import { SiteFooter } from '@/components/SiteFooter'
 import { useAuth } from '@/contexts/AuthContext'
 import { getPlans, getExchangeRates, getAssistantPlans } from '@/lib/db'
 import { formatCurrencyFromCny, DEFAULT_RATE_FALLBACK, CURRENCY_LABELS, type Currency } from '@/lib/currency'
@@ -451,7 +451,7 @@ export default function PricingPage() {
         )}
       </main>
 
-      <Footer />
+      <SiteFooter />
     </div>
   )
 }
