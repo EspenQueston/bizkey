@@ -240,11 +240,19 @@ export default function AdminUsers() {
   // subscription/PAYG pack (subscription_tier !== 'free') or an active
   // WhatsApp Assistant plan. Either alone is enough; this is a business
   // relationship question ("are they paying us"), not specific to one product.
-  function hasActiveAssistantPlan(userId: string): boolean {
-    return assistantByProfile.get(userId)?.status === 'active'
+  //
+  // Admin accounts are excluded regardless of what's in assistant_clients —
+  // staff already get unlimited platform access via the is_admin bypass
+  // (see ERPPanelLayout's "Illimité" badge, which never reads a real plan
+  // row), so a stray grant on an admin's own account left over from
+  // internal testing must never surface as if it were a real customer
+  // relationship.
+  function hasActiveAssistantPlan(u: UserProfile): boolean {
+    if (u.is_admin) return false
+    return assistantByProfile.get(u.id)?.status === 'active'
   }
   function isPayingUser(u: UserProfile): boolean {
-    return u.subscription_tier !== 'free' || hasActiveAssistantPlan(u.id)
+    return u.subscription_tier !== 'free' || hasActiveAssistantPlan(u)
   }
 
   const stats = {
@@ -454,7 +462,7 @@ export default function AdminUsers() {
                         {u.subscription_tier !== 'free' && <Crown className="h-2.5 w-2.5 mr-0.5" />}
                         {u.subscription_tier}
                       </Badge>
-                      {hasActiveAssistantPlan(u.id) && (
+                      {hasActiveAssistantPlan(u) && (
                         <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-600 bg-blue-500/5 gap-0.5">
                           <Bot className="h-2.5 w-2.5" />
                           {assistantPlans.find(p => p.id === assistantByProfile.get(u.id)?.plan_id)?.display_name ?? t('assistantBadge')}

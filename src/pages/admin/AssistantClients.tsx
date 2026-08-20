@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
 import {
   getAssistantClients, createAssistantClient, updateAssistantClient, deleteAssistantClient,
-  getAllAssistantPlans, getWhatsAppNumbers, syncSubscriptionStatus, getUsageSummaryAllTenants,
+  getAllAssistantPlans, getWhatsAppNumbers, syncSubscriptionStatus, getUsageSummaryAllTenants, getAllUsers,
 } from '@/lib/db'
 import { toast } from 'sonner'
 import type { AssistantClient, AssistantClientStatus, AssistantPlan, WhatsAppNumber } from '@/lib/supabase'
@@ -61,9 +61,20 @@ export default function AssistantClientsPage() {
     const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     syncSubscriptionStatus().catch(err => console.warn('syncSubscriptionStatus failed:', err)).finally(() => {
       Promise.allSettled([
-        getAssistantClients(), getAllAssistantPlans(), getWhatsAppNumbers(), getUsageSummaryAllTenants(since30d),
-      ]).then(([c, p, n, usage]) => {
-        if (c.status === 'fulfilled') setClients(c.value)
+        getAssistantClients(), getAllAssistantPlans(), getWhatsAppNumbers(), getUsageSummaryAllTenants(since30d), getAllUsers(),
+      ]).then(([c, p, n, usage, users]) => {
+        if (c.status === 'fulfilled') {
+          // Staff already get unlimited platform access via the is_admin
+          // bypass in the sidebar (never reads a real plan row) — a real
+          // assistant_clients row on an admin's own account only ever
+          // exists as internal-testing leftover, never a genuine customer
+          // relationship, so it's excluded here rather than shown as if
+          // it were one of "your businesses".
+          const adminIds = users.status === 'fulfilled'
+            ? new Set(users.value.filter(u => u.is_admin).map(u => u.id))
+            : new Set<string>()
+          setClients(c.value.filter(client => !client.profile_id || !adminIds.has(client.profile_id)))
+        }
         if (p.status === 'fulfilled') setPlans(p.value)
         if (n.status === 'fulfilled') setNumbers(n.value)
         if (usage.status === 'fulfilled') {

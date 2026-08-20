@@ -35,31 +35,40 @@ export function BusinessHoursEditor({ value, onChange }: { value: BusinessHours;
     onChange({ ...value, [day]: { ...value[day], ...patch } })
   }
 
+  // Each day gets its own vertical slot — a native <input type="time">
+  // renders a fixed HH:MM (or AM/PM) spinner UI with a real minimum width;
+  // squeezing two of them onto the same line as the day name AND a "Fermé"
+  // checkbox (as a single-column layout, or worse, a 2-column day grid)
+  // starves them below that minimum and the browser just clips the digits,
+  // leaving what looks like an empty box. Stacking the time row below the
+  // day/checkbox row keeps the 2-column density without that trade-off.
   return (
-    <div className="grid sm:grid-cols-2 gap-x-5 gap-y-1.5">
+    <div className="grid sm:grid-cols-2 gap-3">
       {DAY_ORDER.map(day => {
         const d = value[day]
         return (
-          <div key={day} className="flex items-center gap-2.5 py-1 rounded-lg px-1.5 -mx-1.5 hover:bg-secondary/40 transition-colors">
-            <span className="text-sm w-20 shrink-0">{DAY_LABELS[day]}</span>
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-              <input type="checkbox" checked={d.closed} onChange={e => updateDay(day, { closed: e.target.checked })} />
-              Fermé
-            </label>
+          <div key={day} className="rounded-lg border border-border/60 p-2.5 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">{DAY_LABELS[day]}</span>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 cursor-pointer">
+                <input type="checkbox" checked={d.closed} onChange={e => updateDay(day, { closed: e.target.checked })} />
+                Fermé
+              </label>
+            </div>
             {!d.closed && (
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <div className="flex items-center gap-2">
                 <input
                   type="time"
                   value={d.open}
                   onChange={e => updateDay(day, { open: e.target.value })}
-                  className="h-8 rounded-lg border border-input bg-background px-1.5 text-xs flex-1 min-w-0"
+                  className="h-8 rounded-lg border border-input bg-background px-2 text-xs flex-1 min-w-[92px]"
                 />
                 <span className="text-muted-foreground text-xs shrink-0">à</span>
                 <input
                   type="time"
                   value={d.close}
                   onChange={e => updateDay(day, { close: e.target.value })}
-                  className="h-8 rounded-lg border border-input bg-background px-1.5 text-xs flex-1 min-w-0"
+                  className="h-8 rounded-lg border border-input bg-background px-2 text-xs flex-1 min-w-[92px]"
                 />
               </div>
             )}
