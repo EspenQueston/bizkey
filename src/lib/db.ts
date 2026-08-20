@@ -1553,6 +1553,12 @@ export async function activateAssistantSubscription(transactionId: string): Prom
   if (error) throw new Error(error.message)
 }
 
+/** Same as activateAssistantSubscription but for BizKey Sourcing — grants the subscription/PAYG credits the caller's own successful payment paid for. Idempotent: a repeat call for an already-activated transaction is a safe no-op, not a double-grant. */
+export async function activateSourcingSubscription(transactionId: string): Promise<void> {
+  const { error } = await supabase.rpc('activate_sourcing_subscription', { p_transaction_id: transactionId })
+  if (error) throw new Error(error.message)
+}
+
 /** Updates the caller's own tone/hours/requested-number — never plan_id or status, which stay admin/RPC-only. */
 export async function updateMyAssistantSettings(settings: {
   tone: AssistantTone

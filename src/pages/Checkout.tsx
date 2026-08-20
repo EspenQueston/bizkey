@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { ModeToggle } from '@/components/mode-toggle'
 import { useAuth } from '@/contexts/AuthContext'
 import { Logo } from '@/components/Logo'
-import { getPlans, createTransaction, getExchangeRates, updateTransaction, getQuoteRequest, markQuoteOrderPaid } from '@/lib/db'
+import { getPlans, createTransaction, getExchangeRates, updateTransaction, getQuoteRequest, markQuoteOrderPaid, activateSourcingSubscription } from '@/lib/db'
 import { convertFromCny, DEFAULT_RATE_FALLBACK, type Currency } from '@/lib/currency'
 import { FedaPayProvider } from '@/lib/payment/providers/FedaPay'
 import { StripeProvider } from '@/lib/payment/providers/Stripe'
@@ -163,6 +163,17 @@ export default function CheckoutPage() {
           await syncTransactionStatus('success', status.rawResponse)
           if (linkedQuote) {
             try { await markQuoteOrderPaid(linkedQuote.id) } catch (err) { console.error(err) }
+          } else if (transactionId) {
+            // A plan purchase (not a quote) — grants the subscription/PAYG
+            // credits the payment paid for. Never wired up here before, so
+            // a paying customer's account silently stayed on the free
+            // tier's defaults no matter what they bought.
+            try {
+              await activateSourcingSubscription(transactionId)
+            } catch (err) {
+              console.error('activateSourcingSubscription failed', err)
+              toast.error("Paiement confirmé, mais l'activation a échoué — contactez le support.")
+            }
           }
           await refreshProfile()
           setStep('done')
