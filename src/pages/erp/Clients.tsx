@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getERPClients, createERPClient, updateERPClient, deleteERPClient } from '@/lib/db'
 import type { ERPClient, ERPCountry } from '@/lib/supabase'
 import { ERP_COUNTRY_INFO } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 const EMPTY: Omit<ERPClient, 'id' | 'user_id' | 'created_at'> = {
   name: '', email: null, phone: null, country: 'benin', city: null,
@@ -88,6 +89,7 @@ export default function ClientsPage() {
       setClients(prev => prev.filter(c => c.id !== id))
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : t('deleteError'))
     } finally {
       setDeletingId(null)
     }

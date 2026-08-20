@@ -20,6 +20,7 @@
   "addClient": "Ajouter un client",
   "edit": "Modifier",
   "confirmDelete": "Supprimer ce client ?",
+  "deleteError": "Erreur lors de la suppression",
   "modal": {
     "editTitle": "Modifier le client",
     "createTitle": "Nouveau client",

@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getUserAnalyses, deleteComparison, deleteComparisons } from '@/lib/db'
 import { supabase } from '@/lib/supabase'
 import { compareAnalyses, type ScoredAnalysis } from '@/lib/api'
+import { toast } from 'sonner'
 import type { Database, AIAnalysisResult } from '@/lib/supabase'
 
 type Analysis = Database['public']['Tables']['analyses']['Row']
@@ -95,6 +96,7 @@ export default function ComparePage() {
       setSelectedHistoryIds((prev) => { const next = new Set(prev); next.delete(id); return next })
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression')
     } finally {
       setDeletingId(null)
       setConfirmTarget(null)
@@ -111,6 +113,7 @@ export default function ComparePage() {
       setSelectedHistoryIds(new Set())
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression')
     } finally {
       setBulkDeleting(false)
       setConfirmTarget(null)

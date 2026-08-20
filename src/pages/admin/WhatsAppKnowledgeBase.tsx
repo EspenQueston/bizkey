@@ -410,6 +410,7 @@ export default function WhatsAppKnowledgeBasePage() {
       setArticles(prev => prev.filter(a => a.id !== id))
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression')
     } finally {
       setDeletingId(null)
       setConfirmDeleteId(null)

@@ -20,6 +20,7 @@
   "addClient": "Add a client",
   "edit": "Edit",
   "confirmDelete": "Delete this client?",
+  "deleteError": "Error while deleting",
   "modal": {
     "editTitle": "Edit client",
     "createTitle": "New client",

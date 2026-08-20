@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getWhatsAppNumbers, createWhatsAppNumber, updateWhatsAppNumber, deleteWhatsAppNumber } from '@/lib/db'
 import type { WhatsAppNumber, WhatsAppNumberStatus } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 const EMPTY = { label: '', phone_number: '', status: 'pending' as WhatsAppNumberStatus, business_account_id: '' }
 
@@ -75,6 +76,7 @@ export default function WhatsAppNumbersPage() {
       setNumbers(prev => prev.filter(n => n.id !== id))
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : t('deleteError'))
     } finally {
       setDeletingId(null)
     }

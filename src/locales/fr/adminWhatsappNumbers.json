@@ -9,6 +9,7 @@
   "edit": "Modifier",
   "delete": "Supprimer",
   "confirmDelete": "Supprimer ce numéro WhatsApp ?",
+  "deleteError": "Erreur lors de la suppression",
   "status": {
     "pending": "En attente de validation",
     "active": "Actif",

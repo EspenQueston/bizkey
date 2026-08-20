@@ -10,6 +10,7 @@ import { getWhatsAppAutoReplies, createWhatsAppAutoReply, updateWhatsAppAutoRepl
 import { useAuth } from '@/contexts/AuthContext'
 import { matchAutoReply, type BotMatchResult } from '@/lib/whatsappBot'
 import type { WhatsAppAutoReply, WhatsAppKbArticle, WhatsAppTriggerType } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 const TRIGGER_META: Record<WhatsAppTriggerType, { label: string; icon: string; color: string }> = {
   greeting: { label: 'Salutation',        icon: '👋', color: 'bg-blue-500/15 text-blue-600' },
@@ -110,6 +111,7 @@ export default function WhatsAppAutoRepliesPage() {
       setRules(prev => prev.filter(r => r.id !== id))
     } catch (err) {
       console.error(err)
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression')
     } finally {
       setDeletingId(null)
       setConfirmDeleteId(null)
