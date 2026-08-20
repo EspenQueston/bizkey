@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Search, MessageCircle, HelpCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,13 +32,14 @@ interface Props {
 
 export function FaqSection({
   items,
-  eyebrow = 'FAQ',
+  eyebrow,
   title,
   subtitle,
   searchable,
   showContactCta = true,
   className = '',
 }: Props) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const enableSearch = searchable ?? items.length > 5
 
@@ -55,10 +57,10 @@ export function FaqSection({
         <div className="text-center mb-10">
           <Badge variant="secondary" className="rounded-full bg-card mb-4 gap-1.5">
             <HelpCircle className="h-3.5 w-3.5 text-primary" />
-            {eyebrow}
+            {eyebrow ?? t('faq.eyebrow')}
           </Badge>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight">
-            {title ?? <>Questions <span className="text-primary">fréquentes</span></>}
+            {title ?? <>{t('faq.titlePrefix')} <span className="text-primary">{t('faq.titleHighlight')}</span></>}
           </h2>
           {subtitle && (
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -73,21 +75,21 @@ export function FaqSection({
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Rechercher une question…"
+              placeholder={t('faq.searchPlaceholder')}
               className="pl-10 h-11 rounded-full bg-card"
-              aria-label="Rechercher dans la FAQ"
+              aria-label={t('faq.searchAria')}
             />
           </div>
         )}
 
         {filtered.length === 0 ? (
           <div className="text-center py-12 rounded-2xl border border-dashed border-border bg-card">
-            <p className="font-medium mb-1">Aucune question ne correspond à « {query} »</p>
+            <p className="font-medium mb-1">{t('faq.noResults', { query })}</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Reformulez votre recherche ou contactez-nous directement.
+              {t('faq.noResultsHint')}
             </p>
             <Button asChild size="sm" variant="outline" className="rounded-full">
-              <Link to="/contact">Poser ma question</Link>
+              <Link to="/contact">{t('faq.askQuestion')}</Link>
             </Button>
           </div>
         ) : (
@@ -121,12 +123,12 @@ export function FaqSection({
                 <MessageCircle className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-sm">Vous ne trouvez pas votre réponse ?</p>
-                <p className="text-sm text-muted-foreground">Notre équipe vous répond sous 24h.</p>
+                <p className="font-semibold text-sm">{t('faq.stillQuestions')}</p>
+                <p className="text-sm text-muted-foreground">{t('faq.teamReplies')}</p>
               </div>
             </div>
             <Button asChild className="rounded-full shrink-0">
-              <Link to="/contact">Nous contacter</Link>
+              <Link to="/contact">{t('faq.contactUs')}</Link>
             </Button>
           </div>
         )}

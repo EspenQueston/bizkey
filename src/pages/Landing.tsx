@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { ArrowRight, ShoppingBag, Clock, Globe as Globe2, Wallet, Search, CreditCard, PackageCheck, MessageCircle, ShieldCheck, CircleCheck as CheckCircle2, Truck, Star, Send, Sparkles, Quote, ChevronRight, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,7 @@ const HERO_STARS = [
 ]
 
 function Hero() {
+  const { t } = useTranslation('landing')
   const [choiceOpen, setChoiceOpen] = useState(false)
   const [choiceProduct, setChoiceProduct] = useState<"sourcing" | "assistant">("sourcing")
   const sectionRef = useRef<HTMLElement>(null)
@@ -85,7 +87,7 @@ function Hero() {
             className="rounded-full border border-primary/20 bg-secondary text-secondary-foreground px-4 py-1.5 mb-6"
           >
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Agent d'achat Chine — Afrique francophone
+            {t('hero.badge')}
           </Badge>
         </motion.div>
 
@@ -95,13 +97,13 @@ function Hero() {
           transition={{ duration: 0.7, delay: 0.15 }}
           className="font-serif text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-foreground"
         >
-          Commande n'importe quel{" "}
+          {t('hero.titleLine1')}{" "}
           <span className="relative inline-block">
-            <span className="relative z-10 text-gradient">produit</span>
+            <span className="relative z-10 text-gradient">{t('hero.titleProduct')}</span>
             <span className="absolute left-0 bottom-1 h-3 w-full bg-primary/30 -z-0" />
           </span>{" "}
-          depuis la Chine.{" "}
-          <span className="text-gradient">Sans parler chinois.</span>
+          {t('hero.titleLine2')}{" "}
+          <span className="text-gradient">{t('hero.titleHighlight')}</span>
         </motion.h1>
 
         <motion.p
@@ -110,7 +112,7 @@ function Hero() {
           transition={{ duration: 0.7, delay: 0.32 }}
           className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
         >
-          BizKey est ton agent d'achat basé en Chine — sourcing produit et automatisation WhatsApp, réunis sous une seule plateforme. Tu envoies la photo, on gère le fournisseur, le paiement et la livraison jusqu'à toi.
+          {t('hero.subtitle')}
         </motion.p>
 
         <motion.p
@@ -119,7 +121,7 @@ function Hero() {
           transition={{ duration: 0.5, delay: 0.48 }}
           className="mt-8 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70"
         >
-          Deux façons de commencer
+          {t('hero.twoWays')}
         </motion.p>
 
         <motion.div
@@ -134,7 +136,7 @@ function Hero() {
             className="rounded-full text-base h-14 px-8 shadow-xl shadow-primary/25 group w-full sm:w-auto"
           >
             <Search className="h-5 w-5" />
-            BizKey Sourcing
+            {t('hero.ctaSourcing')}
             <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </Button>
           <Button
@@ -144,7 +146,7 @@ function Hero() {
             className="rounded-full text-base h-14 px-8 group border-[#0A1B33]/20 hover:bg-[#0A1B33]/5 dark:border-white/15 w-full sm:w-auto"
           >
             <Bot className="h-5 w-5" />
-            BizKey WhatsApp Assistant
+            {t('hero.ctaAssistant')}
           </Button>
         </motion.div>
 
@@ -155,7 +157,7 @@ function Hero() {
           className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground"
         >
           <Clock className="h-4 w-4 text-primary" />
-          Réponse sous 24h — Sans engagement
+          {t('hero.responseTime')}
         </motion.div>
 
         <ProductChoiceDialog open={choiceOpen} onOpenChange={setChoiceOpen} product={choiceProduct} />
@@ -167,9 +169,9 @@ function Hero() {
           className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto"
         >
           {[
-            { icon: ShieldCheck, label: "Paiement sécurisé" },
-            { icon: Truck, label: "Livraison suivie" },
-            { icon: MessageCircle, label: "Support 24h" },
+            { icon: ShieldCheck, label: t('hero.trust1') },
+            { icon: Truck, label: t('hero.trust2') },
+            { icon: MessageCircle, label: t('hero.trust3') },
           ].map((i, k) => (
             <div key={k} className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-3 rounded-xl border border-border bg-card/60">
               <i.icon className="h-4 w-4 text-primary" />
@@ -183,11 +185,12 @@ function Hero() {
 }
 
 function Credibility() {
+  const { t } = useTranslation('landing')
   const items = [
-    { icon: ShoppingBag, value: "+300", label: "commandes livrées en Afrique francophone" },
-    { icon: Clock, value: "Depuis 2024", label: "Agent d'achat actif entre la Chine et l'Afrique" },
-    { icon: Globe2, value: "8 pays desservis", label: "Sénégal, Côte d'Ivoire, Cameroun, Guinée, Mali, Togo, RDC, Bénin" },
-    { icon: Wallet, value: "Mobile Money", label: "Orange Money, Wave, MTN, Moov acceptés" },
+    { icon: ShoppingBag, value: t('credibility.item1Value'), label: t('credibility.item1Label') },
+    { icon: Clock, value: t('credibility.item2Value'), label: t('credibility.item2Label') },
+    { icon: Globe2, value: t('credibility.item3Value'), label: t('credibility.item3Label') },
+    { icon: Wallet, value: t('credibility.item4Value'), label: t('credibility.item4Label') },
   ]
   return (
     <section className="py-16 border-y border-border bg-card/50 relative overflow-hidden">
@@ -212,33 +215,19 @@ function Credibility() {
 }
 
 function ValueProps() {
+  const { t } = useTranslation('landing')
   const blocs = [
-    {
-      icon: Search,
-      title: "Tu trouves le produit. On trouve le meilleur prix.",
-      text: "Tu n'as plus besoin de naviguer sur 1688 ou Taobao sans rien comprendre. Tu envoies juste une photo ou une description, et on te revient avec le prix du fournisseur, les frais de livraison, et le total à payer — en FCFA ou dans ta devise locale. Zéro surprise, zéro mauvaise traduction.",
-      tag: "Transparence totale",
-    },
-    {
-      icon: CreditCard,
-      title: "Pas de carte Visa ? Aucun problème.",
-      text: "On accepte les paiements via Mobile Money (Orange Money, Wave, MTN, Moov) et les virements locaux. C'est nous qui gérons le paiement au fournisseur chinois. Tu n'as pas besoin de compte bancaire international, ni de carte Visa. Tu paies comme tu paies d'habitude.",
-      tag: "Paiement local",
-    },
-    {
-      icon: PackageCheck,
-      title: "Ta commande arrive chez toi, sans stress.",
-      text: "On gère la vérification du fournisseur, l'expédition depuis la Chine, le suivi en temps réel, et la livraison jusqu'à ton adresse ou ton pays. Tu reçois des photos et vidéos à chaque étape. Plus besoin de te demander \"où est ma commande ?\" — on te tient informé jusqu'à la livraison.",
-      tag: "Livraison suivie",
-    },
+    { icon: Search, title: t('valueProps.item1Title'), text: t('valueProps.item1Text'), tag: t('valueProps.item1Tag') },
+    { icon: CreditCard, title: t('valueProps.item2Title'), text: t('valueProps.item2Text'), tag: t('valueProps.item2Tag') },
+    { icon: PackageCheck, title: t('valueProps.item3Title'), text: t('valueProps.item3Text'), tag: t('valueProps.item3Tag') },
   ]
   return (
     <section id="valeur" className="py-24 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal className="max-w-2xl mb-16">
-          <Badge variant="secondary" className="rounded-full mb-4">Pourquoi BizKey</Badge>
+          <Badge variant="secondary" className="rounded-full mb-4">{t('valueProps.eyebrow')}</Badge>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
-            Trois problèmes résolus, <span className="text-gradient">zéro galère.</span>
+            {t('valueProps.title')} <span className="text-gradient">{t('valueProps.titleHighlight')}</span>
           </h2>
         </Reveal>
 
@@ -275,34 +264,20 @@ function ValueProps() {
 }
 
 function HowItWorks() {
+  const { t } = useTranslation('landing')
   const steps = [
-    {
-      n: "01",
-      icon: Send,
-      title: "Envoie ta demande",
-      text: "Tu nous envoies la photo ou la description du produit que tu veux sur WhatsApp. On analyse ta demande et on te revient sous 24h avec le prix exact, le délai de livraison, et les détails de la commande.",
-    },
-    {
-      n: "02",
-      icon: CheckCircle2,
-      title: "Tu confirmes et tu paies",
-      text: "Tu valides le devis. Tu paies via Mobile Money ou virement — en toute sécurité. Dès réception du paiement, on passe la commande au fournisseur et on te confirme le démarrage.",
-    },
-    {
-      n: "03",
-      icon: PackageCheck,
-      title: "Tu reçois ta commande",
-      text: "On gère tout : achat, contrôle qualité, expédition, suivi et livraison jusqu'à toi. Tu reçois des updates réguliers et ta commande arrive à ton adresse en Afrique.",
-    },
+    { n: "01", icon: Send, title: t('howItWorks.step1Title'), text: t('howItWorks.step1Text') },
+    { n: "02", icon: CheckCircle2, title: t('howItWorks.step2Title'), text: t('howItWorks.step2Text') },
+    { n: "03", icon: PackageCheck, title: t('howItWorks.step3Title'), text: t('howItWorks.step3Text') },
   ]
   return (
     <section id="process" className="py-24 bg-secondary/40 relative overflow-hidden">
       <div className="absolute inset-0 bg-grid opacity-30" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <Reveal className="max-w-2xl mb-16">
-          <Badge variant="secondary" className="rounded-full bg-card mb-4">Comment ça marche</Badge>
+          <Badge variant="secondary" className="rounded-full bg-card mb-4">{t('howItWorks.eyebrow')}</Badge>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
-            Trois étapes. <span className="text-gradient">C'est tout.</span>
+            {t('howItWorks.title')} <span className="text-gradient">{t('howItWorks.titleHighlight')}</span>
           </h2>
         </Reveal>
 
@@ -342,59 +317,19 @@ function HowItWorks() {
   )
 }
 
-const TESTIMONIALS = [
-  {
-    text: "J'avais essayé de commander sur Alibaba tout seul et j'ai perdu 80 000 FCFA dans une arnaque. Avec BizKey, j'ai commandé 50 paires de sneakers pour ma boutique. J'ai tout reçu en 3 semaines, exactement comme sur les photos. Je recommande les yeux fermés.",
-    name: "Moussa K.",
-    role: "Revendeur de chaussures, Abidjan",
-    initials: "MK",
-    color: "bg-primary/15 text-primary",
-  },
-  {
-    text: "Ce qui m'a convaincu c'est qu'ils m'ont envoyé des photos du produit avant l'expédition. Je savais exactement ce que j'allais recevoir. J'ai commandé des téléphones reconditionnés et j'ai pu tripler ma mise en les revendant ici à Dakar.",
-    name: "Fatou D.",
-    role: "Vendeuse en ligne, Dakar",
-    initials: "FD",
-    color: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  },
-  {
-    text: "Je n'avais pas de carte Visa, je pensais que c'était impossible de commander depuis la Chine. Ils acceptent Wave — j'ai payé depuis mon téléphone comme d'habitude. Ma commande de cosmétiques est arrivée en moins d'un mois.",
-    name: "Ismaël B.",
-    role: "Entrepreneur, Douala",
-    initials: "IB",
-    color: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    text: "Je gère une petite boutique d'accessoires à Bamako. Avant, un intermédiaire prenait une grosse commission sans jamais montrer les vrais prix. Avec BizKey, je vois le prix fournisseur direct et je paie par Orange Money. Ma dernière commande de 200 coques est arrivée complète.",
-    name: "Aïcha S.",
-    role: "Gérante de boutique, Bamako",
-    initials: "AS",
-    color: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
-  },
-  {
-    text: "Je commande en gros pour ma boutique de tissus à Lomé. Ce qui change tout, c'est le suivi : je reçois des vidéos de l'emballage avant l'expédition. Sur ma dernière commande de 300 mètres, j'ai économisé près de 15% par rapport à mon ancien fournisseur local.",
-    name: "Koffi A.",
-    role: "Grossiste textile, Lomé",
-    initials: "KA",
-    color: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  },
-  {
-    text: "Entre gérer ma boutique et répondre aux clients sur WhatsApp toute la journée, je n'avais plus de temps pour sourcer. Depuis BizKey WhatsApp Assistant, les questions fréquentes sont répondues automatiquement et je ne m'occupe que des vraies commandes. Un vrai gain de temps.",
-    name: "Grace M.",
-    role: "Commerçante, Kinshasa",
-    initials: "GM",
-    color: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-  },
-  {
-    text: "J'ai commandé des sacs à main pour ma boutique en ligne trois fois maintenant avec BizKey. Chaque fois, le numéro de suivi fonctionne vraiment et je peux dire à mes clientes exactement quand la commande arrive. C'est ça qui m'a fait rester fidèle.",
-    name: "Rachidatou O.",
-    role: "Boutique en ligne, Cotonou",
-    initials: "RO",
-    color: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-  },
-]
+const TESTIMONIAL_META = [
+  { name: "Moussa K.", key: "t1", initials: "MK", color: "bg-primary/15 text-primary" },
+  { name: "Fatou D.", key: "t2", initials: "FD", color: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
+  { name: "Ismaël B.", key: "t3", initials: "IB", color: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
+  { name: "Aïcha S.", key: "t4", initials: "AS", color: "bg-rose-500/15 text-rose-600 dark:text-rose-400" },
+  { name: "Koffi A.", key: "t5", initials: "KA", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  { name: "Grace M.", key: "t6", initials: "GM", color: "bg-violet-500/15 text-violet-600 dark:text-violet-400" },
+  { name: "Rachidatou O.", key: "t7", initials: "RO", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400" },
+] as const
 
-function TestimonialCard({ t }: { t: (typeof TESTIMONIALS)[number] }) {
+interface Testimonial { text: string; name: string; role: string; initials: string; color: string }
+
+function TestimonialCard({ t }: { t: Testimonial }) {
   return (
     <motion.div
       whileHover={{ y: -8, scale: 1.02 }}
@@ -430,8 +365,16 @@ function TestimonialCard({ t }: { t: (typeof TESTIMONIALS)[number] }) {
 }
 
 function Testimonials() {
+  const { t } = useTranslation('landing')
+  const testimonials: Testimonial[] = TESTIMONIAL_META.map(m => ({
+    name: m.name,
+    initials: m.initials,
+    color: m.color,
+    text: t(`testimonials.${m.key}Text`),
+    role: t(`testimonials.${m.key}Role`),
+  }))
   // Duplicated so the marquee loop (translateX 0 → -50%) is seamless.
-  const track = [...TESTIMONIALS, ...TESTIMONIALS]
+  const track = [...testimonials, ...testimonials]
   return (
     <section id="avis" className="py-24 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -442,9 +385,9 @@ function Testimonials() {
           transition={{ duration: 0.6 }}
           className="max-w-2xl mb-14"
         >
-          <Badge variant="secondary" className="rounded-full mb-4">Ils nous font confiance</Badge>
+          <Badge variant="secondary" className="rounded-full mb-4">{t('testimonials.eyebrow')}</Badge>
           <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
-            Des commerçants <span className="text-gradient">qui cartonnent</span> grâce à la Chine.
+            {t('testimonials.title')} <span className="text-gradient">{t('testimonials.titleHighlight')}</span> {t('testimonials.titleSuffix')}
           </h2>
         </motion.div>
       </div>
@@ -457,8 +400,8 @@ function Testimonials() {
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 z-10 bg-gradient-to-l from-background to-transparent" />
 
         <div className="flex gap-6 animate-marquee hover:[animation-play-state:paused] w-max px-4 sm:px-6">
-          {track.map((t, i) => (
-            <TestimonialCard key={i} t={t} />
+          {track.map((testimonial, i) => (
+            <TestimonialCard key={i} t={testimonial} />
           ))}
         </div>
       </div>
@@ -466,35 +409,12 @@ function Testimonials() {
   )
 }
 
-const LANDING_FAQ: FaqItem[] = [
-  {
-    q: "Est-ce que c'est fiable ? Comment je sais que ce n'est pas une arnaque ?",
-    a: "On travaille en totale transparence : tu reçois le nom du fournisseur, des photos du produit avant expédition, et un numéro de suivi dès que ta commande part de Chine. On ne demande jamais d'argent avant de t'avoir fourni un devis détaillé et validé ensemble.",
-  },
-  {
-    q: "Combien ça coûte pour utiliser votre service ?",
-    a: "On prend une commission de 5 à 10% sur le montant total de ta commande (produit + livraison). Il n'y a aucun frais caché. Tout est indiqué dans le devis avant que tu confirmes quoi que ce soit.",
-  },
-  {
-    q: "Je n'ai pas beaucoup de capital. Quel est le minimum pour commander ?",
-    a: "Tu peux démarrer avec aussi peu que 30 000 à 50 000 FCFA selon le produit. On t'aide à identifier les fournisseurs qui acceptent les petites quantités pour que tu puisses tester avant de commander en gros.",
-  },
-  {
-    q: "Combien de temps prend la livraison en Afrique ?",
-    a: "En général, entre 15 et 35 jours selon le pays et la méthode d'expédition choisie. On t'informe du délai exact dans le devis et on te tient au courant à chaque étape.",
-  },
-  {
-    q: "Puis-je payer avec Mobile Money ?",
-    a: "Oui. Orange Money, Wave, MTN Mobile Money, Moov Money et T-Money sont acceptés selon ton pays. Aucune carte Visa ni compte bancaire international n'est nécessaire — tu paies depuis ton téléphone comme d'habitude.",
-  },
-  {
-    q: "Que se passe-t-il si le produit reçu ne correspond pas ?",
-    a: "On contrôle la marchandise avant expédition et on t'envoie les photos pour validation. Si malgré cela le produit livré ne correspond pas à ce qui a été validé, on prend en charge le litige avec le fournisseur et on te rembourse la part concernée.",
-  },
-]
+const FAQ_KEYS = ["1", "2", "3", "4", "5", "6"] as const
 
 function Faq() {
-  return <FaqSection items={LANDING_FAQ} />
+  const { t } = useTranslation('landing')
+  const items: FaqItem[] = FAQ_KEYS.map(n => ({ q: t(`faq.q${n}`), a: t(`faq.a${n}`) }))
+  return <FaqSection items={items} />
 }
 
 export default function LandingPage() {

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { MapPin, Smartphone, Globe } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
@@ -36,15 +37,6 @@ function TikTokIcon({ className }: { className?: string }) {
   )
 }
 
-const NAV_LINKS = [
-  { label: 'Accueil', to: '/' },
-  { label: 'Services', to: '/services' },
-  { label: 'Tarifs', to: '/pricing' },
-  { label: 'À propos', to: '/about' },
-  { label: 'Aide', to: '/aide' },
-  { label: 'Contact', to: '/contact' },
-]
-
 const SOCIAL_LINKS = [
   { icon: WeChatIcon, label: 'WeChat', href: buildWhatsAppUrl(), color: 'hover:text-green-500' },
   { icon: Smartphone, label: 'WhatsApp', href: buildWhatsAppUrl(), color: 'hover:text-green-400' },
@@ -54,6 +46,17 @@ const SOCIAL_LINKS = [
 ]
 
 export function SiteFooter() {
+  const { t } = useTranslation()
+
+  const NAV_LINKS = [
+    { label: t('nav.home'), to: '/' },
+    { label: t('nav.services'), to: '/services' },
+    { label: t('nav.pricing'), to: '/pricing' },
+    { label: t('nav.about'), to: '/about' },
+    { label: t('nav.help'), to: '/aide' },
+    { label: t('nav.contact'), to: '/contact' },
+  ]
+
   return (
     <footer className="border-t border-border bg-card text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -62,16 +65,16 @@ export function SiteFooter() {
         <div className="space-y-4">
           <Logo variant="lockup-tagline" size="lg" />
           <p className="text-muted-foreground leading-relaxed text-xs max-w-[220px]">
-            Ton agent d'achat en Chine. Tu envoies une photo, on livre chez toi.
+            {t('footer.tagline')}
           </p>
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} BizKey — All rights reserved
+            &copy; {new Date().getFullYear()} BizKey — {t('footer.rights')}
           </p>
         </div>
 
         {/* Col 2 — Navigation */}
         <div className="space-y-4">
-          <p className="font-semibold text-foreground">Navigation</p>
+          <p className="font-semibold text-foreground">{t('footer.navigation')}</p>
           <ul className="space-y-2">
             {NAV_LINKS.map(link => (
               <li key={link.to}>
@@ -85,7 +88,7 @@ export function SiteFooter() {
 
         {/* Col 3 — Contact */}
         <div className="space-y-4">
-          <p className="font-semibold text-foreground">Contact</p>
+          <p className="font-semibold text-foreground">{t('footer.contact')}</p>
           <ul className="space-y-3 text-muted-foreground">
             <li className="flex items-start gap-2">
               <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
@@ -110,7 +113,7 @@ export function SiteFooter() {
 
         {/* Col 4 — Social */}
         <div className="space-y-4">
-          <p className="font-semibold text-foreground">Réseaux sociaux</p>
+          <p className="font-semibold text-foreground">{t('footer.social')}</p>
           <div className="flex flex-wrap gap-3">
             {SOCIAL_LINKS.map(social => (
               <a
@@ -126,11 +129,11 @@ export function SiteFooter() {
             ))}
           </div>
           <div className="mt-4">
-            <p className="font-semibold text-foreground mb-2">Légal</p>
+            <p className="font-semibold text-foreground mb-2">{t('footer.legal')}</p>
             <ul className="space-y-1">
-              <li><Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Politique de confidentialité</Link></li>
-              <li><Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Conditions d'utilisation</Link></li>
-              <li><Link to="/mentions-legales" className="text-muted-foreground hover:text-foreground transition-colors">Mentions légales</Link></li>
+              <li><Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">{t('footer.privacy')}</Link></li>
+              <li><Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">{t('footer.terms')}</Link></li>
+              <li><Link to="/mentions-legales" className="text-muted-foreground hover:text-foreground transition-colors">{t('footer.legalNotice')}</Link></li>
             </ul>
           </div>
         </div>

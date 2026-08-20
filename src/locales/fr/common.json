@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "services": "Services",
+    "pricing": "Tarifs",
+    "about": "À propos",
+    "help": "Aide",
+    "contact": "Contact",
+    "login": "Se connecter",
+    "trial": "Essai gratuit →",
+    "dashboard": "Tableau de bord",
+    "profile": "Mon profil",
+    "logout": "Déconnexion",
+    "connected": "Connecté",
+    "myAccount": "Mon compte",
+    "accountMenu": "Menu du compte",
+    "menu": "Menu"
+  },
+  "footer": {
+    "tagline": "Ton agent d'achat en Chine. Tu envoies une photo, on livre chez toi.",
+    "rights": "Tous droits réservés",
+    "navigation": "Navigation",
+    "contact": "Contact",
+    "social": "Réseaux sociaux",
+    "legal": "Légal",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "legalNotice": "Mentions légales"
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "titlePrefix": "Questions",
+    "titleHighlight": "fréquentes",
+    "searchPlaceholder": "Rechercher une question…",
+    "searchAria": "Rechercher dans la FAQ",
+    "noResults": "Aucune question ne correspond à « {{query}} »",
+    "noResultsHint": "Reformulez votre recherche ou contactez-nous directement.",
+    "askQuestion": "Poser ma question",
+    "stillQuestions": "Vous ne trouvez pas votre réponse ?",
+    "teamReplies": "Notre équipe vous répond sous 24h.",
+    "contactUs": "Nous contacter"
+  },
+  "language": {
+    "french": "Français",
+    "english": "Anglais",
+    "toggle": "Changer de langue"
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Menu, X, LayoutDashboard, Sparkles, UserRound, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,11 +10,13 @@ import {
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { ModeToggle } from '@/components/mode-toggle'
+import { LanguageToggle } from '@/components/LanguageToggle'
 import { Logo } from '@/components/Logo'
 import { useAuth } from '@/contexts/AuthContext'
 
 /** Avatar + green "connected" dot, dropdown with profile/dashboard/logout. Only rendered when a session actually exists. */
 function AccountMenu() {
+  const { t } = useTranslation()
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   if (!user) return null
@@ -30,14 +33,14 @@ function AccountMenu() {
       <DropdownMenuTrigger asChild>
         <button
           className="relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform hover:scale-105"
-          aria-label="Menu du compte"
+          aria-label={t('nav.accountMenu')}
         >
           <Avatar className="h-9 w-9 ring-2 ring-primary/20">
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{initials}</AvatarFallback>
           </Avatar>
           <span
             className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background"
-            title="Connecté"
+            title={t('nav.connected')}
           />
         </button>
       </DropdownMenuTrigger>
@@ -45,13 +48,13 @@ function AccountMenu() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex items-center gap-1.5 mb-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Connecté</span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{t('nav.connected')}</span>
             {profile?.is_admin && (
               <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 h-4">Admin</Badge>
             )}
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium truncate">{profile?.name ?? 'Mon compte'}</span>
+            <span className="text-sm font-medium truncate">{profile?.name ?? t('nav.myAccount')}</span>
             <span className="text-xs text-muted-foreground truncate">{profile?.email ?? user.email}</span>
           </div>
         </DropdownMenuLabel>
@@ -59,40 +62,41 @@ function AccountMenu() {
         <DropdownMenuItem asChild>
           <Link to="/app" className="cursor-pointer">
             <LayoutDashboard className="h-4 w-4" />
-            Tableau de bord
+            {t('nav.dashboard')}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to="/app/profile" className="cursor-pointer">
             <UserRound className="h-4 w-4" />
-            Mon profil
+            {t('nav.profile')}
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={handleSignOut} className="cursor-pointer">
           <LogOut className="h-4 w-4" />
-          Déconnexion
+          {t('nav.logout')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-const NAV_LINKS = [
-  { label: 'Accueil', to: '/' },
-  { label: 'Services', to: '/services' },
-  { label: 'Tarifs', to: '/pricing' },
-  { label: 'À propos', to: '/about' },
-  { label: 'Aide', to: '/aide' },
-  { label: 'Contact', to: '/contact' },
-]
-
 export function SiteNavbar() {
+  const { t } = useTranslation()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user, profile, signOut } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
+
+  const NAV_LINKS = [
+    { label: t('nav.home'), to: '/' },
+    { label: t('nav.services'), to: '/services' },
+    { label: t('nav.pricing'), to: '/pricing' },
+    { label: t('nav.about'), to: '/about' },
+    { label: t('nav.help'), to: '/aide' },
+    { label: t('nav.contact'), to: '/contact' },
+  ]
 
   async function handleMobileSignOut() {
     setMobileOpen(false)
@@ -152,13 +156,14 @@ export function SiteNavbar() {
 
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-2">
+            <LanguageToggle />
             <ModeToggle />
             {user ? (
               <>
                 <Button asChild size="sm" className="rounded-full">
                   <Link to="/app">
                     <LayoutDashboard className="h-4 w-4 mr-1.5" />
-                    Tableau de bord
+                    {t('nav.dashboard')}
                   </Link>
                 </Button>
                 <AccountMenu />
@@ -166,12 +171,12 @@ export function SiteNavbar() {
             ) : (
               <>
                 <Button asChild size="sm" variant="ghost" className="rounded-full">
-                  <Link to="/login">Se connecter</Link>
+                  <Link to="/login">{t('nav.login')}</Link>
                 </Button>
                 <Button asChild size="sm" className="rounded-full gap-1.5 shadow-lg shadow-primary/25">
                   <Link to="/login">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Essai gratuit →
+                    {t('nav.trial')}
                   </Link>
                 </Button>
               </>
@@ -180,11 +185,12 @@ export function SiteNavbar() {
 
           {/* Mobile actions */}
           <div className="flex md:hidden items-center gap-2">
+            <LanguageToggle />
             <ModeToggle />
             <button
               onClick={() => setMobileOpen(v => !v)}
               className="h-9 w-9 rounded-xl border border-border grid place-items-center"
-              aria-label="Menu"
+              aria-label={t('nav.menu')}
             >
               {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -221,7 +227,7 @@ export function SiteNavbar() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Connecté</span>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{t('nav.connected')}</span>
                           {profile?.is_admin && (
                             <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0 h-4">Admin</Badge>
                           )}
@@ -232,29 +238,29 @@ export function SiteNavbar() {
                     <Button asChild size="sm" className="rounded-full w-full" onClick={() => setMobileOpen(false)}>
                       <Link to="/app">
                         <LayoutDashboard className="h-4 w-4 mr-1.5" />
-                        Tableau de bord
+                        {t('nav.dashboard')}
                       </Link>
                     </Button>
                     <Button asChild size="sm" variant="outline" className="rounded-full w-full" onClick={() => setMobileOpen(false)}>
                       <Link to="/app/profile">
                         <UserRound className="h-4 w-4 mr-1.5" />
-                        Mon profil
+                        {t('nav.profile')}
                       </Link>
                     </Button>
                     <Button size="sm" variant="ghost" className="rounded-full w-full text-destructive hover:text-destructive" onClick={handleMobileSignOut}>
                       <LogOut className="h-4 w-4 mr-1.5" />
-                      Déconnexion
+                      {t('nav.logout')}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button asChild variant="outline" size="sm" className="rounded-full w-full" onClick={() => setMobileOpen(false)}>
-                      <Link to="/login">Se connecter</Link>
+                      <Link to="/login">{t('nav.login')}</Link>
                     </Button>
                     <Button asChild size="sm" className="rounded-full w-full gap-1.5" onClick={() => setMobileOpen(false)}>
                       <Link to="/login">
                         <Sparkles className="h-3.5 w-3.5" />
-                        Essai gratuit →
+                        {t('nav.trial')}
                       </Link>
                     </Button>
                   </>

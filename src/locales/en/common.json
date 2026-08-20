@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "pricing": "Pricing",
+    "about": "About",
+    "help": "Help",
+    "contact": "Contact",
+    "login": "Sign in",
+    "trial": "Free trial →",
+    "dashboard": "Dashboard",
+    "profile": "My profile",
+    "logout": "Sign out",
+    "connected": "Connected",
+    "myAccount": "My account",
+    "accountMenu": "Account menu",
+    "menu": "Menu"
+  },
+  "footer": {
+    "tagline": "Your buying agent in China. Send a photo, we deliver to your door.",
+    "rights": "All rights reserved",
+    "navigation": "Navigation",
+    "contact": "Contact",
+    "social": "Social",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "legalNotice": "Legal Notice"
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "titlePrefix": "Frequently Asked",
+    "titleHighlight": "Questions",
+    "searchPlaceholder": "Search a question…",
+    "searchAria": "Search the FAQ",
+    "noResults": "No question matches “{{query}}”",
+    "noResultsHint": "Try rephrasing your search or contact us directly.",
+    "askQuestion": "Ask my question",
+    "stillQuestions": "Can't find your answer?",
+    "teamReplies": "Our team replies within 24h.",
+    "contactUs": "Contact us"
+  },
+  "language": {
+    "french": "French",
+    "english": "English",
+    "toggle": "Switch language"
+  }
+}
