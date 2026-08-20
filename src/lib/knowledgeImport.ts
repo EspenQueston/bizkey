@@ -52,46 +52,79 @@ export async function parseWorkbookSheet(workbook: WorkBook, sheetName: string):
   return { headers, rows }
 }
 
-export type MappableField = keyof KnowledgeRecordData
-export const MAPPABLE_FIELDS: { key: MappableField; label: string; required: boolean }[] = [
-  { key: 'name', label: 'Nom du produit/service', required: true },
-  { key: 'price', label: 'Prix', required: false },
-  { key: 'stock', label: 'Stock', required: false },
-  { key: 'category', label: 'Catégorie', required: false },
-  { key: 'description', label: 'Description', required: false },
-  { key: 'image_url', label: 'URL image', required: false },
+/** A workspace (one knowledge_documents row) can carry at most this many columns — keeps every imported catalog legible in the review table and in the WhatsApp assistant's lookup instead of an unbounded, arbitrarily wide row. */
+export const MAX_IMPORT_COLUMNS = 14
+/** Rows beyond this per document get split into additional, numbered documents (see splitIntoRowBatches) so a 300-row catalog becomes 3 manageable imports instead of one unwieldy one. */
+export const MAX_ROWS_PER_DOCUMENT = 100
+
+/** A file's own headers frequently exceed the 14-column cap, so the first pass keeps a small set of commonly-useful columns pre-checked (name/title, price, category, description-like fields) and leaves the rest for the user to add — never auto-selects past the cap. */
+const PRIORITY_SYNONYMS = [
+  'nom', 'produit', 'name', 'product', 'article', 'titre', 'désignation', 'title',
+  'prix', 'price', 'tarif', 'montant',
+  'categorie', 'catégorie', 'category', 'type',
+  'description', 'detail', 'détail', 'details', 'détails',
 ]
 
-const FIELD_SYNONYMS: Record<MappableField, string[]> = {
-  name: ['nom', 'produit', 'name', 'product', 'article', 'titre', 'désignation'],
-  price: ['prix', 'price', 'tarif', 'montant', 'cout', 'coût'],
-  stock: ['stock', 'quantite', 'quantité', 'qty', 'disponibilite', 'disponibilité'],
-  category: ['categorie', 'catégorie', 'category', 'type', 'famille'],
-  description: ['description', 'detail', 'détail', 'details', 'détails', 'notes'],
-  image_url: ['image', 'image url', 'photo', 'image_url', 'lien image', 'picture'],
+/** Best-effort default selection so most files need zero clicks to get a sensible starting point — priority-matching headers first, then whatever's left, capped at MAX_IMPORT_COLUMNS. The user can freely swap any of these before importing. */
+export function guessDefaultColumns(headers: string[]): string[] {
+  if (headers.length <= MAX_IMPORT_COLUMNS) return [...headers]
+  const scored = headers.map(h => ({
+    header: h,
+    priority: PRIORITY_SYNONYMS.includes(h.trim().toLowerCase()) ? 0 : 1,
+  }))
+  scored.sort((a, b) => a.priority - b.priority)
+  return scored.slice(0, MAX_IMPORT_COLUMNS).map(s => s.header).filter(h => headers.includes(h))
 }
 
-/** Best-effort auto-mapping by matching header names against common French/English synonyms — the user can always override before importing. */
-export function guessColumnMapping(headers: string[]): Partial<Record<MappableField, string>> {
-  const mapping: Partial<Record<MappableField, string>> = {}
-  for (const field of MAPPABLE_FIELDS) {
-    const synonyms = FIELD_SYNONYMS[field.key]
-    const match = headers.find(h => synonyms.includes(h.trim().toLowerCase()))
-    if (match) mapping[field.key] = match
-  }
-  return mapping
-}
-
-function toNumberOrNull(value: unknown): number | null {
-  if (value == null || value === '') return null
-  const n = typeof value === 'number' ? value : Number(String(value).replace(/[^\d.,-]/g, '').replace(',', '.'))
-  return Number.isFinite(n) ? n : null
-}
-
-function toStringOrNull(value: unknown): string | null {
+function toCellValue(value: unknown): string | number | null {
   if (value == null) return null
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
   const s = String(value).trim()
   return s === '' ? null : s
+}
+
+/**
+ * Builds one flexible record per row using only the columns the user chose
+ * to keep, with the source file's own header text as the key — the record
+ * mirrors exactly what's in the spreadsheet rather than remapping it into a
+ * fixed product schema. A row that ends up fully empty after filtering down
+ * to the kept columns (every selected cell blank) is dropped rather than
+ * imported as a hollow row.
+ */
+export function buildRecordsFromColumns(
+  rows: Record<string, unknown>[],
+  selectedHeaders: string[]
+): KnowledgeRecordData[] {
+  if (selectedHeaders.length === 0) return []
+  return rows
+    .map((row): KnowledgeRecordData | null => {
+      const record: KnowledgeRecordData = {}
+      let hasValue = false
+      for (const header of selectedHeaders) {
+        const value = toCellValue(row[header])
+        record[header] = value
+        if (value != null) hasValue = true
+      }
+      return hasValue ? record : null
+    })
+    .filter((r): r is KnowledgeRecordData => r !== null)
+}
+
+/**
+ * Splits a full record set into MAX_ROWS_PER_DOCUMENT-row batches. Each
+ * batch becomes its own knowledge_documents row — search/ranking already
+ * treats every document's records as one pool (see rankKnowledgeRecords),
+ * so splitting only affects how the catalog is organized for browsing/
+ * management, never what the WhatsApp assistant can find.
+ */
+export function splitIntoRowBatches<T>(records: T[], batchSize = MAX_ROWS_PER_DOCUMENT): T[][] {
+  if (records.length === 0) return []
+  if (records.length <= batchSize) return [records]
+  const batches: T[][] = []
+  for (let i = 0; i < records.length; i += batchSize) {
+    batches.push(records.slice(i, i + batchSize))
+  }
+  return batches
 }
 
 /**
@@ -158,27 +191,4 @@ export function chunkText(text: string): string[] {
   }
   if (current) chunks.push(current)
   return chunks
-}
-
-export function buildRecordsFromMapping(
-  rows: Record<string, unknown>[],
-  mapping: Partial<Record<MappableField, string>>
-): KnowledgeRecordData[] {
-  const nameColumn = mapping.name
-  if (!nameColumn) return []
-
-  return rows
-    .map((row): KnowledgeRecordData | null => {
-      const name = toStringOrNull(row[nameColumn])
-      if (!name) return null
-      return {
-        name,
-        price: mapping.price ? toNumberOrNull(row[mapping.price]) : null,
-        stock: mapping.stock ? toNumberOrNull(row[mapping.stock]) : null,
-        category: mapping.category ? toStringOrNull(row[mapping.category]) : null,
-        description: mapping.description ? toStringOrNull(row[mapping.description]) : null,
-        image_url: mapping.image_url ? toStringOrNull(row[mapping.image_url]) : null,
-      }
-    })
-    .filter((r): r is KnowledgeRecordData => r !== null)
 }

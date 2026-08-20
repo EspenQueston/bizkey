@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch, Eye, Layers, Sparkles } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, X, Save, BookOpen, Trash2, Edit2, Search, Upload, FileSpreadsheet, FileText, Check, Loader2, PackageSearch, Eye, Layers, Sparkles, Columns3, SplitSquareHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +12,10 @@ import {
   getKnowledgeRecordsByDocument, getKnowledgeChunksByDocument, deleteKnowledgeRecord, deleteKnowledgeChunk,
   generateFaqFromDocument, type FaqSuggestion,
 } from '@/lib/db'
-import { loadSpreadsheetWorkbook, parseWorkbookSheet, guessColumnMapping, buildRecordsFromMapping, extractPdfText, extractDocxText, chunkText, MAPPABLE_FIELDS, type MappableField } from '@/lib/knowledgeImport'
+import {
+  loadSpreadsheetWorkbook, parseWorkbookSheet, guessDefaultColumns, buildRecordsFromColumns, splitIntoRowBatches,
+  extractPdfText, extractDocxText, chunkText, MAX_IMPORT_COLUMNS, MAX_ROWS_PER_DOCUMENT,
+} from '@/lib/knowledgeImport'
 import { useAuth } from '@/contexts/AuthContext'
 import type { WhatsAppKbArticle, KnowledgeDocument, KnowledgeRecord, KnowledgeChunk } from '@/lib/supabase'
 import type { WorkBook } from 'xlsx'
@@ -45,7 +48,7 @@ export default function WhatsAppKnowledgeBasePage() {
   const [switchingSheet, setSwitchingSheet] = useState(false)
   const [parsedHeaders, setParsedHeaders] = useState<string[]>([])
   const [parsedRows, setParsedRows] = useState<Record<string, unknown>[]>([])
-  const [mapping, setMapping] = useState<Partial<Record<MappableField, string>>>({})
+  const [selectedColumns, setSelectedColumns] = useState<Set<string>>(new Set())
   const [pendingChunks, setPendingChunks] = useState<string[]>([])
   const [parsing, setParsing] = useState(false)
   const [parseError, setParseError] = useState('')
@@ -59,6 +62,13 @@ export default function WhatsAppKnowledgeBasePage() {
   const [viewChunks, setViewChunks] = useState<KnowledgeChunk[]>([])
   const [loadingView, setLoadingView] = useState(false)
   const [deletingRowId, setDeletingRowId] = useState<string | null>(null)
+  // Different imports can keep different columns, so the detail table's
+  // headers are derived from whatever keys are actually present across this
+  // document's rows rather than a fixed product schema.
+  const viewColumns = useMemo(
+    () => Array.from(new Set(viewRecords.flatMap(r => Object.keys(r.data)))),
+    [viewRecords]
+  )
 
   const isSpreadsheetDoc = (doc: KnowledgeDocument) => doc.source_type === 'csv' || doc.source_type === 'xlsx'
 
@@ -199,7 +209,7 @@ export default function WhatsAppKnowledgeBasePage() {
         setSelectedSheet(chosen)
         setParsedHeaders(parsed.headers)
         setParsedRows(parsed.rows)
-        setMapping(guessColumnMapping(parsed.headers))
+        setSelectedColumns(new Set(guessDefaultColumns(parsed.headers)))
         if (parsed.rows.length === 0) {
           setParseError(names.length > 1 ? "Aucune des feuilles de ce fichier ne contient de données — vérifiez qu'elles ont bien une ligne d'en-têtes." : 'Ce fichier ne contient aucune ligne de données.')
         }
@@ -233,7 +243,7 @@ export default function WhatsAppKnowledgeBasePage() {
     setSelectedSheet('')
     setParsedHeaders([])
     setParsedRows([])
-    setMapping({})
+    setSelectedColumns(new Set())
     setPendingChunks([])
     setParseError('')
   }
@@ -248,7 +258,7 @@ export default function WhatsAppKnowledgeBasePage() {
       setSelectedSheet(sheetName)
       setParsedHeaders(headers)
       setParsedRows(rows)
-      setMapping(guessColumnMapping(headers))
+      setSelectedColumns(new Set(guessDefaultColumns(headers)))
       setParseError(rows.length === 0 ? 'Cette feuille ne contient aucune ligne de données — essayez-en une autre.' : '')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Impossible de lire cette feuille')
@@ -257,7 +267,32 @@ export default function WhatsAppKnowledgeBasePage() {
     }
   }
 
-  const mappedRecords = pendingKind === 'spreadsheet' ? buildRecordsFromMapping(parsedRows, mapping) : []
+  const selectedHeaderList = useMemo(
+    () => parsedHeaders.filter(h => selectedColumns.has(h)),
+    [parsedHeaders, selectedColumns]
+  )
+  const builtRecords = useMemo(
+    () => pendingKind === 'spreadsheet' ? buildRecordsFromColumns(parsedRows, selectedHeaderList) : [],
+    [pendingKind, parsedRows, selectedHeaderList]
+  )
+  const rowBatches = useMemo(() => splitIntoRowBatches(builtRecords), [builtRecords])
+  const willSplit = rowBatches.length > 1
+
+  function toggleColumn(header: string) {
+    setSelectedColumns(prev => {
+      const next = new Set(prev)
+      if (next.has(header)) {
+        next.delete(header)
+        return next
+      }
+      if (next.size >= MAX_IMPORT_COLUMNS) {
+        toast.error(`Vous pouvez garder au maximum ${MAX_IMPORT_COLUMNS} colonnes par import`)
+        return prev
+      }
+      next.add(header)
+      return next
+    })
+  }
 
   async function handleImport() {
     if (!assistantClient || !pendingFile) return
@@ -265,19 +300,30 @@ export default function WhatsAppKnowledgeBasePage() {
     try {
       const baseTitle = pendingFile.name.replace(/\.(csv|xlsx?|xls|pdf|docx)$/i, '')
       const title = pendingKind === 'spreadsheet' && sheetNames.length > 1 ? `${baseTitle} — ${selectedSheet}` : baseTitle
-      let doc: KnowledgeDocument
+      const createdDocs: KnowledgeDocument[] = []
       if (pendingKind === 'spreadsheet') {
-        if (mappedRecords.length === 0) return
+        if (rowBatches.length === 0) return
         const sourceType = /\.csv$/i.test(pendingFile.name) ? 'csv' : 'xlsx'
-        doc = await createKnowledgeDocumentWithRecords({ clientId: assistantClient.id, sourceType, title, file: pendingFile, records: mappedRecords })
+        for (let i = 0; i < rowBatches.length; i++) {
+          const partTitle = rowBatches.length > 1 ? `${title} (partie ${i + 1}/${rowBatches.length})` : title
+          const doc = await createKnowledgeDocumentWithRecords({ clientId: assistantClient.id, sourceType, title: partTitle, file: pendingFile, records: rowBatches[i] })
+          createdDocs.push(doc)
+        }
       } else {
         if (pendingChunks.length === 0) return
         const sourceType = /\.pdf$/i.test(pendingFile.name) ? 'pdf' : 'docx'
-        doc = await createKnowledgeDocumentWithChunks({ clientId: assistantClient.id, sourceType, title, file: pendingFile, chunks: pendingChunks })
+        const doc = await createKnowledgeDocumentWithChunks({ clientId: assistantClient.id, sourceType, title, file: pendingFile, chunks: pendingChunks })
+        createdDocs.push(doc)
       }
-      setDocuments(prev => [doc, ...prev])
+      setDocuments(prev => [...createdDocs, ...prev])
       cancelImport()
-      toast.success(`${doc.row_count} ${pendingKind === 'spreadsheet' ? 'ligne' : 'passage'}${doc.row_count > 1 ? 's' : ''} importé${doc.row_count > 1 ? 's' : ''}`)
+      const totalRows = createdDocs.reduce((sum, d) => sum + d.row_count, 0)
+      const unit = pendingKind === 'spreadsheet' ? 'ligne' : 'passage'
+      toast.success(
+        createdDocs.length > 1
+          ? `${totalRows} ${unit}s importées en ${createdDocs.length} fichiers`
+          : `${totalRows} ${unit}${totalRows > 1 ? 's' : ''} importé${totalRows > 1 ? 's' : ''}`
+      )
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Échec de l'import")
     } finally {
@@ -426,46 +472,71 @@ export default function WhatsAppKnowledgeBasePage() {
                   </div>
                 )}
 
-                <div className="grid sm:grid-cols-2 gap-2.5">
-                  {MAPPABLE_FIELDS.map(field => (
-                    <div key={field.key} className="space-y-1">
-                      <Label className="text-xs">{field.label}{field.required ? ' *' : ''}</Label>
-                      <select
-                        value={mapping[field.key] ?? ''}
-                        onChange={e => setMapping(prev => ({ ...prev, [field.key]: e.target.value || undefined }))}
-                        className="h-9 w-full rounded-lg border border-input bg-background px-2 text-xs"
-                      >
-                        <option value="">— Ignorer —</option>
-                        {parsedHeaders.map(h => <option key={h} value={h}>{h}</option>)}
-                      </select>
-                    </div>
-                  ))}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs flex items-center gap-1.5"><Columns3 className="h-3 w-3" /> Colonnes à conserver</Label>
+                    <Badge variant={selectedColumns.size >= MAX_IMPORT_COLUMNS ? 'default' : 'outline'} className="text-[10px] shrink-0">
+                      {selectedColumns.size} / {MAX_IMPORT_COLUMNS}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Choisissez les colonnes de « {selectedSheet || pendingFile.name} » à garder dans la base de connaissances — {MAX_IMPORT_COLUMNS} maximum, le reste est ignoré.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-0.5">
+                    {parsedHeaders.map(header => {
+                      const active = selectedColumns.has(header)
+                      return (
+                        <button
+                          key={header}
+                          type="button"
+                          onClick={() => toggleColumn(header)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            active
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background text-muted-foreground border-input hover:border-primary/40 hover:text-foreground'
+                          }`}
+                        >
+                          {active && <Check className="h-3 w-3" />}
+                          {header}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
 
-                {mappedRecords.length > 0 && (
+                {willSplit && (
+                  <div className="flex items-start gap-2 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-xs text-blue-700 dark:text-blue-300">
+                    <SplitSquareHorizontal className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span>
+                      {builtRecords.length} lignes dépassent la limite de {MAX_ROWS_PER_DOCUMENT} par import — elles seront automatiquement réparties en {rowBatches.length} fichiers ({rowBatches.map(b => b.length).join(', ')} lignes).
+                    </span>
+                  </div>
+                )}
+
+                {selectedColumns.size === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">Sélectionnez au moins une colonne pour prévisualiser les données.</p>
+                ) : builtRecords.length > 0 && (
                   <div className="rounded-lg border border-border overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead className="bg-secondary/50">
                         <tr>
-                          <th className="text-left px-2.5 py-1.5 font-medium">Nom</th>
-                          <th className="text-left px-2.5 py-1.5 font-medium">Prix</th>
-                          <th className="text-left px-2.5 py-1.5 font-medium">Stock</th>
-                          <th className="text-left px-2.5 py-1.5 font-medium">Catégorie</th>
+                          {selectedHeaderList.map(h => (
+                            <th key={h} className="text-left px-2.5 py-1.5 font-medium whitespace-nowrap">{h}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {mappedRecords.slice(0, 3).map((r, i) => (
+                        {builtRecords.slice(0, 3).map((r, i) => (
                           <tr key={i}>
-                            <td className="px-2.5 py-1.5">{r.name}</td>
-                            <td className="px-2.5 py-1.5">{r.price ?? '—'}</td>
-                            <td className="px-2.5 py-1.5">{r.stock ?? '—'}</td>
-                            <td className="px-2.5 py-1.5">{r.category ?? '—'}</td>
+                            {selectedHeaderList.map(h => (
+                              <td key={h} className="px-2.5 py-1.5 whitespace-nowrap">{r[h] ?? '—'}</td>
+                            ))}
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    {mappedRecords.length > 3 && (
-                      <p className="text-[11px] text-muted-foreground px-2.5 py-1.5">+ {mappedRecords.length - 3} autre{mappedRecords.length - 3 > 1 ? 's' : ''} ligne{mappedRecords.length - 3 > 1 ? 's' : ''}</p>
+                    {builtRecords.length > 3 && (
+                      <p className="text-[11px] text-muted-foreground px-2.5 py-1.5">+ {builtRecords.length - 3} autre{builtRecords.length - 3 > 1 ? 's' : ''} ligne{builtRecords.length - 3 > 1 ? 's' : ''}</p>
                     )}
                   </div>
                 )}
@@ -476,10 +547,12 @@ export default function WhatsAppKnowledgeBasePage() {
                     size="sm"
                     className="flex-1 rounded-lg gap-1.5"
                     onClick={handleImport}
-                    disabled={importing || !mapping.name || mappedRecords.length === 0}
+                    disabled={importing || selectedColumns.size === 0 || builtRecords.length === 0}
                   >
                     {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                    Importer {mappedRecords.length} ligne{mappedRecords.length > 1 ? 's' : ''}
+                    {willSplit
+                      ? `Importer ${builtRecords.length} lignes (${rowBatches.length} fichiers)`
+                      : `Importer ${builtRecords.length} ligne${builtRecords.length > 1 ? 's' : ''}`}
                   </Button>
                 </div>
               </div>
@@ -709,20 +782,18 @@ export default function WhatsAppKnowledgeBasePage() {
                     <table className="w-full text-xs">
                       <thead className="bg-secondary/50 sticky top-0">
                         <tr>
-                          <th className="text-left px-3 py-2 font-medium">Nom</th>
-                          <th className="text-left px-3 py-2 font-medium">Prix</th>
-                          <th className="text-left px-3 py-2 font-medium">Stock</th>
-                          <th className="text-left px-3 py-2 font-medium">Catégorie</th>
+                          {viewColumns.map(col => (
+                            <th key={col} className="text-left px-3 py-2 font-medium whitespace-nowrap">{col}</th>
+                          ))}
                           {canWriteCatalog && <th className="w-8" />}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
                         {viewRecords.map(r => (
                           <tr key={r.id}>
-                            <td className="px-3 py-2">{r.data.name}</td>
-                            <td className="px-3 py-2">{r.data.price ?? '—'}</td>
-                            <td className="px-3 py-2">{r.data.stock ?? '—'}</td>
-                            <td className="px-3 py-2">{r.data.category ?? '—'}</td>
+                            {viewColumns.map(col => (
+                              <td key={col} className="px-3 py-2 whitespace-nowrap">{r.data[col] ?? '—'}</td>
+                            ))}
                             {canWriteCatalog && (
                               <td className="px-1">
                                 <button

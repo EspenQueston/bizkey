@@ -494,13 +494,9 @@ export interface KnowledgeDocument {
   updated_at: string
 }
 
+/** Keyed by the source spreadsheet's own header text (whatever the business named its columns), not a fixed product schema — the user picks which columns to keep at import time. */
 export interface KnowledgeRecordData {
-  name: string
-  price?: number | null
-  stock?: number | null
-  category?: string | null
-  description?: string | null
-  image_url?: string | null
+  [column: string]: string | number | null
 }
 
 export interface KnowledgeRecord {

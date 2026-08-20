@@ -117,12 +117,21 @@ export function rankKnowledgeChunks(query: string, chunks: KnowledgeChunk[], lim
   return scored.slice(0, limit).map(s => s.chunk)
 }
 
-/** Formats a matched catalog record into a WhatsApp-ready reply — one consistent shape, reused by the simulator and (ported) assistant-context. */
+/**
+ * Formats a matched catalog record into a WhatsApp-ready reply. Records no
+ * longer have a fixed name/price/stock/description shape — a business picks
+ * whichever columns it wants to keep at import time — so this renders every
+ * populated field as "Column : value", bolding the first one as the title
+ * (the leftmost kept column is typically the product/service name in a real
+ * spreadsheet export, matching how guessDefaultColumns prioritizes it).
+ */
 export function formatKnowledgeRecordReply(record: KnowledgeRecord): string {
-  const { name, price, stock, description } = record.data
-  const lines = [`*${name}*`]
-  if (price != null) lines.push(`Prix : ${price.toLocaleString('fr-FR')} FCFA`)
-  if (stock != null) lines.push(stock > 0 ? `Stock : disponible (${stock})` : 'Stock : épuisé')
-  if (description) lines.push(description)
+  const entries = Object.entries(record.data).filter(([, v]) => v != null && v !== '')
+  if (entries.length === 0) return ''
+  const [, title] = entries[0]
+  const lines = [`*${title}*`]
+  for (const [key, value] of entries.slice(1)) {
+    lines.push(`${key} : ${value}`)
+  }
   return lines.join('\n')
 }

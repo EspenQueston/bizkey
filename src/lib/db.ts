@@ -1274,7 +1274,7 @@ export async function createKnowledgeDocumentWithRecords(params: {
       document_id: documentId,
       record_type: 'product',
       data: r,
-      searchable_text: [r.name, r.category, r.description, r.price, r.stock].filter(v => v != null && v !== '').join(' ').toLowerCase(),
+      searchable_text: Object.values(r).filter(v => v != null && v !== '').map(String).join(' ').toLowerCase(),
     }))
     const { error: recErr } = await supabase.from('knowledge_records').insert(rows)
     if (recErr) throw new Error(recErr.message)

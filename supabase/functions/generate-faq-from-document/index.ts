@@ -98,10 +98,12 @@ serve(async (req) => {
     sourceText = (records ?? [])
       .map((r) => {
         const d = r.data as Record<string, unknown>
-        return [d.name, d.category, d.price != null ? `${d.price} FCFA` : null, d.description]
-          .filter((v) => v != null && v !== '')
+        return Object.entries(d)
+          .filter(([, v]) => v != null && v !== '')
+          .map(([k, v]) => `${k}: ${v}`)
           .join(' — ')
       })
+      .filter((line) => line !== '')
       .join('\n')
   } else {
     const { data: chunks } = await admin
