@@ -9,13 +9,16 @@ export interface PaymentMethodOption {
   active: boolean
 }
 
-// payment_methods.json keys don't match ERPCountry 1:1 (e.g. "cote_ivoire" vs
-// "cote_divoire"), and mali/niger have no mobile money coverage configured yet.
+// payment_methods.json's keys match ERPCountry 1:1 today; mali/niger just
+// have no mobile money coverage configured yet. Kept as an explicit map
+// (rather than using ERPCountry values directly as keys) so a future
+// naming drift between the two fails loudly here instead of silently
+// returning an empty method list for a whole country.
 const COUNTRY_KEY_MAP: Record<ERPCountry, keyof typeof paymentMethods | null> = {
   benin: 'benin',
   togo: 'togo',
   senegal: 'senegal',
-  cote_divoire: 'cote_ivoire',
+  cote_divoire: 'cote_divoire',
   cameroun: 'cameroun',
   mali: null,
   niger: null,

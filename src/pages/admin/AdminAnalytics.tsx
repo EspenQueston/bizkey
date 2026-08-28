@@ -181,7 +181,7 @@ export default function AdminAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={tooltipStyle()} formatter={(v: number) => [`$${v.toFixed(2)}`, t('revenueChart.revenue')]} />
+                <Tooltip contentStyle={tooltipStyle()} formatter={(v) => [`$${Number(v ?? 0).toFixed(2)}`, t('revenueChart.revenue')]} />
                 <Bar dataKey="amount" name={t('revenueChart.revenue')} fill="var(--primary)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -247,7 +247,7 @@ export default function AdminAnalytics() {
                       <Cell key={q.tier} fill={QUALITY_COLORS[q.tier] ?? '#94a3b8'} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={tooltipStyle()} formatter={(v: number, _n, p) => [v, QUALITY_LABELS[p?.payload?.tier as string] ?? p?.payload?.tier]} />
+                  <Tooltip contentStyle={tooltipStyle()} formatter={(v, _n, p) => [v, QUALITY_LABELS[p?.payload?.tier as string] ?? p?.payload?.tier]} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (

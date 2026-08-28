@@ -73,7 +73,12 @@ export function ParticlesBackground({ density = 55, connect = true, className = 
       }))
     }
 
-    function resize() {
+    // Arrow-function expressions, not `function` declarations — TS's
+    // control-flow narrowing of the outer `const canvas`/`ctx` (guaranteed
+    // non-null by the early returns above) only carries into a closure
+    // defined this way; a hoisted `function` declaration loses it, which is
+    // exactly what produced the 'possibly null' errors this replaces.
+    const resize = () => {
       const parent = canvas.parentElement
       if (!parent) return
       dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -87,7 +92,7 @@ export function ParticlesBackground({ density = 55, connect = true, className = 
       seed()
     }
 
-    function draw() {
+    const draw = () => {
       ctx.clearRect(0, 0, width, height)
 
       if (connect) {
@@ -119,7 +124,7 @@ export function ParticlesBackground({ density = 55, connect = true, className = 
       ctx.globalAlpha = 1
     }
 
-    function step() {
+    const step = () => {
       for (const p of particles) {
         p.x += p.vx
         p.y += p.vy
