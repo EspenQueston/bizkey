@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MessageCircle, Send, X, UserRound, Bot, CheckCircle2, Play, Globe, Smartphone, Ticket, UserCheck2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,6 +11,7 @@ import {
   updateWhatsAppConversation, simulateIncomingWhatsAppMessage, getWhatsAppNumbers,
   getOpenHandoffTickets, updateHandoffTicket, resolveHandoffTicket, getAssistantClientMembers,
 } from '@/lib/db'
+import { supabase } from '@/lib/supabase'
 import type { WhatsAppConversation, WhatsAppConversationStatus, WhatsAppMessage, WhatsAppNumber, HandoffTicket, HandoffTicketPriority, AssistantClientMember } from '@/lib/supabase'
 import { toast } from 'sonner'
 
@@ -78,6 +79,61 @@ export default function WhatsAppConversationsPage() {
       if (n.status === 'fulfilled') setNumbers(n.value)
     }).finally(() => setLoading(false))
     refreshTickets()
+  }, [])
+
+  // The currently-open thread, kept in a ref so the message-insert handler
+  // below (set up once, on mount) always reads the live selection instead
+  // of the value it closed over at subscribe time.
+  const selectedIdRef = useRef<string | null>(null)
+  useEffect(() => { selectedIdRef.current = selectedId }, [selectedId])
+
+  // Live inbox: without this, a new WhatsApp message or a status change
+  // made by a teammate (or n8n) only shows up on the next manual reload.
+  // Realtime re-checks each change against the table's RLS before it ever
+  // reaches this client, so a business only ever receives its own rows —
+  // same scoping getWhatsAppConversations() already relies on.
+  useEffect(() => {
+    const channel = supabase
+      .channel('assistant-inbox')
+      .on<WhatsAppConversation>(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'whatsapp_conversations' },
+        ({ new: conv }) => {
+          setConversations(prev => {
+            if (prev.some(c => c.id === conv.id)) return prev
+            toast.info(`Nouvelle conversation — ${conv.customer_name || conv.customer_phone}`)
+            return [conv, ...prev]
+          })
+          setSelectedId(prev => prev ?? conv.id)
+        },
+      )
+      .on<WhatsAppConversation>(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'whatsapp_conversations' },
+        ({ new: conv, old: prevConv }) => {
+          if (prevConv?.status !== 'pending_human' && conv.status === 'pending_human') {
+            toast.warning(`🙋 Transfert humain demandé — ${conv.customer_name || conv.customer_phone}`)
+          }
+          setConversations(prev => prev.map(c => c.id === conv.id ? conv : c))
+        },
+      )
+      .on<WhatsAppMessage>(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'whatsapp_messages' },
+        ({ new: msg }) => {
+          setConversations(prev => prev.map(c => c.id === msg.conversation_id ? { ...c, last_message_at: msg.created_at } : c))
+          if (msg.conversation_id !== selectedIdRef.current) return
+          setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'handoff_tickets' },
+        () => refreshTickets(),
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   useEffect(() => {
