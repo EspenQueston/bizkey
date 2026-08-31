@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAllAssistantPlans, getUserTransactions, getUsageSummary, getConversationCountSince } from '@/lib/db'
+import { CUSTOMER_AI_COST_MULTIPLIER } from '@/lib/whatsapp'
 import type { AssistantClientStatus, AssistantPlan, PaymentTransaction } from '@/lib/supabase'
 
 const STATUS_META: Record<AssistantClientStatus, { label: string; color: string }> = {
@@ -15,13 +16,6 @@ const STATUS_META: Record<AssistantClientStatus, { label: string; color: string 
   cancelled: { label: 'Résilié',   color: 'bg-destructive/15 text-destructive' },
   expired:   { label: 'Expiré',    color: 'bg-secondary text-muted-foreground' },
 }
-
-// The AI cost shown to a business owner is a display markup over the real
-// OpenAI spend, not the actual cost basis — the admin panel (WhatsAppOverview,
-// AssistantClients) shows the real, unmarked-up figure from the same
-// usage_events rows. Only the multiplier differs; nothing about the
-// underlying cost tracking/billing data changes.
-const CUSTOMER_AI_COST_MULTIPLIER = 10
 
 const TX_STATUS_META: Record<PaymentTransaction['status'], { label: string; color: string }> = {
   success: { label: 'Payé',     color: 'text-primary border-primary/30' },

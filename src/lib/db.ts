@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket, UsageEventType, UsageSummary, UsageSummaryByTenant, KnowledgeDocument, KnowledgeRecord, KnowledgeRecordData, KnowledgeChunk } from './supabase'
+import type { Database, ERPClient, ERPOrder, ERPDelivery, ERPCountry, ERPOrderStatus, ERPDeliveryStatus, Plan, Subscription, PaymentTransaction, PromoCode, CreditBalance, QuoteRequest, WhatsAppNumber, WhatsAppContact, WhatsAppConversation, WhatsAppMessage, WhatsAppKbArticle, WhatsAppAutoReply, AssistantPlan, AssistantClient, AssistantTone, AssistantClientMember, AssistantMemberRole, HandoffTicket, UsageEventType, UsageSummary, UsageSummaryByTenant, KnowledgeDocument, KnowledgeRecord, KnowledgeRecordData, KnowledgeChunk } from './supabase'
 import { matchAutoReply, rankKnowledgeRecords, formatKnowledgeRecordReply, rankKnowledgeChunks } from './whatsappBot'
 import { getFunctionErrorMessage } from './api'
 
@@ -965,6 +965,13 @@ export async function getWhatsAppConversations(): Promise<WhatsAppConversation[]
   return (data ?? []) as WhatsAppConversation[]
 }
 
+/** RLS already scopes this to the caller's own business (or every contact for admin) — no clientId param needed, same pattern as getWhatsAppConversations. */
+export async function getWhatsAppContacts(): Promise<WhatsAppContact[]> {
+  const { data, error } = await supabase.from('whatsapp_contacts').select('*').order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as WhatsAppContact[]
+}
+
 /** Server-side count against a business's plan.max_conversations_per_month — a `head: true` count query, not a fetch-everything-then-filter-in-JS like AssistantBilling.tsx used to do. clientId null means BizKey's own bucket. */
 export async function getConversationCountSince(clientId: string | null, since: string): Promise<number> {
   let query = supabase.from('whatsapp_conversations').select('id', { count: 'exact', head: true }).gte('created_at', since)
@@ -990,6 +997,15 @@ export async function getOpenHandoffTickets(): Promise<HandoffTicket[]> {
   const { data, error } = await supabase.from('handoff_tickets').select('*').eq('status', 'open')
   if (error) throw new Error(error.message)
   return (data ?? []) as HandoffTicket[]
+}
+
+/** Every ticket ever raised since `since`, open or resolved — the denominator for a real "% of conversations that needed a human" figure, not just the currently-open count. */
+export async function getHandoffTicketsCountSince(clientId: string | null, since: string): Promise<number> {
+  let query = supabase.from('handoff_tickets').select('id', { count: 'exact', head: true }).gte('created_at', since)
+  query = clientId === null ? query.is('client_id', null) : query.eq('client_id', clientId)
+  const { count, error } = await query
+  if (error) throw new Error(error.message)
+  return count ?? 0
 }
 
 /** Owner/manager only (handoff_tickets_own_write) — priority/reason/assignee, never status directly (use resolveHandoffTicket for that, since it's the half that syncs the conversation back). */

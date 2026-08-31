@@ -109,6 +109,8 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
         { icon: Bot,        label: "Vue d'ensemble",        to: '/app/assistant',               end: true },
         { icon: Smartphone, label: 'Numéros WhatsApp',      to: '/app/assistant/numbers',        adminOnly: true },
         { icon: MessageSquare, label: 'Conversations',      to: '/app/assistant/conversations'             },
+        { icon: UserRound,  label: 'Contacts',              to: '/app/assistant/contacts',       hideForAdmin: true },
+        { icon: BarChart3,  label: 'Statistiques',          to: '/app/assistant/analytics',      hideForAdmin: true },
         { icon: BookOpen,   label: 'Base de connaissances', to: '/app/assistant/knowledge-base'            },
         { icon: Bot,        label: 'Réponses automatiques', to: '/app/assistant/auto-replies'              },
         { icon: Settings,   label: 'Réglages',              to: '/app/assistant/settings',       hideForAdmin: true },

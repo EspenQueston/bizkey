@@ -441,6 +441,21 @@ export type WhatsAppConversationStatus = 'open' | 'pending_human' | 'closed'
 
 export type WhatsAppChannel = 'whatsapp' | 'website'
 
+export interface WhatsAppContact {
+  id: string
+  whatsapp_number: string
+  display_name: string | null
+  /** Set once this contact has linked a real BizKey account (e.g. to view their own order history) — most contacts stay provisional forever, which is expected. */
+  customer_profile_id: string | null
+  is_provisional: boolean
+  activation_token: string | null
+  activated_at: string | null
+  created_at: string
+  updated_at: string
+  /** null = BizKey's own contact. */
+  client_id: string | null
+}
+
 export interface WhatsAppConversation {
   id: string
   number_id: string | null
@@ -453,6 +468,8 @@ export interface WhatsAppConversation {
   channel: WhatsAppChannel
   /** null = BizKey's own conversation. */
   client_id?: string | null
+  /** Links to the matching whatsapp_contacts row, if one exists — set automatically when the conversation is created. */
+  contact_id?: string | null
 }
 
 export type WhatsAppMessageDirection = 'inbound' | 'outbound'

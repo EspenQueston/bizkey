@@ -49,6 +49,8 @@ import WhatsAppAutoReplies from '@/pages/admin/WhatsAppAutoReplies'
 import AssistantClients from '@/pages/admin/AssistantClients'
 import WhatsAppAssistantSettings from '@/pages/assistant/AssistantSettings'
 import WhatsAppAssistantBilling from '@/pages/assistant/AssistantBilling'
+import AssistantContacts from '@/pages/assistant/AssistantContacts'
+import AssistantAnalytics from '@/pages/assistant/AssistantAnalytics'
 
 // Re-use existing ERP pages
 import ClientsPage from '@/pages/erp/Clients'
@@ -287,6 +289,8 @@ function AppRoutes() {
         <Route path="assistant" element={<AssistantAccessRoute><WhatsAppOverview /></AssistantAccessRoute>} />
         <Route path="assistant/numbers" element={<AdminRoute><WhatsAppNumbers /></AdminRoute>} />
         <Route path="assistant/conversations" element={<AssistantAccessRoute><WhatsAppConversations /></AssistantAccessRoute>} />
+        <Route path="assistant/contacts" element={<AssistantAccessRoute><AssistantContacts /></AssistantAccessRoute>} />
+        <Route path="assistant/analytics" element={<AssistantAccessRoute><AssistantAnalytics /></AssistantAccessRoute>} />
         <Route path="assistant/knowledge-base" element={<AssistantAccessRoute><WhatsAppKnowledgeBase /></AssistantAccessRoute>} />
         <Route path="assistant/auto-replies" element={<AssistantAccessRoute><WhatsAppAutoReplies /></AssistantAccessRoute>} />
         <Route path="assistant/settings" element={<AssistantManagerRoute><WhatsAppAssistantSettings /></AssistantManagerRoute>} />

@@ -15,3 +15,10 @@ export function buildWhatsAppUrl(message?: string): string {
   const base = `https://wa.me/${WHATSAPP_PHONE}`
   return message ? `${base}?text=${encodeURIComponent(message)}` : base
 }
+
+// The AI cost a business owner sees anywhere in their own dashboard
+// (Billing, Analytics) is a display markup over the real OpenAI spend, not
+// the actual cost basis — the admin panel (WhatsAppOverview, AssistantClients)
+// shows the real, unmarked-up figure from the same usage_events rows.
+// Shared here so every customer-facing display of this number agrees.
+export const CUSTOMER_AI_COST_MULTIPLIER = 10
