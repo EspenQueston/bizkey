@@ -119,9 +119,22 @@ export async function createKnowledgeDocumentWithChunks(params: {
     }))
     const { error: chunkErr } = await supabase.from('knowledge_chunks').insert(rows)
     if (chunkErr) throw new Error(chunkErr.message)
+
+    // Best-effort, never blocks the upload: a chunk with no embedding yet
+    // just falls back to keyword search (rankKnowledgeChunks) until this
+    // catches up, or forever if OPENAI_API_KEY is unset / the call fails.
+    embedKnowledgeChunks(documentId).catch(err => console.warn('embedKnowledgeChunks failed:', err))
   }
 
   return doc as KnowledgeDocument
+}
+
+/** Calls the generate-chunk-embeddings edge function — OpenAI call and cost logging happen server-side. Not awaited by its only caller above (fire-and-forget), but exposed so a future "re-embed" retry action could call it directly too. */
+export async function embedKnowledgeChunks(documentId: string): Promise<{ embedded: number }> {
+  const { data, error } = await supabase.functions.invoke('generate-chunk-embeddings', { body: { documentId } })
+  if (error) throw new Error(error.message)
+  if (data?.error) throw new Error(data.error)
+  return { embedded: data?.embedded ?? 0 }
 }
 
 export async function getKnowledgeRecordsByDocument(documentId: string): Promise<KnowledgeRecord[]> {

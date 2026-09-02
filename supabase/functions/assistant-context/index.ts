@@ -67,6 +67,26 @@ interface KnowledgeChunk {
   content: string
 }
 
+interface MatchedChunk {
+  id: string
+  document_id: string
+  content: string
+  similarity: number
+}
+
+// text-embedding-3-small pricing — $0.02 / 1M input tokens. Only used to log
+// a real cost figure into usage_events, matching generate-chunk-embeddings'
+// own constant (kept separate since Deno functions can't share a module
+// across deploys the way the frontend's src/services/ files do).
+const EMBEDDING_COST_PER_TOKEN = 0.02 / 1_000_000
+const EMBEDDING_MODEL = 'text-embedding-3-small'
+// Cosine similarity below this is treated as "nothing relevant enough" —
+// text-embedding-3-small's similarity scores for genuinely related short
+// passages typically land well above this; a low-relevance false positive
+// quoted back to a customer is worse than the agent getting no passage at
+// all and falling back to its own general knowledge / a human handoff.
+const MIN_CHUNK_SIMILARITY = 0.3
+
 const GREETING_PATTERNS = ['bonjour', 'bonsoir', 'salut', 'bjr', 'hello', 'hi', 'coucou', 'cc']
 
 function resolveResponseText(rule: AutoReplyRule, kb: KbArticle[]): string | null {
@@ -193,6 +213,54 @@ function rankKnowledgeChunks(query: string, chunks: KnowledgeChunk[], limit: num
   return scored.slice(0, limit).map(s => s.chunk)
 }
 
+// Runs only when keyword scoring above found zero document passages — the
+// common case (a real keyword hit) never pays for an OpenAI call at all.
+// Embeds the customer's message and calls match_knowledge_chunks (see
+// 20260901110000_knowledge_chunk_embeddings.sql) for a semantic fallback
+// that survives a paraphrase sharing no words with the source document.
+// Every failure path here returns an empty array rather than throwing —
+// this is an enhancement on top of an already-complete keyword result,
+// never something the caller should have to handle failing.
+async function fallbackToChunkEmbedding(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  query: string,
+  clientId: string | null,
+  limit: number,
+): Promise<{ passages: string[]; costAmount: number; totalTokens: number }> {
+  const openaiKey = Deno.env.get('OPENAI_API_KEY')
+  if (!openaiKey) return { passages: [], costAmount: 0, totalTokens: 0 }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
+      body: JSON.stringify({ model: EMBEDDING_MODEL, input: query }),
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!response.ok) return { passages: [], costAmount: 0, totalTokens: 0 }
+
+    const data = await response.json()
+    const queryEmbedding = data.data?.[0]?.embedding
+    const totalTokens = data.usage?.total_tokens ?? 0
+    if (!queryEmbedding) return { passages: [], costAmount: 0, totalTokens }
+
+    const { data: matches } = await admin.rpc('match_knowledge_chunks', {
+      p_query_embedding: queryEmbedding,
+      p_client_id: clientId,
+      p_match_count: limit,
+    })
+    const passages = ((matches ?? []) as MatchedChunk[])
+      .filter(m => m.similarity >= MIN_CHUNK_SIMILARITY)
+      .map(m => m.content)
+
+    return { passages, costAmount: totalTokens * EMBEDDING_COST_PER_TOKEN, totalTokens }
+  } catch (err) {
+    console.warn('Chunk embedding fallback failed:', err)
+    return { passages: [], costAmount: 0, totalTokens: 0 }
+  }
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 }
@@ -264,7 +332,24 @@ serve(async (req) => {
   const autoReplyMatch = matchAutoReply(query, (rules ?? []) as AutoReplyRule[], kbArticles)
   const knowledgeBase = rankKbArticles(query, kbArticles, limit)
   const catalog = rankKnowledgeRecords(query, (records ?? []) as KnowledgeRecord[], limit)
-  const documentPassages = rankKnowledgeChunks(query, (chunks ?? []) as KnowledgeChunk[], limit)
+
+  let documentPassages = rankKnowledgeChunks(query, (chunks ?? []) as KnowledgeChunk[], limit).map(c => c.content)
+  let embeddingCost = 0
+  if (documentPassages.length === 0) {
+    const fallback = await fallbackToChunkEmbedding(supabase, query, clientId, limit)
+    documentPassages = fallback.passages
+    embeddingCost = fallback.costAmount
+    if (fallback.totalTokens > 0) {
+      await supabase.from('usage_events').insert({
+        client_id: clientId,
+        event_type: 'embedding_generation',
+        quantity: 1,
+        unit: 'count',
+        cost_amount: embeddingCost,
+        metadata: { purpose: 'query_fallback', model: EMBEDDING_MODEL, total_tokens: fallback.totalTokens },
+      }).then(({ error }: { error: { message: string } | null }) => { if (error) console.warn('usage_events insert failed:', error.message) })
+    }
+  }
 
   return json({
     clientId,
@@ -276,6 +361,6 @@ serve(async (req) => {
       : { matched: false },
     knowledgeBase: knowledgeBase.map(a => ({ title: a.title, answer: a.answer, keywords: a.keywords })),
     catalog: catalog.map(r => r.data),
-    documentPassages: documentPassages.map(c => c.content),
+    documentPassages,
   })
 })
