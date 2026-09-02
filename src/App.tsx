@@ -298,6 +298,33 @@ function AppRoutes() {
         <Route path="assistant/clients" element={<AdminRoute><AssistantClients /></AdminRoute>} />
       </Route>
 
+      {/* Admin-only mirror of the admin-exclusive routes above, under a
+          genuinely separate /admin/* prefix (the architecture brief's own
+          convention). Purely additive: every /app/* path above keeps
+          working unchanged — old bookmarks, the ERPPanelDashboard "quick
+          actions" tiles reached via /app, anything that still links to
+          /app/users etc. This just gives admin a dedicated entry point,
+          and buildNavSections now points every admin-exclusive nav item
+          here instead. Shared pages a business owner also uses (Assistant
+          Vue d'ensemble/Conversations/Knowledge base/Auto-replies,
+          Commandes/Livraisons) are deliberately NOT mirrored — they stay
+          solely at /app/* since that's still the correct entry point for
+          a non-admin subscriber, and admin reaches them there too. */}
+      <Route path="/admin" element={<ProtectedRoute><AdminRoute><ERPPanelLayout /></AdminRoute></ProtectedRoute>}>
+        <Route index element={<ERPPanelDashboard />} />
+        <Route path="analyses" element={<AdminAnalyses />} />
+        <Route path="transactions" element={<AdminTransactions />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="promo" element={<AdminPromoCodes />} />
+        <Route path="webhooks" element={<AdminWebhooks />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="ai-quality" element={<AdminAIQuality />} />
+        <Route path="clients" element={<ClientsPage />} />
+        <Route path="quote-requests" element={<QuotesPage />} />
+        <Route path="assistant/numbers" element={<WhatsAppNumbers />} />
+        <Route path="assistant/clients" element={<AssistantClients />} />
+      </Route>
+
       {/* Legacy redirects — every old path keeps working */}
       <Route path="/dashboard/pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/app/billing" element={<Navigate to="/app/settings" replace />} />

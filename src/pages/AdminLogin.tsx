@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
       await verifyMfaCode(mfaCode)
       if (await rejectIfNotAdmin()) { setView('login'); return }
       toast.success('Connexion administrateur réussie.')
-      navigate('/app')
+      navigate('/admin')
     } catch (err) {
       const message = mapAuthError(err)
       setError(message)
@@ -92,7 +92,7 @@ export default function AdminLoginPage() {
       if (needsMfa) { setView('mfa'); return }
       if (await rejectIfNotAdmin()) return
       toast.success('Connexion administrateur réussie.')
-      navigate('/app')
+      navigate('/admin')
     } catch (err) {
       const message = mapAuthError(err)
       setError(message)

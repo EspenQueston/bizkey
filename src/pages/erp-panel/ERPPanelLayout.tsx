@@ -75,10 +75,10 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
       group: 'sourcing',
       adminOnly: true,
       items: [
-        { icon: LayoutDashboard, label: "Vue d'ensemble",   to: '/app',              end: true },
-        { icon: Search,          label: 'Analyses',          to: '/app/analyses'            },
-        { icon: BarChart3,       label: 'Analytiques',       to: '/app/analytics'           },
-        { icon: BarChart3,       label: 'Qualité IA',        to: '/app/ai-quality'          },
+        { icon: LayoutDashboard, label: "Vue d'ensemble",   to: '/admin',              end: true },
+        { icon: Search,          label: 'Analyses',          to: '/admin/analyses'            },
+        { icon: BarChart3,       label: 'Analytiques',       to: '/admin/analytics'           },
+        { icon: BarChart3,       label: 'Qualité IA',        to: '/admin/ai-quality'          },
       ],
     },
     {
@@ -86,9 +86,9 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
       group: 'sourcing',
       adminOnly: true,
       items: [
-        { icon: CreditCard, label: 'Transactions',   to: '/app/transactions' },
-        { icon: Tag,        label: 'Codes Promo',    to: '/app/promo'        },
-        { icon: Webhook,    label: 'Webhooks',        to: '/app/webhooks'     },
+        { icon: CreditCard, label: 'Transactions',   to: '/admin/transactions' },
+        { icon: Tag,        label: 'Codes Promo',    to: '/admin/promo'        },
+        { icon: Webhook,    label: 'Webhooks',        to: '/admin/webhooks'     },
       ],
     },
     {
@@ -97,8 +97,8 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
       items: [
         { icon: ShoppingCart,  label: 'Commandes',         to: '/app/orders'         },
         { icon: Truck,         label: 'Livraisons',        to: '/app/delivery'       },
-        { icon: FileText,      label: 'Demandes de devis', to: '/app/quote-requests', adminOnly: true },
-        { icon: Building2,     label: 'Clients',           to: '/app/clients',        adminOnly: true },
+        { icon: FileText,      label: 'Demandes de devis', to: '/admin/quote-requests', adminOnly: true },
+        { icon: Building2,     label: 'Clients',           to: '/admin/clients',        adminOnly: true },
       ],
     },
     {
@@ -107,7 +107,7 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
       requiresAssistantAccess: true,
       items: [
         { icon: Bot,        label: "Vue d'ensemble",        to: '/app/assistant',               end: true },
-        { icon: Smartphone, label: 'Numéros WhatsApp',      to: '/app/assistant/numbers',        adminOnly: true },
+        { icon: Smartphone, label: 'Numéros WhatsApp',      to: '/admin/assistant/numbers',      adminOnly: true },
         { icon: MessageSquare, label: 'Conversations',      to: '/app/assistant/conversations'             },
         { icon: UserRound,  label: 'Contacts',              to: '/app/assistant/contacts',       hideForAdmin: true },
         { icon: BarChart3,  label: 'Statistiques',          to: '/app/assistant/analytics',      hideForAdmin: true },
@@ -122,7 +122,7 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
       group: 'assistant',
       adminOnly: true,
       items: [
-        { icon: Building2, label: 'Clients', to: '/app/assistant/clients' },
+        { icon: Building2, label: 'Clients', to: '/admin/assistant/clients' },
       ],
     },
     {
@@ -131,7 +131,7 @@ function buildNavSections(isAdmin: boolean): NavSection[] {
       adminOnly: true,
       flat: true,
       items: [
-        { icon: Users, label: 'Utilisateurs', to: '/app/users' },
+        { icon: Users, label: 'Utilisateurs', to: '/admin/users' },
       ],
     },
     {
@@ -259,7 +259,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   const activeScope = scopeFromPath(location.pathname, isAdmin)
 
   function goToProduct(group: 'sourcing' | 'assistant') {
-    navigate(group === 'assistant' ? '/app/assistant' : (isAdmin ? '/app' : '/app/analyze'))
+    navigate(group === 'assistant' ? '/app/assistant' : (isAdmin ? '/admin' : '/app/analyze'))
     onClose?.()
   }
 

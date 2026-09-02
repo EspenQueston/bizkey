@@ -299,7 +299,7 @@ export default function WhatsAppOverviewPage() {
             <Smartphone className="h-5 w-5 text-amber-600 shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-400">
               Aucun numéro WhatsApp Business connecté.{' '}
-              <Link to="/app/assistant/numbers" className="underline font-medium">Ajoutez-en un</Link> pour activer l'assistant, ou testez-le dès maintenant depuis les Conversations.
+              <Link to="/admin/assistant/numbers" className="underline font-medium">Ajoutez-en un</Link> pour activer l'assistant, ou testez-le dès maintenant depuis les Conversations.
             </p>
           </CardContent>
         </Card>

@@ -525,12 +525,12 @@ export default function ERPPanelDashboard() {
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {([
-              { icon: Search,       label: t('quickActions.analyses'),   to: '/app/analyses',   accent: 'violet'  },
-              { icon: Users,        label: t('quickActions.users'),      to: '/app/users',      accent: 'sky'     },
-              { icon: Tag,          label: t('quickActions.promoCodes'), to: '/app/promo',      accent: 'rose'    },
+              { icon: Search,       label: t('quickActions.analyses'),   to: '/admin/analyses', accent: 'violet'  },
+              { icon: Users,        label: t('quickActions.users'),      to: '/admin/users',    accent: 'sky'     },
+              { icon: Tag,          label: t('quickActions.promoCodes'), to: '/admin/promo',    accent: 'rose'    },
               { icon: ShoppingCart, label: t('quickActions.orders'),     to: '/app/orders',     accent: 'amber'   },
               { icon: Truck,        label: t('quickActions.deliveries'), to: '/app/delivery',   accent: 'indigo'  },
-              { icon: BarChart3,    label: t('quickActions.analytics'),  to: '/app/analytics',  accent: 'sapphire' },
+              { icon: BarChart3,    label: t('quickActions.analytics'),  to: '/admin/analytics', accent: 'sapphire' },
             ] as const).map(action => {
               const a = DASHBOARD_ACCENTS[action.accent]
               return (
